@@ -1,0 +1,14 @@
+{
+  "name": "autonova-2",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Сайт «Автонова с пробегом» — площадка автомобилей с пробегом официального дилера в Гомеле",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node tests/regression.mjs"
+  }
+}

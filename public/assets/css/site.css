@@ -1,0 +1,2405 @@
+/* «Автонова с пробегом» — дизайн-система. Фирменные цвета, скругления, «стекло» подача. */
+:root{
+  --ink:#14171C; --ink-2:#1C2129; --ink-3:#262C36;
+  --paper:#FFFFFF; --paper-soft:#F5F6F8; --paper-3:#EDEEF1;
+  --bg:#FFFFFF; --bg-soft:#F5F6F8; --bg-dark:#14171C;
+  --text:#14171C; --text-2:#5D6674; --text-3:#8B93A1; --text-inv:#F3F5F8;
+  --line:#E2E5EA; --line-2:#CFD4DB; --line-dark:#2B323C;
+  --accent:#E3000F; --accent-hover:#BC000C; --accent-soft:#FDECEE;
+  --ok:#18794E; --ok-soft:#E7F4ED; --warn:#9A6400; --warn-soft:#FDF4E3; --err:#C4382B; --err-soft:#FBEAE8;
+  --r-card:22px; --r-btn:999px; --r-field:14px; --r-sm:10px; --r-xl:30px;
+  --shadow:0 2px 8px rgba(20,23,28,.06);
+  --shadow-md:0 14px 34px rgba(20,23,28,.11);
+  --shadow-lg:0 24px 64px rgba(20,23,28,.18);
+  --wrap:1260px; --accent-2:#FFB000; --hero:#171A20;
+  /* Единый шаг между крупными блоками по всему сайту (просьба заказчика: «выровняй этот отступ
+     вниз по всему сайту, чтобы отступы вниз были одинаковые»). История шага: 112 px → 74 px
+     (112 минус 1 см) → 56 px → 44 px. Первые два раза заказчик просил «где разумно уменьшить
+     разрыв между блоками, сделай это»; в третий раз — «посмотри по сайту, где разумно уменьшить
+     отступы вниз между блоками, — уменьши их». 56 px на каждой границе всё ещё читались как
+     пустота, 44 px держат блоки раздельными, но уже связанными: заголовок следующего блока
+     остаётся ближе к своей сетке, чем к чужой.
+     Крупные блоки (`section.block`) отбиваются половиной шага сверху и снизу, поэтому соседние
+     дают ровно --block-gap. Всё, что стыкуется с блоком снаружи (потолок страницы, панель поиска,
+     подвал), тоже берёт половину шага — иначе разрыв поехал бы. Менять ритм нужно здесь, одним
+     числом. */
+  --block-gap:44px;
+  --f-text:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
+  --f-num:Bahnschrift,"Segoe UI Semibold","Segoe UI",Arial,sans-serif;
+  --f-display:"Arial Black","Segoe UI Black",Impact,Arial,sans-serif;
+  /* Высота шапки: по просьбе заказчика «сделай немного меньше» — 76 → 68 px (шапка вместе
+     с нижней рамкой 77 → 69 px). Содержимое шапки ниже: сцепка логотипа 47 px, кнопки-иконки
+     42 px, пункты меню ~30 px, — поэтому 68 px остаётся запас и ничего не подрезается.
+     Значение читает только `.header-in{min-height:var(--header-h)}`. */
+  --header-h:68px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--f-text);color:var(--text);background:var(--bg);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+/* Главная — светлая, как внутренние страницы: винной заливки (#40161B, раньше ещё и
+   градиент) больше нет. Шапка, верхняя полоса и подвал держат собственный тёмный фон. */
+.home-page{background:var(--bg)}
+.inner-page{background:var(--bg)}
+.home-page .topbar,.home-page .header{background:#171A20;border-color:rgba(255,255,255,.08)}
+.home-page .hero,.home-page .searchband{background:transparent;border-color:transparent}
+/* Герой больше не заполняет экран: над ним стоят полоса марок и панель поиска. */
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,h4{margin:0 0 .5em;line-height:1.15;letter-spacing:-.02em;font-weight:700}
+h1{font-size:clamp(28px,3.4vw,46px)}
+h2{font-size:clamp(22px,2.3vw,32px)}
+h3{font-size:clamp(18px,1.5vw,22px)}
+p{margin:0 0 1em}
+.wrap{width:100%;max-width:var(--wrap);margin:0 auto;padding:0 20px}
+/* Нижний отступ страницы — половина того же шага, что и между блоками: подвал отбит своей
+   половиной, в сумме те же 74 px. Раньше у каждой страницы стоял свой инлайн-отступ (40, 60,
+   местами 20 px), и низ страницы отличался от страницы к странице. */
+.wrap.page-pb{padding-bottom:calc(var(--block-gap) / 2)}
+/* Последний абзац страницы тянул за собой ещё 16 px собственного отступа (страницы входа и
+   регистрации: 90 px до подвала вместо 74). Хвостовой отступ в конце страницы ничего не значит. */
+.wrap.page-pb > :last-child{margin-bottom:0}
+.num{font-family:var(--f-num)}
+.muted{color:var(--text-2)}
+.small{font-size:13.6px}
+.center{text-align:center}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.grid{display:grid;gap:20px}
+.hide{display:none!important}
+
+/* ── Кнопки ─────────────────────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;border-radius:var(--r-btn);
+  border:1px solid transparent;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;transition:.18s ease;
+  white-space:nowrap;line-height:1.1}
+.btn:hover{background:var(--accent-hover);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-ghost{background:transparent;color:var(--text);border-color:var(--line-2)}
+.btn-ghost:hover{background:var(--paper-soft);border-color:var(--text-3);transform:translateY(-1px)}
+.btn-dark{background:var(--ink);color:#fff}
+.btn-dark:hover{background:#000}
+.btn-light{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn-light:hover{background:var(--paper-soft)}
+.btn-sm{padding:9px 16px;font-size:14px}
+.btn-lg{padding:15px 30px;font-size:17px}
+.btn-block{width:100%}
+.btn-accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-accent:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:#fff}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ── Поля ───────────────────────────────────────────────────────────────────────────── */
+.field{display:flex;flex-direction:column;gap:6px}
+/* Поле «Ваша цена» в заявке появляется только по кнопке «Предложить цену» (site.js:
+   initCarExtras) — display:flex выше перебивает атрибут hidden, поэтому правило явное. */
+.field[hidden]{display:none}
+.field>span{font-size:13.6px;font-weight:600;color:var(--text-2)}
+input[type=text],input[type=email],input[type=password],input[type=tel],input[type=number],input[type=search],select,textarea{
+  width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-field);background:#fff;transition:.15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+textarea{min-height:110px;resize:vertical}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235D6674' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;background-size:16px;padding-right:38px;cursor:pointer}
+.check{display:flex;gap:9px;align-items:center;cursor:pointer;font-size:14.5px;padding:5px 0}
+.check input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+.form-note{font-size:13px;color:var(--text-3)}
+.alert{padding:12px 16px;border-radius:var(--r-field);font-size:14.5px;margin-bottom:14px}
+.alert-err{background:var(--err-soft);color:var(--err)}
+.alert-ok{background:var(--ok-soft);color:var(--ok)}
+.alert-warn{background:var(--warn-soft);color:var(--warn)}
+
+/* ── Шапка ──────────────────────────────────────────────────────────────────────────── */
+.topbar{background:#171A20;color:var(--text-inv);font-size:13.6px;border-bottom:1px solid rgba(255,255,255,.08)}
+/* Приглушённая гамма главной (прозрачные верхняя полоса, подвал, секции и карточки) убрана
+   вместе с винной заливкой страницы: главная теперь светлая, как внутренние, и все эти
+   блоки держат собственный фирменный фон. */
+.topbar .wrap{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;min-height:40px}
+.topbar a{opacity:.86}.topbar a:hover{opacity:1;color:#fff}
+/* Три зоны верхней полосы: слева пусто (время работы убрано), по центру строка брендов,
+   справа ссылки. Явные grid-column нужны, потому что пустая левая зона не держит колонку. */
+.topbar-l{display:flex;gap:8px;align-items:center;flex-wrap:wrap;grid-column:1;justify-self:start}
+.topbar-c{grid-column:2;justify-self:center;display:none}
+.topbar-r{display:flex;gap:18px;align-items:center;flex-wrap:wrap;grid-column:3;justify-self:end}
+/* «Разместить объявление» — та же кнопка, что и остальные кнопки сайта (класс .btn/.btn-sm):
+   те же поля 9×16, кегль 14, скругление --r-btn и красный фон --accent. Раньше это была
+   «сплющенная» кнопка фиксированной ширины 144 px с кеглем 11,8 — по просьбе заказчика
+   (2026-09-29) приводим её к общему стилю. Фиксированную ширину убрали: правый край
+   и так совпадает с правым краем .head-actions (оба блока прижаты к правому краю .wrap). */
+.topbar .topbar-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:9px 16px;border:1px solid transparent;border-radius:var(--r-btn);background:var(--accent);
+  color:#fff;opacity:1;font-size:14px;font-weight:600;line-height:1.1;white-space:nowrap;
+  transition:.18s ease}
+.topbar .topbar-cta:hover{background:var(--accent-hover);color:#fff;transform:translateY(-1px)}
+.topbar .topbar-cta:active{transform:translateY(0)}
+@media(max-width:1080px){.topbar .topbar-cta{margin-right:51px}}
+/* Локация переехала из верхней полосы в правый блок иконок шапки: кнопка — обычный
+   .icon-btn, а меню карт выравниваем по правому краю, иначе список уходит за край экрана. */
+.map-picker{position:relative;display:flex}
+.head-actions .map-menu{left:auto;right:0}
+.map-menu{position:absolute;z-index:80;top:calc(100% + 8px);left:0;min-width:190px;padding:6px;border:1px solid var(--line-dark);border-radius:12px;background:var(--ink-2);box-shadow:var(--shadow-lg)}
+.map-menu a{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;color:#F3F5F8;white-space:nowrap}
+.map-menu a:hover{background:rgba(255,255,255,.1);text-decoration:none}
+.map-menu a .ico{color:var(--accent-2);flex:none}
+
+.header{position:sticky;top:0;z-index:60;background:#171A20!important;border-bottom:1px solid rgba(255,255,255,.08)}
+.header-in{display:flex;align-items:center;gap:22px;min-height:var(--header-h)}
+.logo{display:flex;align-items:center;gap:10px;color:var(--ink);font-weight:700;font-size:18px;flex:0 0 auto}
+.logo img{display:block;height:52px;width:auto;flex:none;transition:opacity .15s ease}
+.logo:hover{text-decoration:none}.logo:hover img{opacity:.86}
+.logo-sub{font-family:var(--f-num);font-size:11px;line-height:1;letter-spacing:.14em;text-transform:uppercase;color:#8B94A2;white-space:nowrap}
+.header .logo{--lg-h:38px;flex-direction:column;align-items:center;gap:0;transform:none}
+.header .logo img{height:var(--lg-h)}
+.header .logo-sub{padding-left:calc(var(--lg-h) * 1.1);margin-top:-2px}
+.nav{display:flex;gap:2px;align-items:stretch;flex:1 1 auto;flex-wrap:nowrap}
+/* Пункт меню — надпись (по просьбе заказчика, 2026-09-29): значки вкладок убраны из
+   штатного вида целиком. Надписи показываем там, где они физически помещаются, — от
+   1280 px (шесть подписей + логотип + блок иконок занимают ~1230 px). Ниже 1280 px шапка
+   переходит на панель-бургер с теми же подписями: в 1081–1279 px ряд подписей не
+   укладывался (дефицит 159 px уже на 1081 px), а возвращать вместо подписей старые значки
+   без подписи нельзя — заказчик 2026-09-29: «когда сдвигаю рамку хрома обозревателя, вижу
+   что появляются старые иконки подписи и вкладок». Поэтому перелом у шапки один:
+   ≥1280 px — ряд подписей, ниже — бургер (@media(max-width:1279px) дальше по файлу). */
+.nav a{display:inline-flex;align-items:center;gap:8px;
+  padding:6px 12px;border-radius:var(--r-btn);font-size:14px;font-weight:500;color:#AEB7C4;transition:.15s}
+.nav a:hover{background:#171717;color:#fff}
+.nav a.on{background:#2A080A;color:#FF5360;font-weight:600}
+/* Значки пунктов меню: только обводка currentColor, без фона и рамки. */
+.nav-ico{flex:none;opacity:.9;transition:opacity .15s ease}
+.nav a:hover .nav-ico,.nav a.on .nav-ico{opacity:1}
+.nav-ico-wrap{display:inline-flex;align-items:center;gap:2px}
+.nav-tx{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;line-height:1.15}
+/* С 1280 px — ряд подписей: значки скрыты (в разметке они остаются, но не показываются
+   нигде — ни в шапке, ни в панели-бургере), поля пункта теснее (6+8 против 6+12). */
+@media(min-width:1280px){
+  .nav-ico{display:none}
+  /* Кегль 13,2 px и поля 9 px вместо 14/12: шесть подписей + логотип + блок иконок
+     занимают ~1230 px, поэтому начиная с 1280 px шапка помещается без прокрутки.
+     min-width:0 разрешает ряду сжиматься: если справа широкая кнопка вошедшего в
+     кабинет, подпись подрезается многоточием, а не растягивает страницу. */
+  .nav{min-width:0}
+  .nav a{font-size:13.2px;padding:6px 8px;min-width:0}
+  /* Запас по месту: промежутки в шапке чуть теснее (22→16 и 9→7 px), чтобы подписи
+     стояли целиком и с запасом ~30 px даже у вошедшего в кабинет. */
+  .header-in{gap:16px}
+  .head-actions{gap:7px}
+  .nav .nav-dd{min-width:0}
+  .nav-tx{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis}
+}
+.nav-dd{position:relative;display:flex;align-items:center}
+.nav-dd-btn .dd-chev{transition:transform .18s ease;opacity:.65}
+.nav-dd:hover .dd-chev,.nav-dd:focus-within .dd-chev,.nav-dd.open .dd-chev{transform:rotate(180deg)}
+.nav-dd-menu{position:absolute;z-index:80;top:calc(100% + 8px);left:0;min-width:246px;padding:6px;border:1px solid var(--line-dark);
+  border-radius:12px;background:var(--ink-2);box-shadow:var(--shadow-lg);
+  opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .16s ease,transform .16s ease,visibility .16s}
+.nav-dd-menu::before{content:"";position:absolute;left:0;right:0;top:-10px;height:10px}
+.nav-dd:hover .nav-dd-menu,.nav-dd:focus-within .nav-dd-menu,.nav-dd.open .nav-dd-menu{opacity:1;visibility:visible;transform:none}
+.nav .nav-dd-menu a{display:block;padding:9px 12px;border-radius:8px;color:#D9DEE7;font-size:14px;white-space:nowrap}
+.nav .nav-dd-menu a:hover{background:rgba(255,255,255,.09);color:#fff}
+.nav .nav-dd-menu a.on{background:rgba(227,0,15,.14);color:#FF5360}
+.head-actions{display:flex;gap:9px;align-items:center;flex:0 0 auto}
+/* «Автожурнал» и «Отзывы» переехали из текстового ряда меню в иконки шапки: в верхнем
+   меню их прячем, в мобильной панели-бургере возвращаем (правило ниже, в медиазапросе). */
+.nav a.nav-extra{display:none}
+/* Хороший отступ от группы «звонок + локация» до иконок журнала и отзывов. */
+.head-actions .head-first{margin-left:20px}
+/* Кнопки кабинета в шапке — «призрачные»: базовый .btn-ghost рассчитан на светлый фон
+   (тёмный текст, светлая рамка) и в тёмной шапке был почти не виден. Задаём цвета шапки.
+   Заказчик: «сделай все иконки в шапке с прозрачным фоном и убери границы кнопок, оставь
+   только иконки» — поэтому у кнопок шапки нет ни рамки, ни подложки, виден только значок.
+   Отклик даёт мягкая полупрозрачная окружность на наведении и фокусе с клавиатуры
+   (не рамка: она «рисовала» кнопку вокруг каждого значка). */
+.header .btn-ghost{background:transparent;color:#F3F5F8;border:0;padding:10px 17px}
+/* Рамку снимаем целиком (border:0), а её 2 px высоты возвращаем в padding: без этого «Кабинет»
+   и «Выход» становились на 2 px ниже соседних значков (проверка в tests/regression.mjs держит
+   прежние 50×36). */
+.header .btn-ghost:hover,.header .btn-ghost:focus-visible{background:rgba(255,255,255,.10);transform:none}
+.header .btn-ghost:active{background:rgba(255,255,255,.16)}
+/* Вкладки меню стали надписями и занимают больше места, чем значки, поэтому кнопка кабинета
+   в шапке — значок с подсказкой (имя целиком видно в подсказке и на самой странице кабинета):
+   кнопка «Иван Иванов + выход» шириной 212 px вытесняла подписи меню за край страницы. */
+.icon-btn{position:relative;width:42px;height:42px;border-radius:50%;border:0;background:transparent;color:#F3F5F8;display:grid;place-items:center;cursor:pointer;transition:background .15s ease}
+.icon-btn:hover,.icon-btn:focus-visible{background:rgba(255,255,255,.10)}
+.icon-btn:active{background:rgba(255,255,255,.16)}
+.icon-btn .badge{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:#fff;
+  font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 5px}
+/* Атрибут hidden у счётчика не работал: display:grid выше перебивал [hidden]{display:none},
+   поэтому у пустых «Сравнения» и «Избранного» всегда висел красный ноль. */
+.icon-btn .badge[hidden]{display:none}
+.burger{display:none}
+/* Перелом шапки — 1280 px, тот же, что у ряда подписей выше: ниже него подписи меню в ряд
+   не помещаются, поэтому меню уходит в панель-бургер с теми же подписями. Значки вкладок
+   не возвращаем ни на одной ширине (заказчик 2026-09-29: «вижу, что появляются старые
+   иконки подписи и вкладок»). */
+@media(max-width:1279px){.nav{display:none}.burger{display:grid}
+  /* На широких экранах блок действий отжимает вправо сам .nav; когда меню скрыто,
+     кнопки прилипали к логотипу — возвращаем их к правому краю шапки. */
+  .head-actions{margin-left:auto}
+  /* В панели-бургере «Автожурнал» и «Отзывы» снова пункты списка: иконками они
+     остаются в самой шапке, а разделы не должны пропадать из меню на телефоне. */
+  [data-mobile-nav] .nav a.nav-extra{display:inline-flex}
+  .head-actions .head-first{margin-left:12px}
+  [data-mobile-nav] .nav{flex-direction:column;align-items:stretch;gap:2px}
+  /* В панели-бургере пункты — только надписями, как и в шапке на широком экране:
+     значки разделов там больше не показываем (просьба заказчика, 2026-09-29). */
+  [data-mobile-nav] .nav>a,[data-mobile-nav] .nav .nav-dd-btn{justify-content:flex-start;gap:10px;padding:12px 14px}
+  [data-mobile-nav] .nav-ico{display:none}
+  [data-mobile-nav] .nav-dd{flex-direction:column;align-items:stretch}
+  /* В панели список услуг раскрывается по тапу на «Услуги». Без display:none
+     скрытый (visibility) список держал ~400 px пустоты между пунктами. */
+  [data-mobile-nav] .nav-dd-menu{display:none;position:static;top:auto;left:auto;min-width:0;margin:2px 0 6px;padding:4px;background:rgba(255,255,255,.04);box-shadow:none}
+  [data-mobile-nav] .nav-dd.open .nav-dd-menu{display:block}
+  [data-mobile-nav] .nav-dd-menu::before{display:none}
+  [data-mobile-nav] .nav .nav-dd-menu a{padding:11px 16px}
+  [data-mobile-nav] .nav-dd-btn .dd-chev{transform:none}}
+/* Меню-«бутерброд» на телефоне — выезжающая справа панель (заказчик 2026-09-29: «бутерброд чтоб
+   плавно выезжал с правой стороны и оставлял ещё какую-то часть слева вид страницы»).
+   Было: блок в потоке под шапкой, который просто раскрывался (display) и толкал страницу вниз.
+   Стало: position:fixed у правого края, ширина min(84%,420px) — на экране 390 px слева остаётся
+   полоса страницы в 62 px (замерено), поверх неё приглушающий .mnav-scrim. Открытое состояние —
+   класс .open (его ставит initChrome
+   в site.js), закрытое — разметка прячется классом .hide, и его display:none!important перебивает
+   display:flex этой панели (без !important победила бы эта же строка — она идёт ниже .hide).
+   Панель перекрывает и шапку (z-index 90 против 60 у .header, 80 у .map-menu): у неё своя строка
+   заголовка с «Меню» и крестиком, поэтому она выглядит одним целым, а не обрубком под шапкой.
+   Тень слева и наползание скрима показывают, что под панелью лежит страница. */
+.mnav-scrim{position:fixed;inset:0;z-index:89;background:rgba(11,13,17,.52);opacity:0;transition:opacity .28s ease}
+.mnav-scrim.on{opacity:1}
+.mdrawer{position:fixed;top:0;right:0;bottom:0;z-index:90;width:min(84%,420px);
+  display:flex;flex-direction:column;
+  background:var(--ink);border-radius:var(--r-xl) 0 0 var(--r-xl);
+  box-shadow:-18px 0 44px rgba(11,13,17,.42);
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.22,.61,.36,1);will-change:transform}
+.mdrawer.open{transform:translateX(0);display:flex}
+.mdrawer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;
+  padding:14px 14px 12px 20px;border-bottom:1px solid rgba(255,255,255,.10)}
+.mdrawer-head b{color:#fff;font-size:16px;font-weight:700}
+.mdrawer-close{width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.10);
+  color:#F3F5F8;display:grid;place-items:center;cursor:pointer;transition:background .15s ease}
+.mdrawer-close:hover,.mdrawer-close:focus-visible{background:rgba(255,255,255,.20)}
+.mdrawer-nav{display:flex;flex-direction:column;align-items:stretch;gap:2px;
+  flex:1 1 auto;min-height:0;overflow-y:auto;padding:10px 12px 22px;overscroll-behavior:contain}
+/* Внутри панели пункты — вертикально. Селектор с двумя классами, а не голый .nav: правило
+   `@media(max-width:1279px){.nav{display:none}}` весит те же 0,1,0, но идёт выше и оставляло
+   список скрытым — панель выезжала пустой. */
+.mdrawer .mdrawer-nav,.mdrawer .nav{display:flex;flex-direction:column;align-items:stretch}
+@media(prefers-reduced-motion:reduce){.mdrawer{transition:none}.mnav-scrim{transition:none}}
+/* Пока панель выехала, фон под ней не прокручивается (скроллит сама .mdrawer-nav), а полосу
+   прокрутки прячем — иначе у правого края оставался бы серый желоб. */
+html.mnav-on,html.mnav-on body{overflow:hidden}
+html.mnav-on{scrollbar-width:none}
+html.mnav-on::-webkit-scrollbar{width:0}
+/* Мобильная шапка: кнопок действий стало пять (звонок + сравнение + избранное + вход +
+   бургер) — прежние 42 px не помещались даже с четырьмя (при 390 px вылезали на 11 px).
+   Логотип ужимается: правило `.logo img{height:29px}` не работало — его перебивало
+   `.header .logo img{height:var(--lg-h)}` из строки 111. */
+@media(max-width:640px){.topbar{display:none}
+  .header .logo img{height:26px}
+  .header .logo-sub{font-size:9.6px;letter-spacing:.08em;padding-left:20px}
+  .header-in{gap:8px;padding-left:14px;padding-right:14px}
+  .head-actions{gap:5px}
+  /* Шестая и седьмая круглые кнопки в 390 px не помещаются (41 px перебора): локация
+     на телефоне, как и раньше в верхней полосе, скрыта, а «Автожурнал» и «Отзывы»
+     остаются пунктами бургера. */
+  .head-actions .head-extra,.head-actions .map-picker{display:none}
+  .head-actions .head-first{margin-left:0}
+  .icon-btn{width:36px;height:36px}
+  /* Кабинет и выход для вошедшего: текстовые кнопки .btn-ghost шире круглых и на 390 px
+     выносили шапку за край экрана на 13 px (замерено аудитом). На телефоне это две такие же
+     круглые кнопки 36 px, как остальные действия; выход подписан подсказкой. */
+  .head-actions .head-user,.head-actions .head-logout{width:36px;height:36px;padding:0;border-radius:50%;display:grid;place-items:center}}
+/* Лид героя на телефоне: каждый смысловой кусок — своя строка и внутри себя не переносится
+   (заказчик 2026-09-29: «сделай, что бы не переносились на следующие вниз строчки»). Раньше
+   фразы были перебиты <br>, и каждая переносилась ещё раз: лид занимал четыре строки, а
+   последняя начиналась с одного висящего слова.
+   Кегль подобран по самому длинному куску: при 390 px колонка героя 350 px, куски при 14 px
+   занимают 279 / 219 / 257 / 222 px, то есть каждый встаёт одной строкой с двукратным запасом
+   (при прежних 17 px и двух фразах строки доходили до 438 px и переносились). Замер — в браузере. */
+@media(max-width:640px){
+  .home-page .hero p.lead .lead-line{display:block;white-space:nowrap;font-size:14px;line-height:1.45}
+  .home-page .hero p.lead .lead-line + .lead-line{margin-top:1px}
+}
+@media(max-width:360px){.header-in{gap:6px;padding-left:12px;padding-right:12px}
+  .head-actions{gap:3px}
+  .icon-btn{width:32px;height:32px}
+  /* Узкие телефоны (320 px, первый iPhone SE): в авторизованной шапке шесть круглых кнопок,
+     при 32 px они выходили за край на 25 px. Ужимаем кнопки и зазоры, а «Кабинет» и «Выход»
+     держим того же размера, что и остальные. */
+  .head-actions .head-user,.head-actions .head-logout{width:30px;height:30px}}
+@media(max-width:340px){.header-in{padding-left:10px;padding-right:10px;gap:5px}
+  .head-actions{gap:2px}
+  .icon-btn,.head-actions .head-user,.head-actions .head-logout{width:28px;height:28px}
+  .header .logo img{height:23px}}
+
+/* ── Hero ───────────────────────────────────────────────────────────────────────────── */
+/* Герой стоит на светлой главной, поэтому весь текст здесь тёмный по белому. Раньше он
+   печатался белым по винной заливке страницы. */
+.hero{position:relative;background:transparent;color:var(--text);overflow:hidden;
+  border-radius:0 0 var(--r-xl) var(--r-xl)}
+/* Горизонтальные отступы 20 px — как у .wrap: без них на окнах уже 1260 px (когда
+   max-width уже не работает) содержимое героя прилипало к краю экрана и не совпадало
+   с колонкой шапки и полосой марок. */
+.hero-in{position:relative;z-index:1;padding:36px 20px 52px}
+.kicker{display:inline-flex;align-items:center;gap:8px;padding:7px 15px;border-radius:var(--r-btn);background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.16);font-size:13.6px;font-weight:600;letter-spacing:.02em;margin-bottom:20px}
+.kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.hero h1{color:var(--ink);max-width:24ch}
+/* text-wrap:pretty — чтобы принудительный перенос лида на главной (<br> перед «Гарантия…»)
+   не оставлял висеть одно слово: без него вторая фраза заканчивалась строкой «визит.» (40 px),
+   с ним последняя строка набирается из двух слов. Поддержка — Chrome 117+, в остальных
+   браузерах правила просто нет, вид прежний. */
+.hero p.lead{font-size:17px;color:var(--text-2);max-width:62ch;text-wrap:pretty}
+/* Две фразы лида — отдельные куски (<span class="lead-line"> в lib/pages.mjs). На телефоне каждая
+   встаёт своей строкой и не переносится внутри себя (см. блок ≤640 px ниже): заказчик просил
+   «сделай, что бы не переносились на следующие вниз строчки» — раньше фразы делились по <br>,
+   и каждая добавляла по второй строке, лид занимал четыре. */
+.hero p.lead .lead-line{display:inline}
+/* Строка брендов в герое главной: подпись «Официальный дилер» и три ссылки-надписи
+   Geely / BelGee / SRM. Эмблемы (белое слово Geely, белое слово BelGee и звёздочка SRM)
+   отсюда убраны по просьбе заказчика — «продолжи блок прозрачными кнопками … этот блок
+   сделай по стилю сайта, логотипы убери». Затем и рамки с фоном ушли: «сделай с прозрачным
+   фоном, чтобы был только текст, то же самое сделай кнопкам брендов — Geely, BelGee и SRM,
+   чтобы имели только буквы и они являлись ссылками». Поэтому вид ссылок задаёт
+   `.hero-dealer .dealer-link` (только буквы, ховер — акцентный красный), а не `.btn.btn-ghost`.
+   Прежние правила эмблем (.dealer-brand-photo / .dealer-brand-logo / .dealer-brand-logo-srm /
+   .dealer-brand-caption) и их окна обрезки 80/68/26 удалены вместе с разметкой. */
+.dealer-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:24px}
+.dealer-row .kicker{margin-bottom:0}
+.dealer-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dealer-link{text-decoration:none}
+/* Верхняя полоса шапки: строка дилера видна с 1081 px (на главной её там больше нет —
+   она уехала в герой, см. .hero-dealer), ниже полосу целиком скрывает шапка на ≤640 px. */
+@media(min-width:1081px){.topbar-c{display:block}}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
+/* «Заказать звонок» и «Разместить объявление» в герое главной — снова фирменные красные кнопки.
+   Заказчик сначала попросил прозрачный фон (2026-09-30: «Заказать звонок / Разместить объявление на
+   титульной, сделай фон кнопок прозрачный»), а следом вернул красный (2026-09-30: «Заказать звонок /
+   Разместить объявление - верни красный цвет кнопкам»). Поэтому здесь заливка --accent и белые буквы,
+   как у .btn по умолчанию, а наведение идёт от --accent-hover; правило оставлено явным, чтобы вид
+   кнопок героя не зависел от порядка каскада. Высота и ширина кнопок (46 px и колонка на телефоне,
+   доля 1fr на широком) заданы ниже в медиа-запросах и не затрагиваются. */
+.hero-cta .btn{background:var(--accent);color:#fff;border-color:var(--accent)}
+.hero-cta .btn:hover,.hero-cta .btn:focus-visible{background:var(--accent-hover);color:#fff;border-color:var(--accent-hover);transform:translateY(-1px)}
+.hero-cta .btn:active{transform:translateY(0)}
+/* Строка «Официальный дилер» + Geely / BelGee / SRM стоит в герое на месте прежних
+   четырёх цифр (53 / 17 / 42 / 15 мин): на широком экране — в правой верхней ячейке
+   героя, над кнопками. Отступ сверху — как у снятого блока цифр на мобильном. */
+.hero-dealer{margin-top:32px}
+.hero-dealer .dealer-row{margin-bottom:0}
+/* Равные отступы в столбике героя главной: заголовок → лид → строка «Официальный дилер» →
+   кнопка (заказчик: «Между блоками — Автомобили с пробегом и проверенной историей… Официальный
+   дилер Geely BelGee SRM / Разместить объявление — сделай равные между ними отступы вниз,
+   это касается и мобильной версии»). До этого столбик был обычным блоком, и зазоры задавали
+   собственные поля элементов: браузерные у h1 (0,67em) и у лида (1em), 32 px сверху у строки
+   дилера и 26 px у кнопки — выходило 14 / 32 / 26 px, причём верхние два ещё и менялись вместе
+   с кеглем заголовка (18,4 px на 1080, 14 px на 640). Теперь столбик — flex с одним зазором
+   14 px на всех ширинах, поля элементов обнулены: воздух между ними одинаковый и на телефоне,
+   и на 1440. На широком экране зазор тот же, но остаток высоты колонки (её тянет блок
+   «Горящая продажа») делится между этими же зазорами поровну — см. justify-content в блоке
+   @media(min-width:1081px) ниже: низ кнопки по-прежнему совпадает с низом карточек. */
+.home-page .hero-main{display:flex;flex-direction:column;gap:14px}
+.home-page .hero-main > h1,
+.home-page .hero-main > p,
+.home-page .hero-main > .hero-dealer,
+.home-page .hero-main > .hero-cta{margin:0}
+/* Ряд брендов: подпись «Официальный дилер» и сразу за ней слова Geely / BelGee / SRM
+   (просьба заказчика: «кнопки размести после слов — Официальный дилер»). Поэтому ряд снова
+   flex, а не сетка в две строки: подпись, зазор 22 px и три ссылки подряд через 18 px.
+   Прежняя раскладка держала ссылки тремя колонками 1fr и вела каждую ровно под кнопку героя —
+   теперь ссылки идут следом за подписью одной строкой, и это выравнивание больше не действует.
+   Если места мало (телефон), ряд переносится целиком: подпись сверху, ссылки под ней, и внутри
+   ссылок тоже разрешён перенос, чтобы на 320 px ничего не вылезало за экран. */
+.hero-dealer .dealer-row{display:flex;align-items:center;gap:22px;flex-wrap:wrap;row-gap:10px}
+.hero-dealer .kicker{padding:0;font-size:13px}
+.hero-dealer .dealer-links{display:flex;align-items:center;gap:18px;flex-wrap:wrap;width:auto}
+/* Ссылки брендов — только буквы: ни рамки, ни фона, ни подложки. Вид задаётся здесь, а не
+   .btn-ghost: фон прозрачный, область клика — само слово, ховер — акцентный красный цвет и
+   приближение при наведении («кнопки сделай, чтобы при наведении чуть приближались»).
+   6 % (scale 1.06) на кегле 15 px глазом почти не читались, заказчик просил ещё раз — подняли
+   до 12 %: 15 px → 16,8 px, заметно, но по-прежнему «чуть».
+   transform не влияет на раскладку, поэтому соседние слова при наведении не сдвигаются. */
+.hero-dealer .dealer-link{display:inline-block;width:auto;height:auto;padding:0;border:0;
+  background:transparent;color:var(--ink);font-weight:600;font-size:15px;line-height:1.2;
+  white-space:nowrap;transition:color .18s ease,transform .18s ease}
+.hero-dealer .dealer-link:hover{color:var(--accent);transform:scale(1.12);text-decoration:none}
+@media(prefers-reduced-motion:reduce){
+  .hero-dealer .dealer-link:hover{transform:none}
+}
+/* Подпись «Официальный дилер» — только текст: плашку .hero .kicker (фон --paper-soft и рамка
+   --line) здесь гасим, иначе специфичность одинаковая и побеждает правило ниже по файлу. */
+.hero .kicker{background:var(--paper-soft);border-color:var(--line);color:var(--text-2)}
+.hero .hero-dealer .kicker{background:transparent;border:0;padding:0;color:var(--text-2)}
+/* ── «Горящая продажа» в герое главной ──────────────────────────────────────────────────────
+   Три маленькие карточки автомобилей заняли место кнопок героя (просьба заказчика: «убери на
+   титульный справа кнопку — Смотреть каталог. Кнопки — Продать автомобиль и Разместить
+   объявление, перенеси под блоком — Официальный дилер Geely BelGee SRM. На месте где были
+   кнопки, размести 3 маленькие карточки со спецпредложением и назови их — Горящая продажа»).
+   Внутри — три самых доступных автомобиля каталога с фото: разметку собирает hotCard() в
+   lib/pages.mjs прямо из базы, поэтому цена и пробег всегда актуальны, а не вписаны руками.
+   Вид карточки повторяет карточку каталога (.car: фон #fff, рамка --line, радиус --r-card),
+   чтобы блок читался как часть той же главной, а не как отдельная плашка.
+   На широком экране (см. медиазапрос ниже) блок занимает правую колонку героя по всей высоте:
+   верх карточек совпадает с верхом заголовка, низ — с низом кнопок под строкой дилера. */
+.hero-hot{min-width:0}
+/* Подписи «Горящая продажа» над блоком больше нет: заказчик попросил перенести её на само фото,
+   в правый нижний угол кадра. Правила для .kicker/.hot-head здесь поэтому убраны. */
+/* ── Centered Slider блока «Горящая продажа» ──────────────────────────────────────────
+   Заказчик 2026-09-27: «блок с горящим предложением на титульный наверху сделай как Centered
+   Slider и добавь ещё на свой выбор две карточки из имеющихся авто».
+   Лента — .hot-cards во flex-строке без переносов, карточка фиксированной ширины (--hot-w,
+   224 px), соседние выходят за края и обрезаются .hot-slider (overflow:hidden). Активную карточку
+   ставит по центру колонки initHotSliders в site.js: он считает translateX трека, а слева и справа
+   достраивает копии крайних карточек — поэтому и первая, и последняя карточка встают ровно в
+   середину, без пустоты по краям (копии видны только как «подпорка» для соседей).
+   align-items:stretch — карточки в ленте одной высоты, даже если у одной параметры заняли две
+   строки: низ у всех на одном уровне, и «центрирование» не дёргает полосу по вертикали.
+   Без JavaScript лента просто стоит с начала: карточки видны, ссылки работают, ничего не прячется.
+   Уменьшение и приглушение соседей включается только после инициализации (атрибут data-ready),
+   поэтому при выключенном JS все карточки одинаковые, а не «погашенные».
+   Заказчик 2026-09-28: «Сделай карточки авто в блоке - карусель, чуть меньшего размера» — ширина
+   карточки уменьшена 272 → 248 px (кадр 203 → 185 px), то есть на 9 %. Тем же днём: «Сделай
+   карточки авто в блоке - карусель, еще чуть меньшего размера, например меньше на 10%» —
+   248 → 224 px (кадр 185 → 167 px), итого −18 % от исходных 272 px. Параметры авто (пять подписей)
+   и название в одну строку с многоточием укладываются и в 224 px; высота героя и кнопка тянутся
+   за лентой (колонки героя одной высоты), поэтому низ блока остаётся вровень с низом кнопок,
+   а верх — с верхом заголовка. */
+.hot-slider{position:relative;overflow:hidden;--hot-w:224px}
+/* Плавный сдвиг включается только после первой расстановки (data-anim ставит initHotSliders):
+   без этого каждая загрузка страницы начиналась бы с «проезда» ленты в центр. */
+.hot-cards{display:flex;flex-wrap:nowrap;align-items:stretch;gap:14px}
+.hot-slider[data-anim] .hot-cards{transition:transform .5s cubic-bezier(.22,.61,.36,1)}
+.hot-card{flex:0 0 var(--hot-w);display:flex;flex-direction:column;min-width:0;background:#fff;
+  border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;color:inherit;text-decoration:none;
+  transition:border-color .18s ease,box-shadow .18s ease,transform .35s ease,opacity .35s ease}
+/* Пустоты между карточками: у соседей чуть меньше масштаб и половина яркости — активная читается
+   центром композиции, но соседние остаются кликабельными (по ним и листают). */
+.hot-slider[data-ready] .hot-card{opacity:.45;transform:scale(.94)}
+.hot-slider[data-ready] .hot-card.on{opacity:1;transform:none;border-color:var(--line-2);box-shadow:var(--shadow)}
+.hot-card:hover{border-color:var(--line-2);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.hot-slider[data-ready] .hot-card:not(.on):hover{opacity:.8}
+/* Плашки соседних карточек гасим вдвое сильнее самой карточки: обрезанная краем колонки красная
+   «Горящая продажа» иначе перетягивала взгляд с активной машины (45 % × 35 % ≈ 16 %). */
+.hot-slider[data-ready] .hot-card:not(.on) .hot-hot,
+.hot-slider[data-ready] .hot-card:not(.on) .hot-disc{opacity:.35}
+/* Края ленты растворяются в фоне страницы: соседняя карточка обрезана краем колонки, и без
+   градиента от неё оставались бы обрывки названия, цены и плашки «Горящая продажа». Градиент
+   лежит над карточками (z-index 4), но под стрелками (5) и не закрывает полосу точек —
+   bottom:18px это её высота вместе с отступом. */
+.hot-slider::before,.hot-slider::after{content:'';position:absolute;top:0;bottom:18px;width:72px;z-index:4;
+  pointer-events:none}
+.hot-slider::before{left:0;background:linear-gradient(90deg,var(--bg),rgba(255,255,255,0))}
+.hot-slider::after{right:0;background:linear-gradient(270deg,var(--bg),rgba(255,255,255,0))}
+/* Стрелки ленты: здесь только место и слой — сама кнопка общая для всех стрелок перелистывания
+   сайта (вид задан у .carousel-btn). Лежат по центру карточки, а не блока: 14 px вниз от центра
+   блока — высота полосы точек под лентой. */
+.hot-nav{position:absolute;top:calc(50% - 14px);transform:translateY(-50%);z-index:5}
+.hot-nav.prev{left:6px}
+.hot-nav.next{right:6px}
+/* Полоса точек под лентой — по одной на автомобиль, активная вытянута в «капсулу», как у карусели
+   кадров в карточке (.carousel-dots i.on). Точки — часть блока, а не наложения на фото: цена
+   внизу карточки должна остаться читаемой. */
+.hot-dots{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:12px}
+.hot-dots i{width:6px;height:6px;border-radius:50%;background:var(--line-2);cursor:pointer;
+  transition:width .2s ease,background .2s ease}
+.hot-dots i:hover{background:var(--text-3)}
+.hot-dots i.on{width:18px;border-radius:999px;background:var(--accent)}
+/* Фото во всю ширину карточки. При ширине 224 px (активная карточка Centered Slider; 2026-09-28
+   уменьшена с 272 px сначала до 248, потом ещё на 10 % — до 224 px) кадр
+   выходит 167 px — заметно крупнее прежних 105 px у карточки 190 px из ряда по три, поэтому
+   фотографии в блоке читаются как в каталоге. object-fit:cover — иначе вертикальные кадры
+   сплющивались бы. Высоту карточки никто не фиксирует: кадр плюс тело по содержимому, а
+   выравнивает их лента (align-items:stretch, карточки одной высоты по самой высокой).
+   Заказчик 2026-09-27: «Отцентрируй автомобиль в фото карточек авто, проверь, чтобы вид авто в
+   карточках по всему сайту был одинаковый». Поэтому кадр здесь ровно такой же, как у карточки
+   каталога (.car-media, 4/3): раньше стояло 16/9, и вертикальное фото 3:4 показывало в герое
+   только 42 % высоты против 56 % в каталоге — у одной и той же машины в герое обрезало и крышу,
+   и колёса, а в остальных блоках она помещалась целиком. Пропорция — единственное отличие;
+   вписывание и точка центра (object-fit:cover, object-position:50% 50%) у обоих кадров общие. */
+.hot-media{display:block;position:relative;aspect-ratio:4/3;background:var(--paper-3);overflow:hidden}
+.hot-media img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 50%}
+/* Ссылка-«хит» на всю площадь кадра: кнопки карусели и плашки лежат выше (z-index), а клик по
+   самому фото по-прежнему открывает карточку автомобиля. */
+.hot-hit{position:absolute;inset:0;z-index:2}
+/* Карусель в миниатюре: стрелки меньше каталожных (36 px). Вид и проявление — общие (см. общее
+   правило .carousel-btn ближе к концу файла): в покое скрыты, появляются приглушёнными (.8) только
+   от курсора на самом кадре и только у главной (активной) карточки ленты — заказчик 2026-10-01:
+   «кнопки перелистывания должны появляться только на главной карточке автомобиля». У приглушённых
+   соседних карточек они не появляются. Точки уходят в левый нижний угол: правый занят плашкой. */
+.hot-media .carousel{position:absolute;inset:0}
+.hot-media .carousel-track img{cursor:pointer}
+/* В карточке «Горящей продажи» кадр 224–312 px: та же кнопка, но на шаг меньше общей (30 px),
+   чтобы не закрывать фотографию. */
+.hot-media .carousel-btn{--arrow:30px;z-index:3}
+.hot-media .carousel-btn.prev{left:5px}
+.hot-media .carousel-btn.next{right:5px}
+.hot-media .carousel-dots{bottom:7px;left:7px;right:auto;justify-content:flex-start;gap:4px;z-index:3}
+.hot-media .carousel-dots i{width:5px;height:5px}
+.hot-media .carousel-dots i.on{width:14px}
+/* Плашка «Горящая продажа» — на кадре, справа внизу, красная кнопка сайта. Выделена пульсирующим
+   свечением («как диммер» у заказчика — то есть плавно меняет яркость, а не мигает): кольцо
+   расходится и гаснет, яркость плашки мягко колеблется. При «уменьшить движение» в системе
+   анимация выключается. z-index выше ссылки-хита, pointer-events:none — клик уходит на ссылку. */
+.hot-hot{position:absolute;right:6px;bottom:6px;z-index:4;display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:999px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;
+  line-height:1.2;letter-spacing:.01em;white-space:nowrap;pointer-events:none;
+  box-shadow:0 2px 8px rgba(15,18,23,.35);animation:hotGlow 2.8s ease-in-out infinite;
+  transition:opacity .35s ease}
+.hot-hot .dot{width:5px;height:5px;border-radius:50%;background:#fff;opacity:.9}
+@keyframes hotGlow{
+  0%,100%{box-shadow:0 2px 8px rgba(15,18,23,.35),0 0 0 0 rgba(227,0,15,.6);filter:brightness(1)}
+  50%{box-shadow:0 2px 10px rgba(15,18,23,.35),0 0 0 7px rgba(227,0,15,0);filter:brightness(1.22)}
+}
+/* Скидка — вторая плашка на кадре, слева вверху. Белая «таблетка» с красной суммой: заметна
+   первой, но не спорит с красной «Горящей продажей». Сумма — cars.discount (2 000–4 000 руб.),
+   та же, что и в зачёркнутой цене «до скидки» в теле карточки. */
+.hot-disc{position:absolute;left:6px;top:6px;z-index:4;padding:3px 7px;border-radius:999px;background:#fff;
+  color:var(--accent);font-size:11px;font-weight:800;line-height:1.2;pointer-events:none;
+  box-shadow:0 2px 8px rgba(15,18,23,.22);transition:opacity .35s ease}
+/* Плашка «Новый» на кадре спецпредложения — правый верхний угол (левый верх занят скидкой, правый
+   низ — «Горящей продажей», левый низ — точки карусели). Красная, как бейдж «Новый» в каталоге:
+   заказчик просил, чтобы слово было видно и в спецпредложении, и одна и та же пометка в разных
+   блоках должна выглядеть одинаково. */
+.hot-new{position:absolute;right:6px;top:6px;z-index:4;padding:3px 8px;border-radius:999px;background:var(--accent);
+  color:#fff;font-size:10px;font-weight:800;line-height:1.2;letter-spacing:.01em;white-space:nowrap;
+  pointer-events:none;box-shadow:0 2px 8px rgba(15,18,23,.3)}
+/* Тело карточки: название, год с пробегом, параметры и внизу цена. Отступы и вертикальный ритм
+   подобраны под карточку Centered Slider (224 px; до 2026-09-28 было 272 px): заказчик 2026-09-27 — «в самих карточках
+   параметры авто сделай без фона и гармоничнее размести описание, сейчас не красиво». Отсюда:
+   чуть больше воздуха по краям (13 px вместо 11) и ровный шаг 4 px между строками вместо 3 px. */
+.hot-body{display:flex;flex-direction:column;gap:4px;padding:11px 13px 12px;min-width:0;flex:1;
+  color:inherit;text-decoration:none}
+/* Название — строго в одну строку с многоточием. Заказчик: «название автомобиля сокращай, чтобы
+   не было переносов на следующую строчку». Раньше стоял clamp на две строки, и в узкой карточке
+   (1081–1180 px, доля ~160 px) «Chevrolet Cruze J300» занимал две строки, сдвигая параметры и
+   цену вниз; теперь переноса нет ни на одной ширине, а полное имя осталось в title ссылки
+   .hot-body и в aria-label карточки. Кегль в карточке слайдера 14 px — она шире прежних 190 px,
+   и название в одну строку помещается целиком. */
+.hot-body b{display:block;font-size:14px;line-height:1.3;font-weight:700;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hot-meta{font-size:11.5px;line-height:1.35;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Параметры авто — заказчик: «Добавь больше параметров авто в карточки спецпредложения» и затем
+   «параметры авто сделай без фона». «Таблетки» с серой подложкой убраны: объём, коробка, привод,
+   мощность, топливо и кузов идут одной строкой обычного текста, разделённые тонкой точкой
+   (разделитель — псевдоэлемент между соседними span, поэтому он не появляется перед первым).
+   Кегль 11 px и цвет --text-2: параметры читаются как справка, но не спорят с названием и ценой.
+   Цифры по-прежнему набраны --f-num (класс .num), как цена и пробег, — числа в карточке одним
+   шрифтом. Перенос по строкам разрешён (flex-wrap): в узкой карточке ряд занимает две строки. */
+.hot-specs{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;margin-top:1px;
+  color:var(--text-2)}
+.hot-specs span{font-size:11px;font-weight:500;line-height:1.4;color:var(--text-2);white-space:nowrap}
+.hot-specs span + span::before{content:'·';margin-right:6px;color:var(--line-2)}
+/* Цена прижата к низу карточки и отделена от описания тонкой линией: тело перестаёт быть «серой
+   массой» строк, а цена читается итогом. Линия берётся из --line — она светлее рамок и не
+   превращается во вторую рамку внутри карточки. */
+.hot-price{margin-top:auto;padding-top:8px;border-top:1px solid var(--line);
+  font-family:var(--f-num);font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+/* Цена «до скидки» — зачёркнутая и мелкая, сразу за текущей: скидка видна не только плашкой на
+   кадре, но и разницей в цене. */
+.hot-old{margin-left:6px;font-family:var(--f-num);font-size:11px;font-weight:500;color:var(--text-3);
+  text-decoration:line-through}
+@media(prefers-reduced-motion:reduce){
+  .hot-card:hover{transform:none}
+  .hot-card{transition:none}
+  /* Селектор с data-anim повторён целиком: он специфичнее простого .hot-cards, и без этого
+     «уменьшить движение» проигрывало бы правилу плавного сдвига ленты выше. */
+  .hot-cards{transition:none}
+  .hot-slider[data-anim] .hot-cards{transition:none}
+  .hot-hot{animation:none}.flag.hot{animation:none}
+}
+/* Узкая полоса героя на главной (≥1081 px): слева заголовок, лид, строка дилера и под ней две
+   кнопки, справа — лента «Горящая продажа» с активной карточкой по центру. Блок растянут на всю
+   ширину колонки (ровно как карточка «Поиск по параметрам», 1220 px на 1440). Ниже 1081 px герой
+   остаётся обычным столбиком: там колонка одна и полоса читалась бы хуже.
+
+   Раскладка — flex, а не сетка: раньше четыре левых элемента и блок справа жили в одной сетке
+   с grid-area, и высокий правый блок растягивал строки сетки (зазоры слева становились 18 px
+   вместо 14, а низ блока не совпадал с низом кнопок на 4 px). В flex левая колонка .hero-main —
+   обычный столбик с честным зазором 14 px, правая .hero-hot тянется по её высоте (align-items:
+   stretch), поэтому верх карточек совпадает с верхом заголовка, а низ — с низом кнопок. */
+@media(min-width:1081px){
+  /* Заказчик (28.09.2026): «сделай чуть больше отступ вниз от блока "Разместить объявление" до
+     марок». Низ кнопки и низ карточек спецпредложения совпадают (flex stretch, см. выше), поэтому
+     отступ до полосы марок задаётся нижним паддингом блока: было 22 px (+10 px у .home-brands =
+     32 px до рамки списка), стало 34 px (+10 px = 44 px). Замер на 1440: зазор от низа кнопки до
+     верха .home-brands 22 → 34 px, до текста первой марки 40 → 52 px. Правило только для главной
+     и только ≥1081 px — полоса марок в каталоге (.home-brands.brands-top) не затронута. */
+  .home-page .hero-in{padding:20px 20px 34px}
+  .home-page .hero-copy{display:flex;align-items:stretch;gap:44px}
+  /* Зазор 14 px и обнулённые поля элементов — из общего правила выше (см. .home-page
+     .hero-main у .hero-dealer). Здесь только распределение остатка высоты: колонка растянута
+     по высоте блока «Горящая продажа», и свободные пиксели делятся между всеми тремя зазорами
+     поровну (14 → 15,3 px на 1440), поэтому отступы остаются равными, а кнопка — внизу. */
+  .home-page .hero-main{flex:1 1 0;min-width:0;justify-content:space-between}
+  .home-page .hero h1{margin:0;font-size:clamp(28px,2.6vw,38px);max-width:none}
+  /* Оптическая симметрия верха (заказчик: «выровняй верхние границы карточек спецпредложения
+     симметрично верхним границам надписи «Автомобили с пробегом и проверенной историей»»).
+     По коробкам они и так совпадают (89 px и 89 px на 1440), но у заголовка кегль 37,4 px при
+     line-height 1.15, и над прописными остаётся полулидинг: замер по метрикам шрифта показал, что
+     верх букв лежит на 9 px ниже верхней рамки карточек (6,7 px при 1081, где кегль 28,1 px).
+     Снимаем лидинг отрицательным отступом в em: 0,24em = 9 / 37,44, величина масштабируется
+     вместе с font-size clamp(28…38 px), поэтому буквы и рамка сходятся на одной линии на всех
+     ширинах ≥1081 px. Низ карточек по-прежнему совпадает с низом кнопки (flex stretch).
+     text-box:trim-start сюда не годится: он режет по cap-высоте, а самая верхняя чернила строки —
+     выносной элемент «б» в «пробегом», то есть осталось бы 2 px зазора. */
+  .home-page .hero h1{margin-top:-.24em}
+  .home-page .hero p.lead{margin:0;font-size:14.4px;line-height:1.5;max-width:none}
+  /* Левая колонка — весь текст сверху вниз: заголовок, лид, строка дилера и под ней кнопки.
+     Раньше строка дилера и кнопки делили строку (дилер во всю ширину, кнопки справа), потом обе
+     кнопки заказчик перенёс под строку дилера («Кнопки — Продать автомобиль и Разместить
+     объявление, перенеси под блоком — Официальный дилер Geely BelGee SRM»), а кнопку «Продать
+     автомобиль» убрал вовсе: «убери кнопку — Продать автомобиль. Кнопку разместить объявление
+     растяни в лево до левой границе страницы». Поэтому доля в .hero-cta одна (minmax(0,1fr), а не
+     две по 1fr): кнопка занимает всю ширину левой колонки — 588 px на 1440, ровно столько, сколько
+     занимала пара кнопок вместе, и начинается от левого края заголовка.
+     Колонка по-прежнему одна, поэтому вторая кнопка — «Заказать звонок» (заказчик, 2026-09-28:
+     «над кнопкой разместить объявление на титульной странице размести кнопку заказать звонок»)
+     встаёт не рядом, а строкой выше той же ширины: две строки сетки, зазор между ними 10 px.
+     Низ блока кнопок прижат к низу колонки не полем, а justify-content:space-between у .hero-main:
+     высота колонки равна высоте блока «Горящая продажа», и остаток высоты делится поровну между
+     тремя зазорами. Поэтому низ нижней кнопки и низ карточек ложатся на одну линию — та самая
+     симметрия, которую просил заказчик, — и при этом все отступы в столбике остаются равными. */
+  .home-page .hero-dealer{margin:0}
+  .home-page .hero-cta{margin:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+  .home-page .hero-cta .btn{height:46px;padding:0 10px;font-size:15px;display:inline-flex;align-items:center;
+    justify-content:center;white-space:nowrap;width:100%}
+  /* «Горящая продажа» — правая колонка на всю высоту левой. Внутри неё лента Centered Slider:
+     карточка 224 px (с 2026-09-28; было 272 px), активная по центру колонки, соседние выглядывают
+     по краям, ниже — полоса
+     точек. Высоту ленты больше не тянем на всю колонку (flex:1 из раскладки-сетки убран): карточка
+     сама складывается из кадра 4/3 и тела по содержимому, а колонка слева подтягивается по ней
+     (align-items:stretch), поэтому низ кнопки и низ полосы точек ложатся на одну линию. */
+  .home-page .hero-hot{flex:1 1 0;min-width:0;display:flex;flex-direction:column}
+}
+/* Узкий экран (≤1080 px): герой снова обычный столбик, кнопки и карточки «Горящей продажи»
+   идут во всю ширину. Кнопки — «Заказать звонок» и «Разместить объявление» — стоят друг под
+   другом и растянуты на всю ширину листа, как и на широком экране.
+   Высота 46 px и кегль 15 px — как у «Показать N автомобилей» и «Сбросить» в панели поиска ниже. */
+@media(max-width:1080px){
+  .home-page .hero-cta{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+  .home-page .hero-cta .btn{width:100%;height:46px;padding:0 10px;font-size:15px;white-space:nowrap}
+  /* Карточки «Горящая продажа» стоят в герое сразу за кнопкой, но это отдельный блок, а не
+     строка текстового столбика: зазор перед ним больше внутренних (14 px) — 26 px, тот же
+     отступ, что и между блоками ниже.
+     Раньше здесь был только этот комментарий, а самого правила не было: на 641–1080 px
+     .hero-hot шёл сразу за .hero-cta без поля, и кнопка упиралась в ленту вплотную. Замер
+     2026-09-29 на 8110: зазор «низ кнопки → верх ленты» = 0 px на 1024/900/768/700/641,
+     низ кнопки и верх карточки разводили только 11 px внутреннего отступа ленты. Заказчик
+     на скрине (окно ~720 CSS px, страница прокручена под липкую шапку: «кнопка разместить
+     объявление упала на блок горящие продажи»). Возвращаем обещанные 26 px; на телефоне
+     (≤640) тот же зазор ставится ниже своим правилом. */
+  .home-page .hero-hot{margin-top:26px}
+  /* Низ героя и верх полосы марок в одноколоночной раскладке. Лента «Горящая продажа» — это
+     последний блок героя, а сразу за героем идёт полоса марок («перечень всех марок и
+     количество»), поэтому пустота под каруселью складывается из нижнего паддинга героя и
+     верхнего паддинга полосы марок. Заказчик (2026-09-29, то же окно): «смотри какой большой
+     разрыв между блоком карусели и блоком с перечнем авто, сделай меньше отступ вниз».
+     Это дословно та же просьба, что уже приходила для телефона («от карусели до перечня всех
+     марок и количество — сделай расстояние вниз меньше»), и значение там заказчик принял:
+     низ героя 12 px и верх полосы марок 6 px. Одноколоночная раскладка на 641–1080 px — та же
+     самая, поэтому переносим сюда то же значение: низ героя 52 → 12 px, верх полосы марок
+     10 → 6 px. От полосы точек ленты до текста первой марки было 70 px, стало ~28 px — ровно
+     как на телефоне. Широкий экран (≥1081) не затронут: там у заказчика обратная просьба —
+     отступ от кнопки до марок увеличен до 34 px (см. комментарий выше), и раскладка другая
+     (две колонки, полоса марок идёт под кнопкой, а не под каруселью). */
+  .home-page .hero-in{padding-bottom:12px}
+  .home-page .home-brands{padding-top:6px}
+/* Телефон: отступы вокруг «Горящей продажи» подтянуты по двум просьбам заказчика.
+   Сверху (2026-09-29, «расстояние между кнопкой разместить объявление и каруселью — сделай
+   стандартным, сейчас очень близко, нехватает отступа вниз»): вернули тот же зазор, что и на
+   широком экране и между блоками ниже — 26 px. Здесь было 20 px, замер на 390 px.
+   Снизу (тогда же, «от карусели до перечня всех марок и количество — сделай расстояние вниз
+   меньше»): низ героя 30 → 12 px и верх полосы марок 10 → 6 px, то есть от низа карусели
+   (полоса точек) до текста первой марки 18 + 10 = 28 px вместо 48. Панель поиска при этом
+   не двигается — её отступ задаёт низ полосы марок, он не менялся.
+   Раньше этим же правилом низ героя уводили на 30 px по просьбе «Сделай меньше отступ от блока
+   горячая продажа до вниз следующего блока» (разрыв до «Лидеров продаж» 229 → 172 px); с новым
+   зазором он стал 154 px, то есть просьба не отменена, а дожата.
+   Правило только для главной: у внутренних страниц тот же ритм просили сохранить одинаковым
+   (см. комментарий у --block-gap в :root). */
+@media(max-width:640px){
+  .home-page .hero-in{padding-bottom:12px}
+  .home-page{--block-gap:32px}
+  .home-page .hero-hot{margin-top:26px}
+  .home-page .home-brands{padding-top:6px}
+}
+  /* Здесь герой — один столбик во всю ширину листа, поэтому и карточке слайдера есть где расти:
+     312 px (не больше 66 % ленты, иначе соседей почти не видно). До 640 px карточка станет
+     строкой списка — там своя ширина. Было 380 px: заказчик 2026-09-28 попросил карточки «чуть
+     меньшего размера», а потом ещё на 10 % — ужато на те же 18 %, что и на широком экране
+     (272 → 224 px). */
+  .home-page .hot-slider{--hot-w:min(312px,66%)}
+  /* В одну колонку лента занимает всю ширину листа (1040 px на экране 1080), и соседи становятся
+     видны почти целиком: карточка 312 px оставляет им по ~350 px. Тогда это уже не Centered
+     Slider, а ряд из трёх машин, где боковые просто приглушены. Поэтому здесь соседей гасим
+     сильнее (45 % → 32 %) и шире растворяем их края — активная машина читается одна. Селектор
+     с :not(.on) обязателен: голое `.hot-card` здесь специфичностью не уступило бы правилу
+     активной карточки выше и погасило бы её саму (оно идёт ниже по файлу). */
+  .home-page .hot-slider[data-ready] .hot-card:not(.on){opacity:.32}
+  .home-page .hot-slider::before,.home-page .hot-slider::after{width:96px}
+  .home-page .hot-dots{margin-top:10px}
+}
+@media(max-width:640px){
+  /* Ссылки брендов в герое — по одной в строке: ряды должны складываться одинаково, иначе блок
+     «Официальный дилер» перестаёт быть продолжением кнопки героя. Отдельных правил для самих
+     ссылок больше не нужно: они идут строкой за подписью и переносятся целиком, высота у них
+     теперь по слову, а не 46 px. (Правило для .hero-cta здесь больше не нужно — доля одна и на
+     широком экране, а с ≤1080 px кнопка и так во всю ширину листа.) */
+  .home-page .hero-dealer .dealer-links{grid-template-columns:minmax(0,1fr)}
+  /* Телефон: три вертикальные карточки с фото заняли бы в герое ~600 px, то есть половину
+     экрана, поэтому на ≤640 px карточка становится строкой списка — фото 116×87 слева, а
+     название, год с пробегом и цена справа. Блок занимает ~300 px, герой остаётся полосой,
+     а сами предложения по-прежнему видны целиком. Имя обрезается в одну строку (в две оно
+     уводило бы строку на 100 px); на узкой колонке этого достаточно, полное название —
+     в карточке каталога по ссылке. Фото 116 px, а не 84: только на такой ширине красная плашка
+     «Горящая продажа» ложится на кадр одной строкой и не закрывает автомобиль. */
+  /* Лента слайдера на узком экране: карточка 88 % ширины (но не шире 420 px), соседи выглядывают
+     тонкими полосами — по ним видно, что блок листается. Стрелки здесь убраны (правило ниже):
+     на кадре 116×87 они закрыли бы половину фотографии, листают свайпом и точками, как и карусель
+     кадров внутри карточки. */
+  .home-page .hot-slider{--hot-w:min(88%,420px)}
+  /* На узком экране соседи выглядывают полосками 20–50 px — им хватает короткого растворения. */
+  .home-page .hot-slider::before,.home-page .hot-slider::after{width:22px;bottom:15px}
+  .home-page .hot-cards{gap:10px}
+  .home-page .hot-nav{display:none}
+  .home-page .hot-dots{margin-top:9px}
+  .home-page .hot-card{flex-direction:row;align-items:center;gap:12px;padding:8px 12px 8px 8px}
+  /* Кадр-миниатюра 116×87 — это те же 4/3, что и у кадра карточки на широком экране: на телефоне
+     машина в «Горящей продаже» видна ровно так же, как в каталоге (заказчик 2026-09-27). */
+  .home-page .hot-media{flex:0 0 116px;width:116px;height:87px;aspect-ratio:auto;border-radius:var(--r-sm)}
+  .home-page .hot-body{padding:0;gap:2px;justify-content:center}
+  .home-page .hot-body b{font-size:13.5px}
+  /* Параметры в строке-карточке: параметры идут обычным текстом (без «таблеток» и их полей), но
+     кегль ужимается под узкое тело. Разделитель-точка тоже короче: 4 px вместо 6.
+     Шесть подписей на экране 390 px (тело ~200 px) рвались как 4+1: «сирота» во второй строке
+     удлиняла каждую из трёх карточек на ~20 px и блок вырастал 322 → 384. Поэтому на самых узких
+     экранах лишние подписи скрыты (правило в блоке ≤430 px ниже); на телефонах шире 430 px места
+     хватает на весь ряд, и он виден целиком. */
+  .home-page .hot-specs{gap:1px 4px}
+  .home-page .hot-specs span{font-size:10px}
+  .home-page .hot-specs span + span::before{margin-right:4px}
+  /* В карточке-строке линия перед ценой не нужна: тело и так высотой кадра, а разделитель добавлял
+     бы строку в столбик из четырёх. */
+  .home-page .hot-price{margin-top:0;padding-top:0;border-top:0;font-size:15px}
+  /* В строке стрелки карусели закрыли бы половину кадра (листается свайпом по кадру и точками),
+     плашка «Горящая продажа» остаётся одной строкой, скидка ужимается. Точки уходят в правый
+     верхний угол: на кадре 116×87 правый низ занят плашкой, левый верх — скидкой, а в левом низу
+     для шести точек не хватает места (плашка шириной 98 px). */
+  .home-page .hot-media .carousel-btn{display:none}
+  .home-page .hot-media .carousel-dots{top:4px;right:4px;bottom:auto;left:auto;gap:2px;justify-content:flex-end}
+  .home-page .hot-media .carousel-dots i{width:4px;height:4px}
+  .home-page .hot-media .carousel-dots i.on{width:12px}
+  .home-page .hot-hot{right:4px;bottom:4px;padding:2px 6px;font-size:8.5px}
+  .home-page .hot-disc{left:4px;top:4px;padding:2px 6px;font-size:9.5px}
+  /* Кадр здесь 116×87: правый верх занят точками карусели, правый низ — плашкой акции, поэтому
+     «Новый» уходит во второй ряд левого столбца, под скидку. */
+  .home-page .hot-new{right:auto;left:4px;top:26px;padding:2px 6px;font-size:8.5px}
+  /* Плашки статуса на странице автомобиля: три в ряд на 390 px не влезают, кегль и отступы
+     ужимаются, а переносятся они сами (flex-wrap во .flags). */
+  .flags{gap:6px}
+  .flag{padding:5px 10px;font-size:11.5px}}
+/* Узкий телефон (390–430 px): тело карточки всего ~200 px, в одну строку ложатся ровно четыре
+   «таблетки» — объём, коробка, привод и топливо (или мощность, если она заполнена). Пятая и
+   шестая подписи уходили «сиротой» во вторую строку, удлиняя каждую карточку на ~20 px. На
+   экранах шире 430 px предел не нужен: там тело карточки шире, и ряд виден целиком. */
+@media(max-width:430px){
+  .home-page .hot-specs span:nth-child(n+5){display:none}
+}
+/* 1081–1180 px: правая колонка героя всего 498–548 px, доля карточки «Горящей продажи» — 160 px,
+   название в две строки и цена в неё влезают; кегль кнопок снижать больше не нужно (две кнопки
+   делят левую колонку 498 px на 244 px, «Разместить объявление» при 15 px занимает ~185 px), но
+   ссылки брендов в узкой колонке всё ещё ужимаются до 13 px — иначе строка дилера переехала бы
+   на вторую строку. */
+@media(min-width:1081px) and (max-width:1180px){
+  .home-page .hero-dealer .dealer-link{font-size:13px}
+}
+
+/* ── Поиск ──────────────────────────────────────────────────────────────────────────── */
+.searchband{background:var(--paper-soft);border-bottom:1px solid var(--line)}
+.home-page .searchband{background:transparent;border-bottom-color:transparent}
+.searchband-in{padding:22px 0}
+.search-row{display:grid;grid-template-columns:2.1fr 1fr 1fr 1fr auto;gap:12px;align-items:end}
+@media(max-width:1080px){.search-row{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.search-row{grid-template-columns:1fr}}
+
+/* ── Секции ─────────────────────────────────────────────────────────────────────────── */
+/* Шаг между блоками задаёт --block-gap: половина сверху + половина снизу у соседей. Было 56+56 =
+   112 px между «Выбором дилера» и «Новыми поступлениями», потом 37+37 = 74 px (на 1 см меньше),
+   теперь 28+28 = 56 px — тот же разрыв стоит и перед «Выбором дилера» после панели поиска.
+   Правило `section.block.tight` удалено: вариант с уменьшенным шагом противоречил бы одинаковым
+   отступам, а в разметке он не использовался ни разу. */
+section.block{padding:calc(var(--block-gap) / 2) 0}
+/* Отступ «заголовок блока → его содержимое» тоже подтянут (26 → 20 px): при шаге 74 px он не
+   читался, при 56 px заголовок отрывался от своей сетки карточек. */
+.sec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:20px;flex-wrap:wrap}
+.sec-head p{margin:6px 0 0;color:var(--text-2);max-width:70ch}
+.chips{display:flex;gap:9px;flex-wrap:wrap}
+.chip{padding:8px 16px;border-radius:var(--r-btn);border:1px solid var(--line);background:#fff;font-size:14px;font-weight:500;transition:.15s}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip .cnt{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:var(--r-btn);background:var(--paper-soft);border:1px solid var(--line);font-family:var(--f-num);font-size:12px;font-weight:600;color:var(--text-2);vertical-align:1px}
+.chip:hover .cnt{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.chip.on .cnt{background:rgba(255,255,255,.14);border-color:transparent;color:#fff}
+
+/* ── Верх титульной: поиск по параметрам во всю ширину ──────────────────────────────── */
+.top-cols{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:20px;align-items:start}
+.top-side{display:flex;flex-direction:column;gap:16px;min-width:0}
+.top-side .brand-grid{margin-top:14px}
+.top-side .brand-card{padding:11px 13px}
+.top-side .brand-card .bc-name{font-size:14.5px}
+.top-side .brand-card .bc-cnt{font-size:11.6px}
+.side-card{padding:22px;border-radius:var(--r-card);background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}
+.side-card h3{margin:0 0 4px;font-size:17px}
+.side-card .btn-block{margin-top:16px}
+
+.param-card{padding:24px;border-radius:var(--r-card);background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}
+.ps-modes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.ps-mode{padding:8px 15px;border-radius:999px;border:1px solid var(--line-2);background:#fff;font-size:13.5px;font-weight:600;color:var(--text-2);transition:.18s}
+.ps-mode:hover{border-color:var(--accent);color:var(--accent)}
+.ps-mode.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.param-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px 16px}
+.ps-field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.ps-field>span{font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text-3)}
+.ps-field select,.ps-field input,.ps-field .sel-btn{width:100%;height:46px;padding:0 12px;border-radius:12px;border:1px solid var(--line-2);background:#fff;color:var(--ink);font-size:14.5px;font-family:inherit}
+.ps-field select:focus,.ps-field input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.ps-field input::placeholder{color:var(--text-3)}
+.ps-range{display:flex;align-items:center;gap:8px}
+.ps-range i{color:var(--text-3);font-style:normal}
+.ps-range select,.ps-range input,.ps-range .sel{flex:1 1 0;min-width:0}
+.ps-field.ps-wide{grid-column:span 2}
+@media(max-width:900px){.ps-field.ps-wide{grid-column:span 1}}
+.ps-actions{grid-column:1/-1;display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:2px}
+.ps-actions .btn{flex:1 1 240px}
+.ps-actions .btn-ghost{flex:0 0 auto}
+.ps-note{margin:14px 0 0;font-size:13px;color:var(--text-3)}
+
+.brand-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
+.top-side .brand-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.brand-card{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:#fff;transition:.18s ease;min-width:0}
+.brand-card:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+.brand-card .bc-name{font-size:15.5px;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brand-card .bc-cnt{font-size:12.4px;color:var(--text-3)}
+.brand-card.all{border-style:dashed;border-color:var(--accent);color:var(--accent)}
+@media(max-width:1180px){.top-cols{grid-template-columns:1fr}.top-side{position:static}.top-side .brand-grid{grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}}
+@media(max-width:900px){.param-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.param-form{grid-template-columns:1fr}.ps-actions .btn{flex:1 1 100%}}
+
+/* ── Выпадающие списки панели поиска: свой список вместо системного ────────────────────
+   Системный список <select> браузер рисует сам и оформить его нельзя: белый прямоугольник
+   без скругления, тени и отступов, системным шрифтом, поверх шапки и с обрезкой по краю
+   окна (снимок _ref/select-open.png). Поэтому в панели поиска список рисуем сами: site.js
+   (`initSelects`) прячет <select> и строит рядом свою кнопку-поле и карточку со строками.
+   Сам <select> остаётся в форме и остаётся источником правды — его значение уходит на
+   сервер, а без JS класса .sel--on нет, и панель выглядит и работает по-старому. */
+.sel{position:relative;min-width:0}
+.sel--on>select{display:none}
+.sel-btn{display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer;transition:border-color .18s ease}
+.sel-btn:hover{border-color:var(--text-3)}
+.sel-btn.on,.sel-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.sel-tx{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sel-ar{flex:none;color:var(--text-2);transition:transform .2s ease,color .18s ease}
+.sel-btn.on .sel-ar{transform:rotate(180deg);color:var(--accent)}
+.sel.is-disabled .sel-btn{background:var(--paper-soft);border-color:var(--line);color:var(--text-3);cursor:not-allowed}
+.sel.is-disabled .sel-btn:hover{border-color:var(--line)}
+/* Узкие поля-диапазоны («Год выпуска», «Объём»): в одной колонке два списка и тире, каждому
+   достаётся ~75 px. Системный список рисовал стрелку внутри правого отступа и «Любой»
+   помещалось; своя кнопка тратит место на стрелку и зазор, и слово превращалось в «Л…».
+   Поэтому здесь экономим: отступы короче, стрелка 12 px без зазора, кегль на пункт меньше,
+   а в самом списке убираем галочку — в 75 px она выдавливает текст («2025» → «2…»). Выбранная
+   строка и без галочки видна: акцентный фон и акцентный текст. */
+.ps-range .sel-btn{padding:0 6px 0 8px;gap:0;font-size:13.5px}
+.ps-range .sel-ar{width:12px;height:12px;margin-left:auto}
+.ps-range .sel-pop{padding:4px}
+.ps-range .sel-opt{padding:0 6px;gap:0;font-size:13.5px}
+.ps-range .sel-opt .sel-ck{display:none}
+.sel-pop{position:absolute;z-index:40;left:0;right:0;top:calc(100% + 6px);padding:6px;background:#fff;border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 18px 40px rgba(20,23,28,.16),0 2px 8px rgba(20,23,28,.06);max-height:302px;overflow:auto;overscroll-behavior:contain;
+  scrollbar-width:thin;animation:selIn .13s ease-out}
+.sel-pop[hidden]{display:none}
+.sel--up .sel-pop{top:auto;bottom:calc(100% + 6px)}
+@keyframes selIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.sel-opt{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 12px;border-radius:9px;font-size:14.5px;color:var(--text);cursor:pointer;white-space:nowrap}
+.sel-opt .sel-ck{flex:none;opacity:0;color:var(--accent)}
+.sel-opt.on{background:var(--paper-soft)}
+.sel-opt[aria-selected=true]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.sel-opt[aria-selected=true] .sel-ck{opacity:1}
+.sel-opt.is-off{color:var(--text-3);cursor:default}
+.sel-opt.is-off.on{background:transparent}
+.sel-pop::-webkit-scrollbar{width:8px}
+.sel-pop::-webkit-scrollbar-track{background:transparent}
+.sel-pop::-webkit-scrollbar-thumb{background:#D9DDE3;border-radius:99px;border:2px solid #fff}
+.sel-pop:hover::-webkit-scrollbar-thumb{background:#C4CAD3}
+@media(prefers-reduced-motion:reduce){.sel-pop{animation:none}.sel-ar{transition:none}}
+
+/* ── Списки формы «Разместить объявление» ───────────────────────────────────────────────
+   Заказчик 2026-09-28: «сделай стили раскрытия списки как на блоке поиск авто». Списком
+   управляет тот же initSelects (site.js), но поля формы продажи компактные (.field), а не
+   .ps-field высотой 46 px, поэтому кнопке-полю нужны свои размеры: те же 9×12, что у соседних
+   <input>, рамка --line и скругление --r-field. Поля «Марка», «Модель», «Поколение» — это
+   комбобоксы (.combo-sel): поле остаётся текстовым <input>, а стрелку и список рисует
+   initCombos, поэтому стрелка тут отдельным элементом и поворачивается при раскрытии. */
+.sell-form .field .sel-btn{width:100%;height:auto;padding:9px 12px;border:1px solid var(--line);border-radius:var(--r-field);background:#fff}
+.sell-form .field .sel-btn:hover{border-color:var(--accent)}
+.sell-form .sel-pop{max-height:280px}
+/* Строка-объяснение («Моделей этой марки в каталоге нет…») длиннее строки списка: переносим. */
+.sel-opt.is-off{white-space:normal;line-height:1.32;min-height:0;padding:8px 12px}
+.combo-sel .sel-input{padding-right:36px}
+.combo-sel .combo-ar{position:absolute;right:10px;top:50%;display:flex;align-items:center;justify-content:center;
+  color:var(--text-2);transform:translateY(-50%);transition:transform .2s ease,color .18s ease;pointer-events:none}
+.combo-sel.is-open .combo-ar{color:var(--accent);transform:translateY(-50%) rotate(180deg)}
+.combo-sel .sel-pop{top:calc(100% + 4px)}
+.combo-sel.sel--up .sel-pop{top:auto;bottom:calc(100% + 4px)}
+/* Строки каталога в списке поколений: снимок поколения, название и годы выпуска. Снимки с
+   2026-09-28 свои, локальные (public/data/avby-img) и только у марок дилера — заказчик просил
+   «фото другие без 100% плагиата», у остальных марок строки идут без снимка. */
+.sel-opt.opt-photo{min-height:52px;gap:12px}
+.sel-opt .opt-img{flex:none;width:54px;height:38px;border-radius:7px;object-fit:cover;background:var(--paper-soft)}
+.sel-opt .opt-tx{flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:0}
+.sel-opt .opt-tx .sel-tx{flex:0 1 auto}
+.sel-opt .opt-years{flex:none;color:var(--text-3);font-size:13px;font-weight:500}
+.sel-opt[aria-selected=true] .opt-years{color:var(--accent)}
+/* Строка без снимка в списке, где снимки есть (поколение марки дилера, для которого фото не
+   нашлось): держим ту же высоту и тот же отступ под снимок, чтобы список не «прыгал» и названия
+   стояли в одной колонке. */
+.sel-pop:has(.opt-photo) .sel-opt:not(.opt-photo):not(.is-off){min-height:52px;padding-left:78px}
+/* Название поколения и годы не помещаются в одну строку ширины поля — раскладываем в два ряда,
+   а сам список делаем шире поля (но не шире окна). */
+.sel-pop:has(.opt-img){min-width:340px;max-width:min(420px,calc(100vw - 24px))}
+.sel-opt.opt-photo .opt-tx{flex-direction:column;align-items:flex-start;gap:1px}
+.sel-opt.opt-photo .sel-tx{white-space:normal;line-height:1.25;overflow:visible;text-overflow:clip}
+
+/* ── Полоса популярных марок ──────────────────────────────────────────────────────────
+   В самом верху главной, во всю ширину страницы: только прозрачные надписи «бренд +
+   количество авто», без карточек, рамок, фона и теней. */
+/* ── Марки в продаже: нижняя строка шапки ─────────────────────────────────
+   Прозрачные надписи «марка + количество авто», без карточек и рамок.
+   Сетка одинаковых колонок: марки идут ровными группами, а то, что не
+   поместилось в строку, переносится на следующую. */
+.brand-strip{--bs-col:122px;position:relative;z-index:2;background:#171A20;border-bottom:1px solid rgba(255,255,255,.08);padding:10px 0 12px}
+.bs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--bs-col),1fr));column-gap:14px;row-gap:3px;align-items:baseline}
+.bs-item{display:inline-flex;justify-content:space-between;align-items:baseline;gap:5px;min-width:0;color:#EDF0F5;white-space:nowrap;transition:color .18s ease}
+.bs-name{font-size:13.6px;font-weight:600;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis}
+.bs-cnt{flex:none;font-size:10.6px;color:rgba(255,255,255,.4)}
+.bs-item:hover{color:var(--accent)}
+.bs-item:hover .bs-cnt{color:rgba(255,255,255,.72)}
+/* Правила для последней плашки «Все марки 18» (.bs-item.bs-all) убраны вместе с самой плашкой:
+   заказчик — «Все марки18 внизу под шапкой слева — убери везде», см. brandStrip() в lib/view.mjs. */
+@media(max-width:1080px){.brand-strip{--bs-col:118px;padding:9px 0 11px}}
+@media(max-width:560px){.brand-strip{--bs-col:100px;padding:8px 0 10px}.bs-name{font-size:12.6px}}
+
+/* ── Классическая панель «Поиск по параметрам» под списком марок ──────────────────────
+   Белая карточка во всю ширину .wrap — ровно та же колонка, что у блоков «Выбор дилера»
+   и «Новые поступления»: заголовок с подводкой в шапке панели, поля в 6 колонок (два
+   ровных ряда по 6), внизу одной строкой подсказка слева и кнопки справа. */
+/* Верхний отступ панели: 22 → 14 px по просьбе заказчика «блок поиска по параметрам перевести
+   немного выше к верхним блокам, так как большой разрыв между блоками вниз», затем 14 → 10 px по
+   повторной просьбе «перемести чуть вверх блок — Поиск по параметрам, чтобы меньше был разрыв
+   между блоками». Работает и на главной, и в каталоге: там панель тоже стоит вплотную под
+   заголовком страницы. */
+/* z-index:2 у .ps-band ломал раскрывающийся список фильтра: .ps-band создаёт собственный
+   контекст наложения, поэтому .sel-pop (z-index:40) внутри него всё равно проигрывал плашкам
+   и кнопкам карточек — .car-badges/.car-fav (3) и .carousel-btn (2) лежат в корневом контексте.
+   Заказчик видел, что открытый список «Все марки» накрыт карточками: часть опций (y 675…699
+   при открытии первой кнопки) не нажималась, клик уходил в плашку «Новый» карточки. 20 — выше
+   всего, что есть в карточках (до 4), и ниже шапки (60), меню (80), тоста (90) и модалок (300). */
+.ps-band{position:relative;z-index:20;padding:10px 0 calc(var(--block-gap) / 2)}
+/* Главная: список марок стоит НАД панелью поиска и рисуется без карточки (см. .brand-line ниже);
+   заголовок «Марки N» у него убран (вариант .bl-bare). Воздух вокруг списка подтянут по той же
+   просьбе: сверху было 20+14 px, стало 10+8; снизу было 22 px, стало 12, затем 6 px — на повторную
+   просьбу «перемести чуть вверх блок — Поиск по параметрам». Итого панель поиска стоит в 16 px под
+   последней строкой марок (было 50+26). */
+.home-brands{padding-top:10px}
+.home-brands .brand-line{margin-bottom:0;padding-bottom:6px}
+.brand-line.bl-bare{padding-top:8px}
+/* Список марок главной — ровно два ряда по 9 (18 марок; заказчик: «размести марки и количество
+   авто этих марок на 2 строчки, подожми друг к другу — сейчас на 4-х строчках»). Раньше колонки
+   считал auto-fill: при .wrap 1220 px выходило 6 колонок и 4 ряда. Только название марки и
+   рядом её количество («Все марки N» убрана — заказчик: «Все марки 57 — убери»).
+   Горизонтальный зазор 26 → 12 px: «Mercedes-Benz 1» и «Volkswagen 1» — самые длинные пары —
+   укладываются в колонку 124 px без переноса.
+   Порядок чтения — сверху вниз по колонкам, а не слева направо по строкам (заказчик 2026-09-29:
+   «сделай в алфавитном порядке который будет идти сверху — вниз, а не с лева на права как сейчас,
+   измени на всех страница, где есть этот блок»). Алфавит задаёт lib/cars.mjs (brands(): сортировка
+   localeCompare с 'ru'), а grid-auto-flow:column раскладывает этот же порядок по колонкам: первый
+   столбец получает первые марки, второй — следующие. Так список читается как колонки алфавитного
+   указателя: сверху вниз, потом следующий столбец.
+   Число рядов задаём явно (grid-template-rows). Без него grid-auto-flow:column кладёт все марки в
+   одну строку и создаёт по колонке на каждую — 18 колонок вместо 9 (проверено). Ряды держим
+   такими, чтобы 18 марок заполняли сетку целиком: 9 колонок — 2 ряда, 6 — 3, 4 — 5, 2 — 9.
+   Пересчитывать при смене числа марок не нужно: лишняя марка займёт следующий ряд в своей колонке,
+   а сетка останется той же (grid-template-rows задаёт только первые ряды, остальные — auto).
+   Правило одно на все раскладки: главная и все четыре страницы каталога («Все авто», «С пробегом»,
+   «Новые», «Электро») рисуются одним и тем же блоком brandLine → .home-brands. */
+.home-brands .bl-grid{grid-template-columns:repeat(9,minmax(0,1fr));grid-template-rows:repeat(2,auto);
+  grid-auto-flow:column;gap:0 12px}
+@media(max-width:1180px){.home-brands .bl-grid{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(3,auto)}}
+@media(max-width:900px){.home-brands .bl-grid{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(5,auto)}}
+/* Телефон: 19 марок в одну колонку — это 720 px и панель поиска уезжает за экран, поэтому
+   на главной список идёт в две колонки (в каталоге он под поиском, там это не мешает).
+   Низ списка здесь тоже 6 px (было 10), чтобы разрыв «марки → панель поиска» был тем же, что
+   на широком экране: 16 px. */
+@media(max-width:560px){
+  .home-brands{padding-top:10px}
+  .home-brands .brand-line{padding:8px 0 6px}
+  .home-brands .bl-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(9,auto);gap:0 12px}
+  .home-brands .bl-item{font-size:13.2px;padding:4px 0}
+}
+/* Тень панели рассчитана на светлую главную: раньше под белой карточкой лежала винная
+   заливка и тень была почти чёрной (0 22px 46px -28px rgba(0,0,0,.65)). */
+.ps-band .param-card{padding:15px 22px 15px;box-shadow:0 18px 38px -26px rgba(20,23,28,.45)}
+.ps-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px 18px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.ps-head .ps-title{font-size:20px;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
+.ps-head p{margin:0;font-size:13.6px;color:var(--text-3);text-align:right}
+@media(max-width:1180px){.ps-head p{text-align:left}}
+.hero-copy{min-width:0}
+/* Компактная шапка панели на главной: без подводки и без разделителя, заголовок и
+   переключатель «Параметры» в одну строку — панель ниже примерно на треть. */
+.ps-band .ps-head{align-items:center;margin-bottom:12px;padding-bottom:0;border-bottom:0}
+.ps-band .ps-head .ps-title{font-size:18px}
+.ps-band .param-form{grid-template-columns:repeat(6,minmax(0,1fr))}
+.ps-foot{grid-column:1/-1;display:flex;align-items:center;justify-content:flex-end;gap:18px;flex-wrap:wrap;margin-top:2px}
+.ps-foot .ps-note{margin:0}
+.ps-foot .ps-actions{margin:0}
+/* Кнопки панели поиска — одной мерки с кнопками героя главной: высота 46 px, кегль 15 px,
+   форма-пилюля. Обе кнопки одинаковой ширины: пара делит пополам общий блок 560 px
+   (на узком экране — 100 %), поэтому «Сбросить» не выглядит обрубком рядом с
+   «Показать N автомобилей». Раньше здесь стояло flex:0 0 auto и кегль 17 px от .btn-lg —
+   из-за этого кнопка поиска была 300 px, «Сбросить» 126 px, а кнопки героя 191 px. */
+.ps-band .ps-actions{width:min(100%,560px)}
+.ps-band .ps-actions .btn{flex:1 1 0;height:46px;padding:0 14px;font-size:15px}
+/* Счётчик машин в кнопке «Показать автомобили N» — без подложки (просьба заказчика):
+   цифра стоит прямо на красном фоне кнопки. Внутренние отступы и радиус оставлены, чтобы
+   размер и положение счётчика не сдвинулись, — у прозрачной плашки они просто не видны.
+   Класс общий для обеих панелей поиска: count передаёт searchBand() и на главной, и в
+   каталоге — число в кнопке меняется вместе с фильтром (например, «Показать автомобили 16»
+   при выбранной марке). */
+.btn-cnt{margin-left:9px;padding:1px 9px 2px;border-radius:999px;background:transparent;font-size:12.4px;font-weight:700;line-height:1.45}
+@media(max-width:1180px){.ps-band .param-form{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.ps-band .param-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.ps-band .param-form{grid-template-columns:1fr}.ps-band .ps-actions{width:100%}.ps-band .ps-foot .ps-actions .btn{flex:1 1 100%}}
+
+/* Компактная панель на главной (paramSearch с more): на виду марка, модель, год, объём и
+   цена — один ряд из 6 колонок (цена занимает две), кузов/коробка/топливо/привод/пробег/
+   ключевое слово прячутся за переключателем «Параметры» в шапке панели. Прячем скрытым
+   чекбоксом с label, а не <details>: строка переключателя уехала в шапку (была отдельной
+   строкой — панель стала ниже), работает без JS, а скрытые поля остаются в форме и уходят
+   в запрос, поэтому активное условие не теряется. */
+.ps-band .param-form.ps-compact{grid-template-columns:repeat(6,minmax(0,1fr))}
+.ps-more-tgl{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+/* «Параметры» — уже не кнопка, а надпись-переключатель со значком в ЛЕВОМ НИЖНЕМ углу панели:
+   ни фона, ни рамки, только значок и слово, красным по стилю сайта (--accent). Заказчик: «кнопку
+   параметры на блоке поиска убери кнопку и фон оставь только иконку и подпись параметры и сделай
+   их красным цветом по стилю сайта». padding:0 — чтобы значок встал ровно по левому краю полей
+   над ним. Стилей у .ps-more-sum больше нет, поэтому цвет значка задаётся тем же color (в ico()
+   обводка currentColor). Отклик на наведении — плотнее красный (--accent-hover) и подчёркивание,
+   как у текстовых ссылок сайта. Раскрытый блок помечаем тёмным --ink: на прозрачном фоне одной
+   надписи не видно, что переключатель «нажат» (раньше это показывал красный фон кнопки). */
+.ps-more-sum{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0;
+  margin-right:auto;cursor:pointer;border:0;background:transparent;color:var(--accent);
+  font-size:15px;font-weight:600;user-select:none;transition:color .18s ease}
+.ps-more-sum:hover{color:var(--accent-hover);text-decoration:underline;text-underline-offset:4px}
+.ps-more-sum svg{opacity:1}
+.ps-more-tgl:focus-visible ~ .param-form .ps-foot .ps-more-sum{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+.ps-more-tgl:checked ~ .param-form .ps-foot .ps-more-sum{color:var(--ink)}
+.ps-more-tgl:checked ~ .param-form .ps-foot .ps-more-sum:hover{color:var(--ink)}
+.ps-more-tgl:not(:checked) ~ .param-form .ps-more-body{display:none}
+.ps-more-body{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 16px;margin-top:2px;padding-top:14px;border-top:1px solid var(--line)}
+/* Марки — верхняя строка самой карточки поиска (главная), а не тёмная полоса под шапкой. */
+.ps-brands{display:flex;align-items:baseline;gap:5px 12px;flex-wrap:wrap;margin:0 0 10px;padding:0 0 9px;border-bottom:1px solid var(--line)}
+.psb-label{font-size:11.2px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3)}
+.psb-list{display:flex;align-items:baseline;flex-wrap:wrap;gap:3px 12px;min-width:0}
+.psb-item{display:inline-flex;align-items:baseline;gap:4px;font-size:12.8px;font-weight:600;color:var(--text-2);white-space:nowrap;transition:color .18s ease}
+.psb-item i{font-style:normal;font-size:10.2px;color:var(--text-3);transition:color .18s ease}
+.psb-item:hover,.psb-item:hover i{color:var(--accent)}
+.psb-item.psb-all,.psb-item.psb-all i{color:var(--accent)}
+.psb-item.psb-all i{opacity:.75}
+@media(max-width:1180px){.ps-band .param-form.ps-compact{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){
+  .ps-band .param-form.ps-compact{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ps-more-body{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+  .ps-band .param-form.ps-compact{grid-template-columns:1fr}
+  .ps-more-body{grid-template-columns:1fr}
+}
+
+/* ── Рейтинг и отзывы Яндекс.Карт ───────────────────────────────────────────────────── */
+/* Минималистичная строка рейтинга: без карточки, рамки, тени и подложки — логотип 24 px,
+   оценка, дробная полоса звёзд, счётчик и подпись источника в одну линию. */
+.reviews-head{margin-bottom:14px}
+.yx-badge{display:inline-flex;align-items:center;gap:9px;max-width:100%;font-size:13.4px;color:var(--text-2)}
+.yx-badge:hover .yx-src{color:var(--accent);border-color:var(--accent)}
+.yx-logo{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#FC3F1D;color:#fff;font-weight:800;font-size:11.5px;flex:0 0 auto}
+.yx-rating{font-family:var(--f-num);font-size:15px;line-height:1;color:var(--ink)}
+.yx-cnt{font-size:13px;color:var(--text-3)}
+.yx-src{padding-left:12px;border-left:1px solid var(--line);font-size:13px;color:var(--text-3);white-space:nowrap;transition:color .18s ease,border-color .18s ease}
+/* .yx-tag («Яндекс» красным в строке автора) удалён вместе с самой меткой: по просьбе
+   заказчика под отзывом остались только имя и город, источник виден в шапке раздела. */
+@media(max-width:560px){.yx-badge{gap:7px}.yx-src{display:none}}
+
+/* ── Рейтинг на странице отзывов ────────────────────────────────────────────────────── */
+/* Дробная полоса звёзд: серая подложка <i>, золотая заливка <b> шириной --fill. */
+.star-bar{position:relative;display:inline-block;line-height:1;letter-spacing:2px;white-space:nowrap;color:var(--line-2)}
+.star-bar i,.star-bar b{display:block;font-style:normal;font-weight:400}
+.star-bar b{position:absolute;left:0;top:0;width:var(--fill);overflow:hidden;color:var(--accent-2)}
+.rev-head{align-items:center}
+.rev-lead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;color:var(--text-2)}
+.rev-lead .rev-avg{font-size:20px;line-height:1;color:var(--text)}
+@media(max-width:560px){.rev-head .yx-badge{width:100%}}
+
+/* ── Плитки категорий ───────────────────────────────────────────────────────────────── */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.tile{position:relative;padding:22px;border-radius:var(--r-card);background:#fff;border:1px solid var(--line);transition:.2s ease;overflow:hidden}
+.tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:transparent}
+.tile .ico{width:44px;height:44px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:14px}
+.tile b{display:block;font-size:17px;margin-bottom:4px}
+.tile span{font-size:13.6px;color:var(--text-2)}
+.tile .cnt{position:absolute;top:20px;right:20px;font-family:var(--f-num);font-size:15px;color:var(--text-3)}
+/* Плитка со снимком — «Читайте также» в статье Автожурнала (заказчик 2026-09-30: «На страницах
+   статей справа блок — Читайте также — добавь туда соответствующие фото в статьи»). Кадр во всю
+   ширину плитки: у плитки с фото снят верхний отступ, а снимок выходит за боковые поля 22 px
+   (ширина `100% + 44px` при отрицательных полях -22 px), поэтому верхние углы скругляет сам
+   `overflow:hidden` плитки вместе с её радиусом. Пропорция 16/9 — та же, что у обложки в самой
+   статье (`.art-cover`), и это заметно компактнее 4/3: колонка ссылок узкая (330 px), три плитки
+   подряд с кадром 4/3 растянули бы её вдвое. `max-width:none` здесь обязателен: общее правило
+   `img{max-width:100%}` (строка 46) иначе срезает кадр обратно до ширины содержимого плитки
+   (284 px вместо 328 px — проверено замером), и «во всю ширину» не получается. */
+.tile.has-photo{padding-top:0}
+.tile-photo{display:block;width:calc(100% + 44px);max-width:none;margin:0 -22px 14px;aspect-ratio:16/9;object-fit:cover;object-position:50% 50%;background:var(--paper-3)}
+
+/* ── Карточка авто ──────────────────────────────────────────────────────────────────── */
+/* Живой замер .cars: полезная ширина контейнера 1220px на окнах 1300–1920px (потолок .wrap
+   1260px минус padding 40px), 1160px при окне 1200px; gap 22px. Эмпирика: при 1220px F≤286
+   даёт 4 колонки, F≥290 — уже три, поэтому тиры 1290/1700/1800px с F=296/298/330 роняли
+   сетку до 3 колонок и удалены. Держим четыре колонки: 262px до 1260px, 286px от 1260px. */
+.cars{display:grid;grid-template-columns:repeat(auto-fill,minmax(262px,1fr));gap:22px}
+@media(min-width:1260px){.cars{grid-template-columns:repeat(auto-fill,minmax(286px,1fr))}}
+.car{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;display:flex;flex-direction:column;transition:.22s ease}
+.car:hover{box-shadow:var(--shadow-md);transform:translateY(-3px);border-color:transparent}
+/* Кадр карточки авто — 4/3 на всех поверхностях: каталог, «Лидеры продаж», «Выбор дилера», «Новые
+   поступления», «Похожие автомобили», лента новостей. Такой же кадр у .hot-media в «Горящей
+   продаже», у главного фото галереи (.gallery-main) и у миниатюр (.thumbs): вертикальное фото 3:4
+   везде показывает одну и ту же центральную часть снимка (56 % высоты), и машина в карточке
+   выглядит одинаково, в каком бы блоке её ни показали (заказчик 2026-09-27). object-position
+   задан явно, чтобы центрирование не зависело от умолчаний браузера. */
+.car-media{position:relative;aspect-ratio:4/3;background:var(--paper-3);overflow:hidden}
+.car-media img{width:100%;height:100%;object-fit:cover;object-position:50% 50%;transition:opacity .25s}
+.carousel{position:relative;height:100%}
+.carousel-track{display:flex;height:100%;transition:transform .35s cubic-bezier(.22,.61,.36,1)}
+.carousel-track img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;object-position:50% 50%}
+/* Снимок карточки авто — ссылка на страницу автомобиля (заказчик 2026-09-28: «сделай чтобы при
+   нажатии на фото карточки авто происходил переход на страницу авто»). Накладка лежит на кадре и
+   не трогает раскладку карусели; «избранное» (3) и кнопки карусели (2 в .car-media, 4 в .hot-media,
+   заданы ниже) держат z-index выше и остаются кликабельными. Обводка фокуса — видимая рамка кадра:
+   Tab с клавиатуры проходит и по снимку. */
+.car-photo-hit{position:absolute;inset:0;z-index:1}
+.car-photo-hit:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+/* ── Стрелки перелистывания фото: один вид по всему сайту ─────────────────────────────
+   История вида. Заказчик 2026-09-30 сначала просил сделать стрелки одинаковыми по всему сайту и
+   более видными, затем — «кнопки прокрутки на карточках авто и на странице авто, сделай
+   одинаковыми и что бы появлялись при наведение на фото, только в карусели, чтобы были всегда чуть
+   видны», затем — «кнопки пролистывания все-таки сделай стрелочками, которые появляются при
+   наведении на карточку авто»: тогда подложку сняли и осталась голая стрелка с тенью. Последняя
+   просьба подложку вернула, но уже белую и полупрозрачную: «сделай чтобы кнопки пролистывания
+   фотографии базового были не видны только появлялись при наведении мышкой на фотографии и сделай
+   их круглыми как раньше и прозрачными. В карусели верни кнопки прокрутки карточек авто в
+   бело-прозрачный фоном». Поэтому у всех трёх кнопок (.carousel-btn в карусели кадра, .gal-nav у
+   большого фото, .hot-nav в ленте «Горящей продажи») — круг 36 px (30 px на телефоне и в узкой
+   карточке «Горящей продажи») с белой полупрозрачной заливкой rgba(255,255,255,.62), а стрелка
+   внутри тёмная (--ink): на белом круге белая стрелка была бы не видна. Тень drop-shadow снята —
+   контраст теперь держит сам круг. Заказчик 2026-10-01: «не наводя на карточки авто я вижу прозрачную
+   очень кнопку перелистывания фоток, Исправь чтобы кнопка появлялась только при наведении на
+   фотографию и сделай кнопки чуть прозрачнее». Поэтому в покое стрелка карусели кадра больше не
+   «едва намечена» (.3), а скрыта целиком (0), и поднимает её только курсор на самом снимке: прежде
+   стрелку проявляла вся карточка (.car:hover), и на выдаче кнопка висела над фото, стоило навести
+   курсор на текст карточки. Проявление неполное (.8) — заказчик просил «чуть прозрачнее», и
+   заливка под курсором тоже ослаблена (.7 вместо .92): 2026-10-01 заказчик увидел, что «при
+   нажатии на кнопку прокрутки фото она становится сильно белая». Стрелки ленты «Горящей продажи» —
+   не карусель кадра: они видны всегда, и заказчик просил сделать их «более выраженными» — почти
+   белый фон (.95) и мягкая тень, чтобы круг читался и на светлом снимке. Кадровые стрелки внутри
+   ленты, наоборот, показываем только у главной (центральной) карточки. */
+.carousel-btn,.gal-nav,.hot-nav{--arrow:36px;--arrow-idle:0;--arrow-reveal:.8;
+  position:absolute;top:50%;transform:translateY(-50%);width:var(--arrow);height:var(--arrow);
+  padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.62);color:var(--ink);
+  display:grid;place-items:center;cursor:pointer;z-index:2;opacity:1;
+  transition:opacity .18s ease,transform .18s ease,background .18s ease}
+/* Лента «Горящей продажи» накрывает свои края растворяющими градиентами (z-index 4) — стрелкам
+   ленты нужен слой выше, поэтому z-index задаётся здесь, после общего правила. Здесь же «более
+   выраженный» вид (заказчик 2026-10-01): почти белый фон и тень, которых нет у стрелок кадра. */
+.hot-nav{z-index:5;background:rgba(255,255,255,.95);box-shadow:0 2px 10px rgba(16,20,28,.24)}
+/* Отклик на курсор: круг чуть плотнее и подрастает; размер и прозрачная «мишень» 36 px, по которой
+   удобно попадать, не меняются. Заказчик 2026-10-01: «В карточках авто при нажатии на кнопку
+   прокрутки фото она становится сильно белая, сделай еще прозрачнее». «Нажатие» мышью и есть
+   наведение: пока курсор на кнопке, она в состоянии :hover (отдельного :active у стрелок нет),
+   и заливка там была почти непрозрачной (.92). Теперь под курсором .7 — снимок видно сквозь
+   кружок, а «нажатость» держат рост круга (scale 1.12) и тёмный шеврон (--ink). Стрелки ленты
+   «Горящей продажи» это не касается: у них свой чистый белый (правило ниже), их заказчик просил
+   сделать, наоборот, «более выраженными». */
+.carousel-btn:hover,.carousel-btn:focus-visible,.gal-nav:hover,.gal-nav:focus-visible,
+.hot-nav:hover,.hot-nav:focus-visible{background:rgba(255,255,255,.7);transform:translateY(-50%) scale(1.12)}
+/* Стрелки ленты и так почти белые: под курсором доводим до чистого белого, иначе «плотнее» читалось
+   бы наоборот — светлее. */
+.hot-nav:hover,.hot-nav:focus-visible{background:#fff}
+/* Обводка фокуса акцентная, а не белая: круг теперь светлый, и белая рамка потерялась бы на светлом
+   снимке. */
+.carousel-btn:focus-visible,.gal-nav:focus-visible,.hot-nav:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.carousel-btn.prev{left:10px}.carousel-btn.next{right:10px}
+/* Проявление. Стрелка карусели кадра и стрелка большого фото скрыты целиком (opacity 0) и появляются
+   только от курсора на самом снимке — .car-media в карточке (кадр с накладкой .car-photo-hit) и
+   .gallery-main на странице объявления — да и то не целиком (.8, «чуть прозрачнее»); плотными они
+   становятся только от наведения на саму кнопку. Наведение на текст карточки (.car-body) стрелку
+   больше не поднимает: именно такую «прозрачную очень кнопку» и видел заказчик, не наводя курсор на
+   фото. Считаем по кадру, а не по карусели: поверх ленты кадров лежит ссылка на объявление
+   (.car-photo-hit, .hot-hit), под курсором оказывается именно она, и по .carousel:hover стрелка не
+   проявилась бы. В ленте «Горящей продажи» кадровые стрелки показываем только у активной карточки
+   (.hot-card.on) — у приглушённых соседних они не нужны (заказчик: «должны появляться только на
+   главной карточке автомобиля»). Стрелки самой ленты (.hot-nav) к карусели кадра не относятся и
+   остаются видимыми всегда (заказчик: «только в карусели»). */
+.carousel-btn{opacity:var(--arrow-idle)}
+.gal-nav{opacity:0}
+.car-media:hover .carousel-btn,
+.hot-card.on .hot-media:hover .carousel-btn,
+.gallery-main:hover .gal-nav{opacity:var(--arrow-reveal)}
+.carousel-btn:hover,.carousel-btn:focus-visible,
+.gal-nav:hover,.gal-nav:focus-visible{opacity:1}
+/* Под курсором на самой кнопке круг плотный, и проявление кадра (.8) его не перебивает: у правил
+   проявления контекст из трёх селекторов (`.car-media:hover .carousel-btn`), поэтому прямое
+   `.carousel-btn:hover` без того же контекста проигрывало бы по весу и кнопка оставалась бы
+   приглушённой даже под курсором. Контекст повторяем буквально. */
+.car-media:hover .carousel-btn:hover,
+.hot-card.on .hot-media:hover .carousel-btn:hover,
+.gallery-main:hover .gal-nav:hover{opacity:1}
+/* Тач-экраны: наведения курсора нет, поэтому стрелки карусели и галереи видны — в той же
+   приглушённой мере, что и при проявлении, — иначе они застыли бы невидимыми навсегда. У
+   приглушённых соседних карточек ленты кадровая стрелка остаётся скрытой: заказчик просил
+   показывать её только у главной карточки. Стрелки ленты .hot-nav и так видны всегда. */
+@media(hover:none){.carousel-btn,.gal-nav{opacity:var(--arrow-reveal)}}
+@media(hover:none){.hot-card:not(.on) .carousel-btn{opacity:0}}
+/* У приглушённых (неактивных) карточек ленты кадровая стрелка не только скрыта, но и не ловит курсор:
+   иначе случайное попадание мыши в невидимый круг показало бы стрелку там, где заказчик просил её не
+   показывать вовсе. Клик по кадру такой карточки, как и раньше, уходит на ссылку .hot-hit — то есть
+   на объявление. */
+@media(hover:hover){.hot-card:not(.on) .hot-media .carousel-btn{pointer-events:none}}
+.carousel-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:5px;z-index:2}
+.carousel-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;transition:.18s}
+.carousel-dots i.on{background:#fff;width:18px;border-radius:3px}
+.car-badges{position:absolute;top:12px;left:12px;display:flex;gap:6px;flex-wrap:wrap;z-index:3}
+.tag{padding:6px 11px;border-radius:var(--r-btn);font-size:12px;font-weight:700;background:rgba(20,23,28,.78);color:#fff;backdrop-filter:blur(6px)}
+.tag.red{background:var(--accent)}
+.tag.amber{background:var(--accent-2);color:#3A2A00}
+.tag.green{background:var(--ok)}
+.tag.light{background:rgba(255,255,255,.92);color:var(--ink)}
+/* Статус автомобиля на его странице — плашки под заголовком слева, над сгибом (заказчик: «сделай,
+   когда переходишь на страницу, было видно скидки и что это горящая продажа или новое
+   объявление»). По форме и кеглю это те же «таблетки», что бейджи каталога (.tag), но живут они в
+   тексте страницы, а не на фото, поэтому без backdrop-filter: «Новое объявление» — та же красная
+   плашка, что «Новый» в каталоге; «Горящая продажа» — красная с белой точкой и тем же пульсирующим
+   свечением, что в герое (анимация hotGlow), чтобы пометка читалась как та же акция; скидка —
+   мягкая красная «таблетка» на светлом фоне, сумма набрана --f-num (класс .num), как и цены. */
+.flags{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.flag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--r-btn);
+  font-size:12.5px;font-weight:700;line-height:1.2;white-space:nowrap}
+.flag.new{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(227,0,15,.22)}
+.flag.hot{background:var(--accent);color:#fff;animation:hotGlow 2.8s ease-in-out infinite}
+.flag.hot .dot{width:6px;height:6px;border-radius:50%;background:#fff;opacity:.9}
+.flag.save{background:var(--accent-soft);color:var(--accent)}
+.car-fav{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.92);
+  display:grid;place-items:center;cursor:pointer;z-index:3;transition:.18s}
+.car-fav:hover{transform:scale(1.08)}
+.car-fav.on{background:var(--accent);color:#fff}
+.car-body{padding:17px 18px 18px;display:flex;flex-direction:column;gap:10px;flex:1}
+.car-title{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+.car-title:hover{color:var(--accent)}
+/* Шапка карточки: название и «сравнить» — всегда одна строка. Раньше строка была .spread
+   с flex-wrap и выравниванием по верху: длинное название («Renault Sandero Stepway II, II»)
+   выдавливало галочку с подписью на вторую строку, и они уезжали вниз под название. Теперь
+   название сжимается первым (min-width:0 + «…»), галочка не сжимается вовсе, а по высоте
+   обе части выровнены по центру строки. Полное название остаётся в title. */
+.car-head{gap:8px;align-items:center;flex-wrap:nowrap}
+.car-head .car-title{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.car-head .check{flex:0 0 auto;white-space:nowrap;gap:7px}
+.car-head .check input{width:16px;height:16px}
+.car-head .check .small{font-size:12.6px}
+/* Теснее поля внутри карточки на 1081–1239 px (там 4 узкие колонки по 262–286 px): название
+   выигрывает 6 px и обрезается позже. */
+@media(min-width:1081px){.car-body{padding:15px 15px 16px}}
+.car-price{font-family:var(--f-num);font-size:23px;font-weight:700;letter-spacing:-.01em}
+.car-price small{display:block;font-family:var(--f-text);font-size:12.5px;font-weight:400;color:var(--text-3);letter-spacing:0}
+.car-params{font-size:13.6px;color:var(--text-2);display:flex;flex-direction:column;gap:3px}
+.car-params i{font-style:normal;color:var(--text-2);margin-right:6px} /* было --text-3: подпись «Пробег» давала 3,1:1 и не читалась */
+.car-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.car-actions{display:grid;gap:8px}
+.car-actions .btn{width:100%;justify-content:center;white-space:nowrap}
+.car-more{display:inline-flex;align-items:center;gap:2px;font-size:13.4px;font-weight:600;color:var(--text-2);white-space:nowrap;align-self:center}
+.car-more:hover{color:var(--accent)}
+.car-more svg{transition:transform .18s}
+.car-more:hover svg{transform:translateX(2px)}
+@media(min-width:1240px){
+  .car-body{padding:15px 15px 16px;gap:9px}
+  .car-title{font-size:15.6px}
+  .car-price{font-size:20.5px}
+  .car-params{font-size:12.8px}
+  .car-foot{gap:8px}
+  .car-actions{flex:1 1 100%}
+  .car-actions .btn-sm{flex:1 1 0;justify-content:center;padding:0 10px}
+  .car-more{width:100%;justify-content:flex-end}
+}
+/* ── Телефон: две карточки в ряд ─────────────────────────────────────────────────────
+   Заказчик 2026-09-28: «в мобильной версии … карточки авто, сделай, чтобы размещались по две»,
+   «карусель тоже должна быть». До этого до 600 px выдача шла одной колонкой: карточка занимала
+   всю ширину (350 px на 390), в кадр экрана попадала половина карточки, и сравнивать машины
+   приходилось прокруткой. Теперь те же две колонки, что и на планшете, но отступы и кегли
+   подтянуты, чтобы карточка 134–278 px читалась целиком и в ряд помещалось две машины.
+   Правила стоят после базовых .car-* и не пересекаются с @media(min-width:1240px). */
+@media(max-width:600px){
+  .cars{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .car-body{padding:10px 10px 11px;gap:7px}
+  /* Название — две строки. В одну строку с «…» от «Geely Monjaro, I» оставалось «Geely…»,
+     а машину покупатель выбирает как раз по марке и модели. Высота зафиксирована в две
+     строки, чтобы карточки в ряду были одной высоты (симметрия ряда). */
+  .car-head{gap:6px}
+  .car-head .car-title{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.5em;font-size:14px}
+  /* Подпись «сравнить» на узкой карточке съедала половину строки — остаётся галочка
+     (у неё есть title и aria-label). */
+  .car-head .check .small{display:none}
+  .car-head .check input{width:22px;height:22px}
+  .car-price{font-size:16.5px}
+  .car-price small{font-size:11px}
+  .car-params{font-size:11.6px;gap:2px}
+  /* Подпись «Пробег» на телефоне — 11,6 px; цвет --text-2 задан в базовом правиле .car-params i,
+     здесь только отбивка. */
+  .car-params i{margin-right:4px}
+  .car-foot{padding-top:9px;gap:7px}
+  /* «Бронь» и «Обмен» — одной строкой: в столбик футер съедал четверть карточки. Отбивка по
+     вертикали 10 px даёт кнопку 36 px — палец попадает, а на 134 px карточке это ещё компактно. */
+  .car-actions{grid-template-columns:1fr 1fr;gap:6px}
+  .car-actions .btn{padding:10px 4px;font-size:12px;gap:5px}
+  .car-actions .btn svg{width:14px;height:14px}
+  /* «Подробнее» — тоже цель для пальца: строка текста 19 px была слишком мелкой, добавляем
+     вертикальные поля (за счёт gap футера раскладка не разъезжается). */
+  .car-more{font-size:12.4px;padding:4px 0}
+  /* Плашки над кадром: «VIN проверен» при уменьшенном кегле не влезал рядом с «Новый» и
+     обрезался правым краем кадра — теперь плашки не сжимаются, переносятся на вторую строку
+     и не заходят под кнопку избранного. */
+  .car-badges{top:7px;left:7px;right:34px;gap:4px}
+  .car-badges .tag{padding:3px 7px;font-size:10.5px;border-radius:6px;white-space:nowrap;flex:0 0 auto}
+  .car-fav{top:7px;right:7px;width:30px;height:30px}
+  .car-fav svg{width:14px;height:14px}
+  /* Плашка «N фото» в правом нижнем углу на 134–278 px наезжала на точки карусели —
+     на телефоне число кадров показывают сами точки и свайп. */
+  .car-media > span.tag{display:none}
+  /* Стрелки карусели и галереи: тот же вид, что и на широком экране, но на шаг меньше — 30 px
+     по краю карточки 134–172 px. По 26 px палец промахивался мимо края кадра; отдельного показа
+     для тач-устройств больше не нужно — кнопка видна всегда (см. @media(hover:none) у общего
+     правила). Главное фото объявления здесь попадает в то же правило, чтобы кнопки оставались
+     одинаковыми и на телефоне. */
+  .carousel-btn,.gal-nav,.hot-nav{--arrow:30px}
+  .carousel-btn.prev{left:5px}
+  .carousel-btn.next{right:5px}
+  .carousel-dots{bottom:6px;gap:4px}
+  .carousel-dots i{width:6px;height:6px;box-shadow:0 0 0 1px rgba(15,18,22,.18)}
+  .carousel-dots i.on{width:15px}
+}
+/* На самых узких телефонах (320–380 px) карточка 134–172 px: «Бронь» с иконкой переставала
+   влезать в половину строки кнопок — иконки убираем, текст остаётся. */
+@media(max-width:380px){
+  .car-actions .btn svg{display:none}
+}
+.car-loc{font-size:13px;color:var(--text-3);display:flex;align-items:center;gap:5px}
+
+/* ── Каталог: список выдачи ─────────────────────────────────────────────────────────── */
+/* .catalog-search удалён: панель поиска в каталоге — та же, что на главной странице
+   (.ps-band + paramSearch в компактном режиме), отдельных правил ей не нужно. */
+/* Строка марок (.brand-line) стоит на всех страницах, где есть панель «Поиск по параметрам»:
+   главная и четыре страницы каталога («Все авто», «С пробегом», «Новые», «Электро», список рисует
+   brandsTop). Из каталога перечень марок убирали по просьбе заказчика (тогда марки стояли тёмной
+   полосой в шапке), а 2026-09-27 он попросил вернуть его на «Все авто» — правила оформления общие
+   для всех страниц, отдельных в site.css не нужно.
+   Блок без рамок и линий — только марки и их количество (просьба заказчика: «сделай этот блок
+   без рамок и линий, только марки и их количество»). Раньше это была белая карточка: рамка
+   --line, радиус --r-card, заливка #fff, линия под заголовком и линия под каждой маркой.
+   Горизонтальные отступы убраны вместе с карточкой (было 26 px, на телефоне 16 px) — иначе
+   список читался бы сдвинутым вправо на пустом месте: теперь левый край марок совпадает с левым
+   краем заголовка и лида героя (110 px на 1440, 20 px на 390). Вертикальные отступы подтянуты
+   вслед за общим ритмом (20/22 → 18/16 px, у варианта .bl-bare сверху 8 px) — см. блок
+   `.home-brands` выше. */
+.brand-line{padding:18px 0 16px;margin-bottom:20px}
+.bl-head{display:flex;align-items:baseline;gap:10px;padding-bottom:12px;margin-bottom:8px}
+.bl-head b{font-size:15px;letter-spacing:-.01em}
+.bl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:0 26px}
+/* Строка марки: количество стоит рядом с названием (заказчик: «размести счётчик количества авто
+   рядом с маркой»), а не у правого края колонки, как было при justify-content:space-between.
+   Вертикальные поля подтянуты 8 → 5 px: на главной это экономит 12 px на четырёх рядах и
+   поджимает список к панели поиска. */
+.bl-item{display:flex;align-items:baseline;justify-content:flex-start;gap:7px;padding:5px 0;font-size:14px;color:var(--text-2)}
+.bl-item:hover{color:var(--accent)}
+.bl-item.on{color:var(--accent);font-weight:600}
+.bl-item i{font-style:normal;font-size:12.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.bl-item.on i{color:var(--accent)}
+.bl-all{font-weight:600;color:var(--ink)}
+.list-head{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:20px}
+.list-head h2{font-size:clamp(19px,1.7vw,23px);font-weight:700;letter-spacing:-.01em}
+.list-head h2 b{font-family:var(--f-num)}
+.sort-box{display:flex;align-items:center;gap:10px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+/* Хвост каталога: кнопок страниц здесь нет — есть прозрачная кнопка «Показать ещё» и подпись
+   рядом с ней, «На странице 20 объявлений из 57» (.cars-more-row, см. carsMore в lib/view.mjs).
+   Прокрутка больше ничего не подгружает: партию берут только по клику (initInfinite в site.js).
+   Высоту держим постоянной, чтобы подгрузка не дёргала страницу: у коробки всегда 56px.
+   Кнопка с подписью прижаты к левой границе списка (заказчик 2026-09-29: «Показать ещё … смести
+   к левой границе»). Было по центру: на 1400 px кнопка начиналась на 509 px, то есть на 419 px
+   правее первой карточки. Ширина .cars-more и так равна колонке списка, поэтому достаточно
+   align-items:flex-start у коробки и justify-content:flex-start у строки — левый край кнопки
+   (90 px) совпадает с левым краем первой карточки (90 px), подпись идёт следом.
+   flex-start, а не space-between: разрывать кнопку и подпись по краям не просили.
+   На телефоне пара не влезает в одну строку (150 + 14 + 218 = 382 px при колонке 350 px),
+   поэтому подпись уходит под кнопку, и left-выравнивание там особенно заметно. */
+.cars-more{min-height:56px;margin-top:30px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:12px;text-align:left}
+.cars-more-row{display:flex;align-items:center;justify-content:flex-start;gap:14px;flex-wrap:wrap}
+.cars-more-count{margin:0;font-size:14px;color:var(--text-2)}
+.cars-more-spin{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-2)}
+.cars-more-spin .spin{width:17px;height:17px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--accent);animation:cars-spin .7s linear infinite}
+@keyframes cars-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.cars-more-spin .spin{animation:none}}
+.cars-more-end{margin:0;font-size:14px;color:var(--text-2)}
+/* `[hidden]` перебиваем явно у каждого display-правила коробки: браузерное `[hidden]{display:none}`
+   слабее авторского `display:flex`, иначе скрытая кнопка с подписью осталась бы на экране. */
+.cars-more-fail[hidden],.cars-more-spin[hidden],.cars-more-end[hidden],.cars-more-row[hidden]{display:none}
+.empty{padding:60px 20px;text-align:center;color:var(--text-2);border:1px dashed var(--line-2);border-radius:var(--r-card)}
+
+/* ── Карточка товара ────────────────────────────────────────────────────────────────── */
+/* Заказчик 2026-10-01: «сделай, чтобы нижняя граница блока проверка по VIN была симметрична нижней
+   границе блока фотографий. Нижние и верхняя границы блока — условия покупки — были симметричны
+   верхним и нижним границам блока — описание». Поэтому колонки карточки больше не самостоятельные
+   флекс-колонки, а две общие строки: верхняя — [галерея ↔ цена + связь + проверка по VIN], нижняя —
+   [описание ↔ условия покупки]. Строки задаёт .detail, колонки встают в них как subgrid, поэтому
+   верх и низ парных блоков совпадают сами: «Проверка по VIN» тянется по низу своей строки (flex:1
+   у .vin-panel), «Условия покупки» — по обоим краям строки «Описания» (растянутая grid-строка).
+   Если правая пара оказывается выше галереи (узкие ноутбуки, где кадр ниже), кадр дотягивается
+   вместе со строкой — пара всё равно сходится по низу, а не разъезжается. Шаг строк 20 px — тот же,
+   что был между блоками внутри колонок. Ниже 1000 px карточка снова в одну колонку и идёт прежней
+   последовательностью блоков. */
+.detail{display:grid;grid-template-columns:1.55fr 1fr;column-gap:30px;row-gap:20px;grid-template-rows:auto auto}
+/* Раньше здесь стояло `.detail>div,.detail>aside{display:flex;flex-direction:column;gap:20px}` и
+   колонки друг о друге не знали: левая кончалась «Описанием», правая — «Условиями покупки», и на
+   одной линии были только верха. Теперь каждая колонка — subgrid по строкам карточки: левая кладёт
+   в первую строку галерею, во вторую «Описание»; правая — стопку панелей и «Условия покупки».
+   Браузер без subgrid покажет те же блоки в прежнем порядке (колонки станут обычными grid-ячейками
+   на две строки), просто без выравнивания по строкам. */
+.detail>div,.detail>aside{grid-row:1/3;display:grid;grid-template-rows:subgrid}
+.detail>div{grid-column:1}
+.detail>aside{grid-column:2}
+/* Панель «Комплектация» (у опубликованных машин не показывается) идёт в одной строке с галереей:
+   число строк карточки не зависит от того, есть ли у машины разобранные опции. */
+.detail-media,.side-stack{display:flex;flex-direction:column;gap:20px;min-width:0}
+/* `min-width:0` у колонок обязателен: у grid-элемента ширина по умолчанию не меньше
+   min-content содержимого, а лента миниатюр (12 фото по 86 px + зазоры = 1140 px) тянула
+   колонку галереи до 1140 px. Из-за этого карточка автомобиля вылезала за экран и давала
+   горизонтальную прокрутку на всех ширинах до 1440 px (проверка _ref/deploy/audit-layout.mjs). */
+.detail>*{min-width:0}
+/* Галерея тянется по высоте строки, а «Проверка по VIN» — по её низу: так нижняя граница панели
+   встаёт ровно по низу блока фотографий. */
+.detail-media>.gallery{flex:1 1 auto}
+/* Свободную высоту строки набирают зазоры правой колонки, а не панель. Раньше её добирала «Проверка
+   по VIN» (flex:1): пока строка «В избранное / сравнить» стояла внутри ценовой панели, разница была
+   нулевой и правило не работало. С 2026-10-01 эта строка уехала в угол ценовой панели, та стала ниже
+   на 50 px — и «Проверка по VIN» вытянулась бы пустотой под списком. Теперь лишнюю высоту делят
+   зазоры: низ последней панели, как и прежде, стоит по низу строки, то есть по низу галереи. */
+.side-stack{justify-content:space-between}
+@media(max-width:1000px){
+  .detail{grid-template-columns:1fr;row-gap:30px}
+  .detail>div{grid-column:1;grid-row:1}
+  .detail>aside{grid-column:1;grid-row:2}
+  .detail>div,.detail>aside{display:flex;flex-direction:column;gap:20px}
+}
+.gallery{--thumbs-h:84px;display:flex;flex-direction:column;border-radius:var(--r-card);overflow:hidden;background:var(--paper-3)}
+.gallery-main{position:relative;aspect-ratio:4/3;background:#000}
+/* Кадр забирает высоту галереи за вычетом ленты миниатюр (64 px снимки + 2×10 px поля), поэтому низ
+   галереи и низ кадра встают по низу панели «Проверка по VIN». Высота задана именно height, а не
+   flex-grow: у кадра картинка занимает height:100%, и её собственная высота (у горизонтального
+   снимка ~966 px) попала бы в базовый размер флекс-элемента — галерея растянулась бы вдвое. На
+   телефоне (одна колонка) высота галереи не определена, процент считается как auto — и кадр
+   остаётся прежним 4/3 по aspect-ratio. Галерея без ленты миниатюр (у машины одно фото) занимает
+   высоту целиком. */
+.gallery>.gallery-main{flex:0 0 auto}
+.gallery:has(.thumbs)>.gallery-main{height:calc(100% - var(--thumbs-h))}
+.gallery:not(:has(.thumbs))>.gallery-main{height:100%}
+.gallery-main img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.gallery-main .counter{position:absolute;right:12px;bottom:12px;padding:6px 12px;border-radius:var(--r-btn);
+  background:rgba(20,23,28,.7);color:#fff;font-size:13px;font-family:var(--f-num)}
+/* Лента миниатюр — своей высоты: свободную высоту галереи забирает кадр, а не она. */
+.thumbs{display:flex;gap:8px;padding:10px;overflow-x:auto;background:#fff;flex:0 0 auto}
+.thumbs img{width:86px;height:64px;object-fit:cover;border-radius:var(--r-sm);cursor:pointer;opacity:.65;transition:.15s;flex:0 0 auto}
+.thumbs img:hover{opacity:1}
+.thumbs img.on{opacity:1;outline:2px solid var(--accent);outline-offset:-2px}
+/* Блоки внутри колонки идут флекс-колонкой с прежним шагом 20 px. `justify-content:space-between`
+   здесь стоял ради растянутых колонок одной высоты (см. выше) — вместе с ним ушёл: высота колонки
+   равна её содержимому, распределять нечего. Свои прежние margin внутри .detail отменяем — иначе
+   они складывались бы с gap.
+   Позже (2026-10-01) флекс-колонкой остались только сами стопки блоков (.detail-media и
+   .side-stack, см. выше), а колонки .detail>div / .detail>aside стали subgrid'ами по строкам
+   карточки — правило `display:flex;flex-direction:column;gap:20px` для них переехало отсюда в
+   блок карточки товара и в медиазапрос ≤1000 px (одна колонка). */
+.detail .panel+.panel{margin-top:0}
+.detail .price-box{margin-bottom:0}
+.panel{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);padding:22px}
+.panel+.panel{margin-top:20px}
+/* Обратный отсчёт карточки товара (2026-09-30): блоки были на 20–50 px выше соседей в парной
+   колонке — заказчик просил «сделай высоту меньше, чтобы влез симметрично». Поджимаем не текст, а
+   служебные отступы: поля карточек 22 → 18 px, шаг между строками списков, зазоры у кнопок.
+   Текст остаётся тем же, читаемость не меняется. Размеры — замер _ref/probe-columns.mjs. */
+.price-box{background:var(--paper-soft);border-radius:var(--r-card);padding:18px;margin-bottom:20px}
+.price-box .price{font-family:var(--f-num);font-size:36px;font-weight:700;letter-spacing:-.02em}
+.price-box .month{font-size:14px;color:var(--text-2);margin-top:3px}
+/* Заказчик 2026-10-01: «Кнопу — расчёт, в блоке цена на странице авто, напиши красным цветом в цвет
+   сайта». Ссылка «расчёт» в строке кредита — акцентным красным (--accent), начертание 600, как у
+   постоянных ссылок на сайте (.auth-alt a), под курсором — --accent-hover. Прежде она выглядела
+   обычным текстом строки: базовое правило `a{color:inherit}` красило её в серый цвет строки. */
+.price-box .month a{color:var(--accent);font-weight:600}
+.price-box .month a:hover,.price-box .month a:focus-visible{color:var(--accent-hover)}
+/* Цена «до скидки» в ценовом блоке: зачёркнутая и приглушённая, сразу под текущей ценой — рядом с
+   плашкой «Скидка −N руб.» под заголовком видно и сумму, и от какой цены считали. */
+.price-box .was{margin-top:2px;font-size:14px;color:var(--text-3);text-decoration:line-through}
+.spec-list{display:flex;flex-direction:column;gap:0}
+.spec-list div{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.spec-list div:last-child{border-bottom:none}
+.spec-list span{color:var(--text-2)}
+.spec-list b{text-align:right}
+/* Опции комплектации на странице объявления (заказчик 2026-09-27: «чтобы можно было выбирать
+   комплектацию и её содержимое»). Те же «таблетки», что чипы фильтров, но статичные: список
+   ничего не фильтрует, поэтому без наведения и без рамки-кнопки. */
+.equip-opts{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 0;padding:0;list-style:none}
+.equip-opts li{padding:6px 12px;border-radius:var(--r-btn);background:var(--paper-soft);border:1px solid var(--line);font-size:13.4px;color:var(--text-2)}
+.prose{font-size:15.5px;line-height:1.7;color:var(--text-2);white-space:pre-line;max-width:78ch}
+.prose b{color:var(--text)}
+
+/* ── Объявление: шапка, сводка, галерея, комплектация ────────────────────────────────
+   Разметка страницы автомобиля собрана по образцу объявления av.by (заказчик 2026-09-28 прислал
+   ссылку cars.av.by/audi/sq7): под заголовком — мета-строка с датой публикации и номером
+   объявления («Пожаловаться…» из образца убрана по просьбе заказчика 29.09.2026, вместе со
+   ссылкой); в ценовом блоке — краткая сводка из трёх строк с переходом к полной таблице; внизу —
+   кнопки связи и «Поделиться». Ссылка-модификация («Автомат (218 л.с.)»)
+   убрана по просьбе заказчика — правила .car‑mod удалены вместе с разметкой. Ниже — только то, что
+   относится к этой раскладке; цвета и радиусы берём общие (переменные из :root), чтобы объявление
+   оставалось частью сайта, а не отдельной страницей. */
+.car-meta{align-items:center;row-gap:6px}
+.car-no{font-variant-numeric:tabular-nums}
+/* Сводка характеристик под ценой: три строки обычным текстом, как на av.by. Отдельной рамки нет —
+   она стоит внутри .price-box и не должна спорить с ценой. Ссылки «Все параметры» больше нет
+   (2026-09-30): вести ей было некуда после снятия таблицы «Характеристики» под галереей. */
+/* Строка цены в ценовой панели (2026-10-01). Заказчик: «на странице авто кнопку лайк и сравнить
+   перенести в правый верхний часть» — значки уехали из отдельной строки между ценой и сводкой
+   характеристик в правый верхний угол панели, на строку с ценой. Слева цена (и «было»), справа
+   «В избранное» и «сравнить», прижатые к правому краю автоотступом. Строка кредита лежит вне этой
+   пары: она идёт следом на всю ширину панели — иначе, как самое длинное, она задавала ширину левой
+   части и значки уезжали под цену уже на 1200 px. flex-wrap оставлен на узкую панель (≈1100 px и
+   ниже, между одноколоночной раскладкой и широким ноутбуком): там значки переносятся под цену и
+   остаются справа. */
+.price-box .price-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px 12px}
+.price-box .price-col{flex:1 1 auto;min-width:0}
+.price-box .price-tools{display:flex;align-items:center;gap:8px;flex:0 0 auto;margin-left:auto}
+.car-brief{margin:8px 0 0;padding:0;list-style:none;font-size:14px;color:var(--text-2);line-height:1.55}
+.car-brief li+li{margin-top:4px}
+/* Иконка «В избранное» рассчитана на тёмный фон (каталог ставит её поверх фото): в светлом
+   ценовом блоке белый контур не читался вовсе. Даём ей рамку и цвет текста, а «сравнить» рядом
+   остаётся простым чекбоксом — так строка выглядит как две равные кнопки, а не как пустое место. */
+.price-box .icon-btn{color:var(--text);border:1px solid var(--line);background:#fff}
+.price-box .icon-btn:hover,.price-box .icon-btn:focus-visible{color:var(--accent);border-color:var(--accent);background:#fff}
+.price-box .icon-btn:active{background:var(--paper-soft)}
+.car-contact{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+/* Поля карточек и заголовки в карточке товара поджаты 22 → 18 px и 8 → 6 px (заказчик 2026-09-30:
+   «блок сделай высоту меньше, чтобы влез симметрично»). Правило привязано к карточке (.detail), а не
+   к .panel целиком: на остальных страницах шаг остаётся прежним. Селектор — потомок, а не `>`: с
+   2026-10-01 панели правой колонки лежат внутри .side-stack (первая строка карточки). */
+.detail>aside .panel{padding:18px}
+.detail>aside .panel>h4{margin:0 0 4px}
+.detail>aside .panel>.btn{margin-top:12px}
+/* Класс no-vin и его правило (поля 22 px у панели «Проверка по VIN» машины без VIN) убраны
+   2026-10-01: заказчик убрал пояснение под списком проверок, и разница между машинами с VIN и без
+   него исчезла — обе панели теперь одинаковы, а низ строки добирает subgrid (см. блок карточки
+   товара выше). */
+/* «Проверка по VIN»: список из трёх строк (строку про владельцев и историю регистраций, строку про
+   такси/каршеринг и пояснение под списком заказчик убрал 2026-10-01). Панель сразу стала самой
+   низкой в строке, и её низ держит subgrid (flex:1 1 auto выше). Внутренние отступы подтянуты на
+   26 px, чтобы собственная высота панели (125 px) совпала с низом галереи уже на широком экране:
+   иначе строку раздувала бы колонка, и кадр 4/3 подрастал на 26 px (замер _ref/probe-columns.mjs).
+   Подтяжка — только внутри этой панели: у соседей поля остаются 18 px. */
+.detail>aside .panel.vin-panel{padding:14px 18px 12px}
+.detail>aside .panel.vin-panel>h4{margin:0}
+.vin-panel .vin-check{margin-top:8px;gap:6px}
+.vin-panel .vin-check li{line-height:1.35}
+/* «Условия покупки» растянуты по строке «Описания» (см. блок карточки товара выше), и свободные
+   14 px уходят в промежуток перед кнопкой: список стоит под заголовком, а «Рассчитать кредит» — по
+   нижнему краю панели, вровень с низом «Описания». На телефоне (одна колонка) высота не растянута,
+   и кнопка отходит от списка на свои 14 px из разметки. */
+.car-cond{display:flex;flex-direction:column;justify-content:space-between}
+/* «Условия покупки»: пять строк списка были самой высокой частью блока (213 px при 42,6 px на
+   строку). Поджимаем строки до 31 px — блок догоняет по высоте «Описание» (293 px). */
+.car-cond .spec-list div{padding:6px 0;line-height:1.35}
+/* «Проверка по VIN» — как блок «Что покажет проверка» на av.by: список того, что смотрит отчёт,
+   с галочками. Своя разметка, а не .spec-list: это перечисление, а не пары «параметр — значение». */
+.vin-check{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;font-size:14.4px;color:var(--text-2)}
+.vin-check li{display:flex;align-items:flex-start;gap:9px}
+.vin-check svg{flex:0 0 auto;margin-top:2px;color:var(--accent)}
+/* Поделиться — рядом значков на главном фото объявления (заказчик 2026-09-30: «Поделиться
+   Telegram Viber WhatsApp Скопировать ссылку, — сделай на фото в карточках авто, — значками»;
+   в уточнении выбраны большое фото на странице автомобиля и постоянная видимость). Раньше здесь
+   стояла строка кнопок-таблеток под описанием — теперь это значки на кадре. */
+/* Значки видны всегда, без наведения: на телефоне :hover не наступает, а прятать их до наведения
+   заказчик не просил. Подложка — та же тёмная «таблетка» с блюром, что у плашек каталога и счётчика
+   кадров (.tag, .gallery-main .counter): белый знак читается и на светлом, и на тёмном снимке.
+   Кружок 34 px — палец попадает; ряд из четырёх занимает 154 px и в правом верхнем углу не доходит
+   ни до левого края кадра (на телефоне кадр ~350 px), ни до стрелки «вперёд»: она стоит по середине
+   правого края, а ряд занимает верхние 12–46 px. Заказчик 2026-10-01: «на странице автомобиля на
+   фотографии кнопки четыре штуки внизу с левой стороны, размести их справа вверху на фотографии» —
+   прежнее место (левый нижний угол) значки занимали с 2026-09-30, когда только появились. */
+.gal-share{position:absolute;right:12px;top:12px;display:flex;gap:6px;z-index:3}
+.gal-soc{width:34px;height:34px;border:none;border-radius:50%;padding:0;display:grid;place-items:center;
+  background:rgba(20,23,28,.72);color:#fff;cursor:pointer;text-decoration:none;
+  backdrop-filter:blur(6px);transition:background .18s,transform .18s}
+.gal-soc:hover{background:var(--accent);transform:translateY(-1px)}
+.gal-soc:focus-visible{outline:2px solid #fff;outline-offset:2px}
+/* Комплектация разделами: у av.by опции сгруппированы («Салон», «Системы безопасности», …),
+   у нас — свои группы из lib/car-options.mjs. Видны первые восемь опций, остальные раскрывает
+   кнопка (data-equip-more → data-open на контейнере). */
+.equip-groups{margin-top:16px}
+.equip-group+.equip-group{margin-top:14px}
+.equip-group h4{margin:0 0 2px;font-size:14px;color:var(--text);font-weight:600}
+.equip-group .equip-opts{margin-top:8px}
+.equip-opts li.is-extra{display:none}
+.equip-groups[data-open] .equip-opts li.is-extra{display:inline-block}
+.equip-more{margin-top:16px}
+/* Стрелки на главном фото объявления — та же кнопка, что в карусели карточки (см. .carousel-btn):
+   тот же круг 36 px (30 px на телефоне — правило в блоке ≤600 px выше), та же белая полупрозрачная
+   заливка и та же тёмная стрелка 22 px. Отдельного вида у галереи нет с 2026-09-30, когда заказчик
+   попросил сделать кнопки на карточках и на странице авто одинаковыми (прежние 44 px с тёмным
+   кругом отменены), а последней просьбой — «сделай чтобы кнопки пролистывания фотографии базового
+   были не видны только появлялись при наведении мышкой на фотографии» — у стрелок галереи убран
+   даже приглушённый покой: в покое они скрыты совсем (opacity 0, см. правило проявления выше).
+   Здесь остались только отступы от краёв кадра. */
+.gal-nav.prev{left:12px}
+.gal-nav.next{right:12px}
+/* Подсказка av.by «Открыть во весь экран» вернулась в левый нижний угол: в правый верхний переехали
+   значки «Поделиться» (заказчик 2026-10-01), а 2026-09-30 она уходила из этого угла именно ради них.
+   Осталась такой же ненавязчивой (появляется при наведении, на тач-устройствах её нет вовсе — кадр и
+   так открывается касанием). Так нижний край делят подсказка и счётчик кадров, а верхний — одни
+   значки «Поделиться»: подсказка (156 px) и ряд значков (154 px) иначе сталкивались бы на окне уже
+   ~380 px. */
+.gal-hint{position:absolute;left:12px;bottom:12px;padding:6px 12px;border-radius:var(--r-btn);
+  background:rgba(20,23,28,.7);color:#fff;font-size:12.6px;opacity:0;transition:opacity .15s}
+.gallery-main:hover .gal-hint{opacity:1}
+@media(hover:none){.gal-hint{display:none}}
+/* Полноэкранный просмотр фотографий (public/assets/js/site.js: initGallery). Оверлей поверх
+   страницы, прокрутка документа при открытом просмотре выключается через html.lb-on. */
+html.lb-on{overflow:hidden}
+.lightbox{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,12,15,.96);padding:clamp(12px,4vw,48px)}
+/* Кадр растягивается на весь оверлей, а внутри уже работает object-fit:contain — иначе небольшое
+   фото (800×600) оставалось бы в центре экрана мелким пятном: max-width/max-height не увеличивают
+   картинку. Пустые поля по краям остаются фоном оверлея, и клик по ним закрывает просмотр. */
+.lightbox img{width:100%;height:100%;object-fit:contain;border-radius:var(--r-sm)}
+.lb-close{position:absolute;top:14px;right:18px;width:44px;height:44px;border:none;border-radius:50%;
+  background:rgba(255,255,255,.12);color:#fff;font-size:26px;line-height:1;cursor:pointer;padding:0}
+.lb-close:hover{background:rgba(255,255,255,.22)}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:52px;height:52px;border:none;
+  border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:30px;line-height:1;cursor:pointer;padding:0}
+.lb-nav:hover{background:rgba(255,255,255,.22)}
+.lb-nav.prev{left:clamp(8px,2vw,24px)}
+.lb-nav.next{right:clamp(8px,2vw,24px)}
+.lb-num{position:absolute;left:0;right:0;bottom:18px;text-align:center;color:#fff;font-size:13.6px;opacity:.85}
+@media(max-width:700px){.lb-nav{width:44px;height:44px;font-size:26px}}
+
+/* ── Статья автожурнала ─────────────────────────────────────────────────────────────── */
+/* Блок «Читайте также» стоит справа от текста статьи, а не под ним (просьба заказчика:
+   «блок „Читайте также“ в автожурнале размести справа от текста» — и так во всех статьях).
+   Колонка текста не шире 820 px, поэтому ширина строки `.prose` не меняется; правый край колонки
+   ссылок совпадает с правым краем остальных блоков страницы. На узких экранах (≤1000 px) сетка
+   складывается в одну колонку и блок уезжает под текст.
+
+   Раскладка — сетка из двух колонок и двух строк: в левой колонке отдельными строками лежат
+   заголовок статьи (.art-head: тег, название, дата) и её тело (.art-body: обложка, текст), в правой
+   — «Читайте также» (.art-aside), которая тянется по обеим строкам и повторяет их сетку
+   (grid-template-rows:subgrid): её заголовок попадает в строку заголовка статьи, а плитки — ровно в
+   строку тела. Поэтому фото первой ссылки встаёт вровень с фото статьи на любой ширине и при любом
+   числе строк в названии (просьба заказчика 2026-09-30: «Блок — Читайте также, смести вниз, что бы
+   фото этого блока и левого блока со статьей, были на одном уровне, примени ко всем статьям»).
+   Раньше колонка ссылок начиналась от верха статьи, и её фото было на 85–121 px выше фото статьи.
+   Браузер без subgrid просто покажет прежнюю раскладку (заголовок и плитки подряд) — ничего не
+   ломается. Строковый зазор нулевой: отступ под заголовком статьи даёт margin даты, как и раньше. */
+.art-main{display:grid;grid-template-columns:minmax(0,1fr) 330px;column-gap:40px;row-gap:0;align-items:start}
+.art-head{grid-column:1;grid-row:1;max-width:820px}
+.art-body{grid-column:1;grid-row:2;max-width:820px}
+.art-aside{grid-column:2;grid-row:1/3;display:grid;grid-template-rows:subgrid}
+/* Обложка статьи: тот же файл, что и в карточке Автожурнала (public/uploads/news/<slug>.jpg),
+   но крупнее и в пропорции 16/9 — так кадр обрезан меньше, чем квадрат карточки. */
+.art-cover{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r-card);background:var(--paper-3);margin:0 0 22px}
+.art-aside-h{margin:0 0 14px;align-self:start}
+@media(max-width:1000px){
+  .art-main{grid-template-columns:1fr;row-gap:0}
+  .art-head,.art-body,.art-aside{grid-column:1;grid-row:auto;max-width:none}
+  .art-aside{display:block;margin-top:28px}
+  .art-aside-h{align-self:auto}
+}
+
+/* ── Формы-заявки ───────────────────────────────────────────────────────────────────── */
+.lead-form{display:flex;flex-direction:column;gap:12px}
+
+/* ── Подвал ─────────────────────────────────────────────────────────────────────────── */
+/* Подвал собран плотнее (просьба заказчика: «сделай отступы между строчками меньше, чтобы подвал
+   был уже»). Было: внутренние отступы 52/26, зазор между строками списков 9 px, между строками
+   контактов 10 px, шаг строки 33 px, высота подвала 374 px. Стало: 36/22, 4 px и 5 px, шаг строки
+   24,8 px, высота 287 px — на 23 % ниже, при этом кегли не тронуты, читаемость та же. Высоту
+   подвала задавала колонка контактов (222 px, самая высокая из четырёх), поэтому ужимали в первую
+   очередь `.kv`: строки «подпись + значение» получили line-height 1.25, а отступ значения от
+   подписи уменьшился с 2 px до 1 px. */
+.footer{background:var(--ink);color:var(--text-inv);margin-top:calc(var(--block-gap) / 2);border-radius:var(--r-xl) var(--r-xl) 0 0}
+/* Только вертикальные отступы: `padding:36px 0 22px` обнулял ещё и боковые 20 px из `.wrap`,
+   из-за чего содержимое подвала шло на 20 px шире страницы, а на телефоне (390) текст подвала
+   упирался в край экрана (лого и «АДРЕС» начинались с x = 0 при 20 px у остальных блоков).
+   Замер до правки: строка значков соцсетей 390 px шириной от x = 0; после — 350 px от x = 20,
+   ровно как у контента страницы. */
+.footer-in{padding-top:36px;padding-bottom:22px}
+.fgrid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.3fr;gap:34px}
+/* Заказчик 2026-09-30: «Сервисы <кредит, лизинг, обмен, выкуп, комиссия, кредитный калькулятор>
+   сделай справа от Каталог <все автомобили, с пробегом, новые, электро, продано>». Раньше до
+   560 px подвал схлопывался в одну колонку (`grid-template-columns:1fr`) и «Сервисы» уезжали под
+   «Каталог» — заказчик видел именно это. Теперь до 900 px знак с абзацем и значками занимает
+   всю ширину (иначе ряд значков попадает в узкую колонку и переносится: замер на 561 px —
+   колонка 244 px, значки просили 286 px, выходило две строки 5 + 2), а под ним «Каталог» и
+   «Сервисы» стоят рядом в одной строке, «Сервисы» справа от «Каталога». Контакты: на телефоне
+   во всю ширину, на 561–900 px — третьей колонкой, как на большом экране. */
+@media(max-width:900px){
+  .fgrid{gap:26px 20px}
+  .fgrid>:first-child{grid-column:1/-1}
+}
+/* 561–900 px: знак, абзац и значки соцсетей во всю ширину, под ними три колонки — «Каталог»,
+   «Сервисы» справа от него и контакты, как на большом экране (подвал от этого не разъезжается:
+   знак и так самая высокая ячейка, а контакты встают третьей колонкой, а не отдельной строкой;
+   замер на 900 px — 730 px). */
+/* Третья колонка — по содержимому, а не «равной третью»: заказчик 2026-09-30 (окно 730 px):
+   «Емаил и время работы не влезло в одну строчку». В равных третях колонка контактов выходила
+   210 px, а «пн–пт 9:00–19:00, сб–вс 10:00–18:00» просит 234,4 px, поэтому значение переносилось
+   («…сб–вс 10:00–» / «18:00»). С `auto` колонка ровно такая, какая нужна её содержимому (замер
+   561–900 px: 234,4 px, «Режим работы» и «E-mail» — по одной строке), а «Каталог» и «Сервисы»
+   стоят рядом в одной строке, как и просил заказчик. */
+@media(max-width:900px) and (min-width:561px){
+  .fgrid{grid-template-columns:1.1fr 1fr auto}
+}
+/* ≤560 px: телефон. Две колонки — «Каталог» слева, «Сервисы» справа, а знак с абзацем и контакты
+   занимают обе колонки. Раньше подвал схлопывался в одну колонку и «Сервисы» уезжали под «Каталог». */
+@media(max-width:560px){
+  .fgrid{grid-template-columns:1fr 1fr}
+  .fgrid>.kv{grid-column:1/-1}
+}
+.footer h4{font-size:15px;margin-bottom:10px;color:#fff}
+.footer ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px}
+.footer li{line-height:1.3}
+.footer a{color:rgba(255,255,255,.72);font-size:14.5px}
+.footer a:hover{color:#fff}
+.footer p.small{line-height:1.4}
+/* Логотип в подвале — та же сцепка, что в шапке (просьба заказчика: «лого в подвале сделай как
+   в шапке»): знак 38 px, подпись «с пробегом» под ним с тем же сдвигом. Раньше в подвале знак
+   был 52 px, а подпись стояла справа строкой. Правило `.footer .ftr-logo img{height:38px}`
+   при этом вообще не срабатывало: обёртка была ссылкой `<a class="ftr-logo">` с вложенной
+   ссылкой `<a class="logo">`, а вложенные ссылки запрещены — парсер выносит внутреннюю наружу,
+   и обёртка оставалась пустой. Обёртка теперь `<div class="ftr-logo">`, а правила логотипа
+   в подвале повторяют правила шапки (`.header .logo`). */
+.footer .ftr-logo{display:block;margin-bottom:12px}
+/* inline-flex (а не flex): сцепка сжимается по содержимому, поэтому логотип стоит у левого
+   края колонки и выровнен с текстом ниже — как в шапке. С display:flex он растягивался на всю
+   ширину колонки и уезжал в центр (замер: 361,9 px против 164,1 px у шапки). */
+.footer .logo{display:inline-flex;--lg-h:38px;flex-direction:column;align-items:center;gap:0}
+.footer .logo img{height:var(--lg-h)}
+.footer .logo-sub{padding-left:calc(var(--lg-h) * 1.1);margin-top:-2px}
+.kv{display:flex;flex-direction:column;gap:5px;margin:0}
+.kv dt{font-size:12.5px;line-height:1.25;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.5)}
+.kv dd{margin:1px 0 0;font-size:14.5px;line-height:1.25;color:#fff}
+/* Значки-кнопки соцсетей под абзацем о площадке (просьба заказчика: «добавь телеграм, вайбер,
+   ватсап, ютуб, вконтакте, фейсбук; размести их в подвале под — Площадка автомобилей с пробегом
+   официального дилера “Автонова”»). В покое — приглушённые плашки с белым знаком сети, на
+   наведении плашка заливается фирменным цветом сети (своя переменная `--soc` у каждой ссылки),
+   а знак чуть подрастает и приподнимается — то же «чуть увеличиваются», что у строки брендов
+   в герое. Селекторы с `.footer` не для красоты: правило `.footer a{color:rgba(255,255,255,.72)}`
+   весит больше (0,1,1 против 0,1,0) и без этого перекрашивало бы значки в серый. */
+/* nowrap + «резиновая» ширина: значки соцсетей никогда не переносятся на вторую строку (заказчик
+   2026-09-30: «в мобильной версии в подвале переносится иконки социальных сетей на строчку ниже
+   сделай чтобы не переносились»). Раньше было `flex-wrap:wrap` и жёсткие `width:34px`: на 320 px
+   значки просили 286 px (7 × 34 + 6 зазоров по 8), а колонка давала 280 px — Facebook уезжал на
+   вторую строку (замер: 6 + 1). Теперь шаг 34 px — это максимум (`flex:0 1 34px;max-width:34px`),
+   и при нехватке ширины значки ужимаются на доли пикселя (на 320 px — 33,1 px каждый), оставаясь
+   в одной строке; там, где места хватает, размер прежний, ровно 34 px. */
+.footer .soc-row{display:flex;flex-wrap:nowrap;gap:8px;margin-top:14px}
+.footer .soc-link{display:inline-flex;flex:0 1 34px;min-width:0;max-width:34px;align-items:center;justify-content:center;height:34px;
+  border-radius:10px;background:rgba(255,255,255,.08);color:#fff;
+  transition:background-color .18s ease,transform .18s ease}
+.footer .soc-link svg{display:block}
+.footer .soc-link:hover{background:var(--soc);color:#fff;transform:translateY(-2px) scale(1.08)}
+.soc-instagram{--soc:#e4405f}
+.soc-telegram{--soc:#26a5e4}
+.soc-viber{--soc:#7360f2}
+.soc-whatsapp{--soc:#25d366}
+.soc-youtube{--soc:#ff0000}
+.soc-vk{--soc:#0077ff}
+.soc-facebook{--soc:#0866ff}
+@media(prefers-reduced-motion:reduce){.footer .soc-link:hover{transform:none}}
+.fbottom{border-top:1px solid rgba(255,255,255,.12);margin-top:22px;padding-top:14px;display:flex;justify-content:space-between;
+  gap:14px;flex-wrap:wrap;font-size:13px;color:rgba(255,255,255,.5)}
+
+/* ── Прочее ─────────────────────────────────────────────────────────────────────────── */
+.breadcrumbs{font-size:13.6px;color:var(--text-3);padding:16px 0;display:flex;gap:8px;flex-wrap:wrap}
+.breadcrumbs a:hover{color:var(--accent)}
+/* Отзывы — одна линия карточек. grid-auto-flow:column не переносит колонки, а
+   grid-auto-columns:minmax(0,1fr) делит ширину поровну между всеми отзывами, поэтому ряд
+   остаётся одним при любом их числе. Карточки минималистичные: радиус 16, отступы 15/16,
+   текст мельче и обрезан по 6 строк, автор прижат к низу. До 1080 px — обычная сетка в
+   2–3 колонки: в одну линию карточки там становятся нечитаемо узкими. */
+.reviews{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:14px;align-items:stretch}
+.review{display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px 16px 14px}
+.review .stars{color:var(--accent-2);font-size:13.4px;letter-spacing:1.6px;line-height:1;margin:0}
+.review p{margin:0;font-size:13.6px;line-height:1.45;color:var(--text-2);
+  display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.review .who{margin-top:auto;padding-top:10px;border-top:1px solid var(--line);font-size:12.6px;color:var(--text-3)}
+/* На самой странице отзывов текст не режем так же коротко, как в превью на главной: строк
+   больше (10), поэтому отзыв читается целиком, а предел только страхует от очень длинных. */
+.reviews-all .review p{-webkit-line-clamp:10}
+@media(max-width:1080px){.reviews{grid-auto-flow:row;grid-auto-columns:auto;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}}
+.calc-out{background:var(--paper-soft);border-radius:var(--r-card);padding:22px;
+  display:flex;flex-direction:column;gap:14px}
+.calc-out .big{font-family:var(--f-num);font-size:34px;font-weight:700}
+.calc-out .big span{font-size:15px;font-family:var(--f-text);color:var(--text-2);font-weight:400}
+/* Список итогов прижат к низу карточки: в общем ряду карточки растянуты на одну высоту, и без
+   этого под списком оставалась бы пустая полоса, а низ карточки не совпадал с соседними. */
+.calc-out .spec-list{margin-top:auto}
+.acc{border:1px solid var(--line);border-radius:var(--r-card);background:#fff;overflow:hidden}
+.acc details{border-bottom:1px solid var(--line)}
+.acc details:last-child{border-bottom:none}
+.acc summary{padding:17px 20px;cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.acc summary::-webkit-details-marker{display:none}
+.acc summary::after{content:"+";color:var(--accent);font-size:20px;line-height:1}
+.acc details[open] summary::after{content:"▴"}
+.acc .acc-body{padding:0 20px 18px;color:var(--text-2);white-space:pre-line}
+table.tbl{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--r-card);overflow:hidden;font-size:14.5px}
+/* Обёртка для широких таблиц: на телефоне таблица прокручивается внутри себя,
+   а не растягивает страницу (страница «Проданные автомобили» при 390 px давала 458 px ширины). */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.tbl th,table.tbl td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)}
+table.tbl th{background:var(--paper-soft);font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2)}
+table.tbl tr:last-child td{border-bottom:none}
+/* ── Страница «Проданные автомобили»: таблица слева, заявка на подбор справа сверху ───────────
+   Просьба заказчика: «блок — Заявка на подбор автомобиля перемести на право вверх, подтяни
+   правые границы блока — Автомобили, которые уже нашли новых владельцев на нашей площадке
+   в лево, чтобы влез блок — Заявка на подбор автомобиля». Раньше заявка стояла под таблицей:
+   таблица занимала все 1220 px листа, а форма с ограничением 560 px шла ниже. Теперь колонка
+   таблицы занимает остаток ширины (minmax(0,1fr)), поэтому её правый край ровно там, где
+   начинается заявка, — как в кредитном калькуляторе (.calc-layout). Ширина колонки заявки —
+   420 px, та же карточка, что у окна заявки на страницах услуг. */
+.sold-layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:26px;align-items:start}
+@media(max-width:1080px){
+  /* minmax(0,1fr), а не 1fr: min-content широкой таблицы (438 px при 390 px экрана) иначе
+     растягивает колонку и страница уезжает вправо — раньше таблица прокручивалась внутри
+     .tbl-wrap и переполнения не было. */
+  .sold-layout{grid-template-columns:minmax(0,1fr);gap:20px}
+  /* Окно заявки в сложенной раскладке растягивается на всю ширину колонки. Просьба заказчика
+     2026-10-01: «блок — заявка на подбор автомобиля, на странице проданные автомобили сделай,
+     чтобы окно в мобильной версии растягивалось на ширину экрана». До этого здесь стояло
+     max-width:560px (ограничение осталось от прежней раскладки, когда заявка шла под таблицей),
+     и на 600–1080 px справа от окна оставалась пустая полоса: на 760 px окно было 560 px при
+     колонке 720 px. max-width:none, а не удаление строки: правило .panel ниже по файлу может
+     получить своё ограничение, и тогда окно снова сожмётся. */
+  .sold-layout .panel{max-width:none}
+}
+/* ── Проданные: маленькое фото автомобиля и подписи групп ─────────────────────────────────────
+   Заказчик 2026-09-30: «сделай там соответствующую одну маленькую фото авто» и «добавь дальше по
+   тексту — Проданные автомобили в этом месяце». Кадр — тот же снимок, что был у карточки в
+   каталоге (sold_cars.photo): у продаж из журнала его пишет server.mjs при удалении карточки,
+   у демонстрационных записей он взят из каталога или из public/uploads/sold. Размер подобран под
+   строку таблицы (padding 11px + кадр 48 px), чтобы таблица не разъезжалась по высоте. */
+.sold-car{display:flex;align-items:center;gap:12px}
+.sold-photo{display:block;flex:0 0 auto;width:64px;height:48px;border-radius:8px;object-fit:cover;background:var(--paper-soft)}
+.sold-photo-empty{display:grid;place-items:center;color:var(--text-2);opacity:.45}
+/* Подпись группы («Проданные ранее», а до 2026-10-01 и «Проданные автомобили в этом месяце») —
+   строка таблицы: она не сдвигает верх таблицы, и блок «Заявка на подбор автомобиля» остаётся
+   ровно на одной линии с таблицей (это проверяет tests/regression.mjs, раздел ui). */
+table.tbl tr.tbl-group td{background:var(--paper-soft);padding:9px 14px;font-size:12.6px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2)}
+table.tbl tr.tbl-group b{font-weight:600;color:var(--text)}
+table.tbl tr.tbl-group .small{margin-left:8px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text-2)}
+/* Колонка «Дата продажи» — по центру. Заказчик 2026-10-01: «заголовок — Дата продажи, а под ним
+   даты, так вот фактические даты продажи сдвинуты влево, а надо по середине». Центрируются и
+   заголовок, и значения (.tbl-ctr в lib/pages.mjs): при центрировании одних значений даты
+   оказались бы правее, чем нужно, и всё равно не под своим заголовком. */
+table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
+@media(max-width:560px){.sold-photo{width:48px;height:36px}.sold-car{gap:9px}}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);padding:20px}
+.stat b{display:block;font-family:var(--f-num);font-size:30px;font-weight:700}
+.stat span{font-size:13.6px;color:var(--text-2)}
+.side-layout{display:grid;grid-template-columns:250px 1fr;gap:26px;align-items:start}
+@media(max-width:860px){.side-layout{grid-template-columns:1fr}}
+/* ── Страница «Контакты»: адреса 2×2 слева, форма «Написать нам» справа ───────────────────────
+   Заказчик 2026-09-30: «убери блок реквизиты, блок — написать нам, — вмести справа от блока —
+   Станция технического обслуживания, сделай симметрично». Блок «Реквизиты» убран, поэтому
+   .side-layout (250px + форма) на этой странице больше не используется: четыре плитки адресов
+   стоят сеткой 2×2, а форма занимает правую колонку ровно справа от плитки «Станция
+   технического обслуживания» — та стоит четвёртой, то есть в нижней строке правого столбца.
+   Колонка формы 420 px — как у заявки на странице «Продано»: шире форма расползается, уже —
+   поля становятся тесными. align-items:stretch и grid-auto-rows:1fr растягивают две строки
+   плиток на высоту формы, поэтому верх и низ обеих колонок совпадают. */
+.contacts-layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:26px;align-items:stretch}
+.contacts-tiles{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1fr}
+@media(max-width:1080px){
+  .contacts-layout{grid-template-columns:minmax(0,1fr);gap:20px}
+  .contacts-layout .panel{max-width:560px}
+}
+@media(max-width:560px){.contacts-tiles{grid-template-columns:minmax(0,1fr)}}
+/* ── Страница «Кредитный калькулятор»: поля сверху, итоги под ними, окно заявки справа ───────
+   Просьба заказчика (2026-09-27): «Перемести (Стоимость автомобиля, руб. / Первоначальный взнос,
+   руб. / Срок, месяцев) в верх, а (платёж в месяц, Сумма кредита, Переплата, Итого к возврату) —
+   ниже блока». Раньше три карточки стояли в один ряд (поля | итоги | заявка), и заказчик читал
+   итоги раньше, чем поля. Теперь порядок чтения сверху вниз: поля, под ними итоги; окно заявки
+   остаётся справа — как просили раньше («чтобы справа влез блок Отправить заявку на кредит»).
+   Тот же порядок и на телефоне, где всё и так в одну колонку.
+   Вторая просьба (2026-09-27): «громоздко, сделай не ниже границы блока заявка» — расчёт
+   столбиком выходил на 181 px ниже окна заявки: карточка полей 299 px + зазор 26 + карточка
+   итогов 236 px = 561 px против 380 px у окна. Теперь поля расчёта стоят одной строкой
+   (.calc-fields), итоги — строкой под платежом, а карточка итогов растягивается на остаток
+   высоты (grid-template-rows:auto 1fr + align-self:stretch): её низ встаёт ровно по низу окна
+   заявки, а строка показателей прижимается к низу карточки (margin-top:auto ниже). Если же
+   колонка расчёта оказалась выше окна заявки (узкое окно 861–1000 px, где подписи полей
+   переносятся и карточки растут), наоборот растягивается окно заявки — низы сходятся в любом
+   случае, и расчёт никогда не выходит ниже заявки. */
+.calc-layout{grid-template-columns:minmax(0,1fr) 460px;
+  grid-template-areas:"in lead" "out lead";grid-template-rows:auto minmax(0,1fr);align-items:start;row-gap:26px}
+.calc-layout > [data-calc]{grid-area:in}
+.calc-layout > .calc-out{grid-area:out;align-self:stretch}
+.calc-layout > .calc-lead{grid-area:lead;align-self:stretch}
+/* Поля расчёта одной строкой: столбиком карточка полей была выше окна заявки на 120 px.
+   Выравнивание по низу (align-items:end), а не по верху: на 861–1179 px подписи «Стоимость
+   автомобиля, руб.» и «Участие клиента, %» переносятся на две строки и по верху их
+   ползунки уезжали бы на 20 px ниже ползунка «Срока, месяцев»; по низу все три ползунка и их
+   значения стоят на одной линии. В одну колонку (≤640 px) у каждой строки своя высота, там
+   выравнивание ничего не меняет.
+   Полей снова три: «Стоимость автомобиля, руб.», «Участие клиента, %» и «Срок, месяцев» (заказчик
+   2026-09-29: «в блок кредитный калькулятор добавь ползунок участие клиента от 5% до 80%» — процент
+   участия заменил прежний ползунок «Первоначальный взнос, руб.», а взнос в рублях выводится в
+   подписи рядом с процентом). Колонки описаны явно, а не одним auto-fit: при auto-fit число колонок
+   зависит от ширины карточки, после замены поля на процент их стало три, а карточка оставалась
+   рассчитана на четыре — ползунки сжимались до 110 px или появлялась пустая колонка.
+   lib/finance.mjs держит ставку и границы. */
+.calc-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px;align-items:end}
+/* ── Ползунки расчёта: стоимость, взнос и срок — одинаковые ползунки ─────────────────────────
+   Просьба заказчика: «Стоимость автомобиля, руб. 60000 / Первоначальный взнос, руб. — сделай
+   ползунком как в месяцах». Раньше стоимость и взнос были числовыми полями (50 px высотой),
+   а срок — системным ползунком: один ряд выглядел разнородно, а бегунок Chrome оставался синим
+   на винном акценте сайта. Теперь все поля — один и тот же ползунок (стоимость, участие клиента
+   в процентах, срок): дорожка 6 px, заливка до
+   бегунка акцентом (доля в переменной --p, её ставит initCalc; без скрипта дорожка просто серая),
+   бегунок 18 px с белой сердцевиной и винтовой обводкой. Значение по-прежнему видно подписью
+   <output> под ползунком, как было у «Срока». Правила только внутри .calc-slider — числовые поля
+   остальных форм (каталог, заявки, кабинет) не затронуты. */
+.calc-slider input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;
+  margin:0;background:transparent;cursor:pointer}
+.calc-slider input[type=range]:focus{box-shadow:none}
+.calc-slider input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent) var(--p,0%),var(--paper-3) var(--p,0%))}
+.calc-slider input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+  width:18px;height:18px;margin-top:-6px;border-radius:50%;background:#fff;border:2px solid var(--accent);
+  box-shadow:0 1px 3px rgba(16,20,28,.28)}
+.calc-slider input[type=range]:hover::-webkit-slider-thumb{border-color:var(--accent-hover)}
+.calc-slider input[type=range]:focus-visible{outline:none}
+.calc-slider input[type=range]:focus-visible::-webkit-slider-thumb{
+  box-shadow:0 0 0 4px var(--accent-soft)}
+.calc-slider input[type=range]::-moz-range-track{height:6px;border-radius:99px;background:var(--paper-3)}
+.calc-slider input[type=range]::-moz-range-progress{height:6px;border-radius:99px;background:var(--accent)}
+.calc-slider input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;
+  border:2px solid var(--accent);box-shadow:0 1px 3px rgba(16,20,28,.28)}
+.calc-slider output{font-family:var(--f-num);font-size:15px;font-weight:700;color:var(--text)}
+/* Значение ползунка — всегда одной строкой. Подпись участия клиента длинная («20 % · 12 000 руб.»),
+   и в узких колонках (861–1179 px, где карточка заявки забирает 420 px) она переносилась на две
+   строки: под ползунком «Стоимости» значение стояло в 23 px ниже остальных. Шрифт подписи сжимается
+   по ширине окна, поэтому все значения снова на одной линии, как и сами ползунки. */
+@media(max-width:1179px){.calc-slider output{font-size:clamp(11px,1.05vw,15px);white-space:nowrap}}
+/* Итоги строкой: платёж сверху, три показателя под ним в одну линию, подписи над числами. */
+.calc-out .spec-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px;
+  border-top:1px solid var(--line);padding-top:14px}
+.calc-out .spec-list div{display:block;padding:0;border-bottom:0;font-size:13.6px;color:var(--text-2)}
+.calc-out .spec-list b{display:block;margin-top:4px;font-family:var(--f-num);font-size:17px;font-weight:700;text-align:left}
+/* Тесно: колонка заявки чуть уже — как в блоке «Проданные автомобили» (.sold-layout). */
+@media(max-width:1179px){
+  .calc-layout{grid-template-columns:minmax(0,1fr) 420px}
+}
+/* Узкий экран: всё в одну колонку — поля, итоги, окно заявки. Строки снова по содержимому,
+   иначе растянутая карточка итогов отодвигала бы окно заявки вниз. */
+@media(max-width:860px){
+  .calc-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:none;
+    grid-template-areas:"in" "out" "lead"}
+}
+/* Телефон: поля расчёта снова столбиком, показатели — списком с разделителями, как раньше. */
+@media(max-width:640px){
+  .calc-fields{grid-template-columns:minmax(0,1fr);gap:12px 0}
+  .calc-out .spec-list{grid-template-columns:minmax(0,1fr);gap:0}
+  .calc-out .spec-list div{padding:10px 0;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;gap:14px;font-size:14.5px}
+  .calc-out .spec-list div:last-child{border-bottom:0;padding-bottom:0}
+  .calc-out .spec-list b{margin-top:0;font-size:15px;text-align:right}
+}
+.side-nav{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);padding:12px;display:flex;flex-direction:column;gap:2px}
+.side-nav a{padding:11px 14px;border-radius:var(--r-field);font-size:14.5px;font-weight:500;color:var(--text-2)}
+.side-nav a:hover{background:var(--paper-soft);color:var(--text)}
+.side-nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+/* ── Страницы раздела «Услуги»: окно «Оставить заявку» справа сверху ────────────────────────
+   Просьбы заказчика: «перемести окно Оставить заявку вправо вверх, высоту блока сделай как
+   высота блока с левого края, где кнопки перечень услуг, симметрично», затем «вмести текст
+   в пустое место сверху… текст съехал вниз».
+   Отсюда три колонки: перечень услуг слева, текст услуги в середине, окно заявки справа.
+   Перечень и окно заявки стоят в ОДНОЙ первой строке и растягиваются на её высоту, поэтому
+   их высота совпадает (её задаёт более высокий блок; окно заявки сжато до 263 px, чтобы не
+   оказаться выше перечня — иначе 380 px против 253 px и «одинаковая высота» невозможна).
+   Текст услуги — один блок `.serv-main` (заголовок + подзаголовок + текст) в средней колонке:
+   он начинается сразу под подзаголовком и идёт вниз, не дожидаясь конца первой строки.
+   Раньше текст стоял отдельной строкой сетки и начинался после боковых блоков — в середине
+   оставалась пустая полоса 165 px. Высоту первой строки `.serv-main` не задаёт (он не входит
+   в неё по высоте), поэтому длинный текст не растягивает боковые блоки. */
+.serv-layout{grid-template-columns:250px minmax(0,1fr) 440px;
+  column-gap:26px;row-gap:0;
+  grid-template-areas:"rail main form" ". main ."}
+.serv-layout > .side-nav{grid-area:rail;align-self:stretch}
+.serv-main{grid-area:main;align-self:start;min-width:0}
+.serv-main h1{margin:0 0 10px}
+.serv-main .serv-head{margin:0}
+.serv-main .serv-head p{margin:0}
+/* На широком экране это обычный блок внутри `.serv-main`; grid-area нужен на узком,
+   где `.serv-main` становится display:contents и шапка с текстом снова отдельные ячейки. */
+.serv-layout .serv-head{grid-area:head}
+.serv-layout .serv-prose{grid-area:text;max-width:78ch}
+.serv-main .serv-prose{margin:16px 0 0}
+.serv-form{grid-area:form;align-self:stretch;padding:16px}
+/* Компактная форма: два поля в одну строку, остальные элементы — во всю ширину. */
+.serv-form .lead-form{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px}
+.serv-form .lead-form b,.serv-form .lead-form>p,.serv-form .lead-form .check,.serv-form .lead-form .btn{grid-column:1/-1}
+.serv-form .check{padding:3px 0}
+/* Узкие экраны: три колонки не помещаются — перечень, шапка, текст услуги и окно заявки встают
+   друг под друга. Порядок — описание, потом заявка (заказчик 2026-09-29: «в разделе услуги
+   карточка услуг сначала идёт заявка потом описание сделать так чтобы сначала было описание потом
+   заявка»): в одну колонку читать описание нужно до формы, иначе окно заявки отрывало заголовок от
+   текста. На широком экране порядок прежний — форма стоит правой колонкой рядом с текстом. */
+@media(max-width:1100px){
+  .serv-layout{grid-template-columns:minmax(0,1fr);row-gap:26px;
+    grid-template-areas:"rail" "head" "text" "form"}
+  .serv-main{display:contents}
+  .serv-main .serv-prose{margin:0}
+  .serv-layout > .side-nav,.serv-form{align-self:start}
+  /* В одну колонку окно заявки ничего не уравнивает — возвращаем ему обычный вид .panel
+     с полями в столбик, чтобы подписи и подсказки не обрезались на узком экране. */
+  .serv-form{padding:22px}
+  .serv-form .lead-form{display:flex;flex-direction:column;gap:12px}
+  .serv-form .check{padding:5px 0}
+}
+/* Тост по центру низа. Центрируем через left/right:0 + margin:auto, а не left:50% + translateX:
+   при left:50% доступная ширина = половина экрана, и на 390 px сообщение с кнопкой ломалось на три строки.
+   Спрятанное состояние — translateY(100% + 34px): тост уходит за нижний край целиком (120% от высоты
+   оставляли в кадре тонкую полоску сверху). z-index выше модалок (300), иначе «Сравнить» перекрывалась
+   подложкой окна входа. */
+.toast{position:fixed;left:0;right:0;bottom:26px;width:fit-content;max-width:calc(100vw - 32px);margin:0 auto;
+  transform:translateY(calc(100% + 34px));will-change:transform;background:var(--ink);color:#fff;padding:13px 22px;
+  border-radius:var(--r-btn);box-shadow:var(--shadow-lg);z-index:400;transition:transform .28s cubic-bezier(.22,.61,.36,1),width .28s cubic-bezier(.22,.61,.36,1);font-size:14.5px;
+  display:flex;align-items:center;gap:12px}
+.toast.on{transform:translateY(0)}
+/* Красная «Сравнить» появляется в самом тосте, но только для «Добавлено к сравнению».
+   Прячем классом, а не атрибутом hidden: у .btn display:inline-flex перебивает [hidden]. */
+.toast .toast-go{display:none}
+.toast.toast--cmp .toast-go{display:inline-flex;padding:8px 16px}
+/* Кнопка «Наверх» — та же прозрачная кнопка, что и на сайте (`.btn-ghost`), только со стрелкой
+   вместо подписи и посередине низа страницы (просьба заказчика: «кнопки прокрутки экрана сделай
+   прозрачную и посередине страницы», затем «сделай в виде кнопки прозрачные по стилю как на
+   сайте кнопки»). Путь: белый круг 46 px с рамкой --line и тенью в правом нижнем углу →
+   голая красная стрелка без рамки → прозрачная кнопка со стрелкой.
+   Стало: как `.btn-ghost` — фон прозрачный, рамка 1px --line-2; на наведении фон заливается
+   --paper-soft, рамка темнеет до --text-3 (то же, что у «Сбросить» и «Продать автомобиль»).
+   Форма круглая — из семьи кнопок с --r-btn: подпись не нужна, знак один.
+   Знак оставлен акцентным: кнопка висит по центру низа и попадает то на белый фон, то на тёмную
+   фотографию карточки, то на тёмный подвал (rgb(20,23,28)) — чёрный знак на тёмном пропадает,
+   белый пропадает на белом, а красный читается и там, и там (белая тень под ним — подстраховка
+   на фотографиях). В «Сбросить»/«Продать автомобиль» подпись тёмная, но там фон кнопки известен
+   заранее, а здесь он меняется под кнопкой.
+   transform держим в обоих состояниях (left:50% + translateX(-50%)), иначе `.on` вернул бы
+   кнопку к левому краю.
+   Тост тоже встаёт по центру низа (z-index 300 против 90), поэтому на пару секунд сообщение
+   оказывается поверх стрелки — это ожидаемо, тост сам уходит. */
+.back-top{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;
+  background:transparent;border:1px solid var(--line-2);box-shadow:none;color:var(--accent);filter:drop-shadow(0 1px 2px rgba(255,255,255,.8));
+  display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transition:.2s;z-index:90}
+.back-top.on{opacity:1;pointer-events:auto}
+.back-top:hover{background:var(--paper-soft);border-color:var(--text-3);color:var(--accent-hover);transform:translateX(-50%) scale(1.1)}
+.svc-block{background:var(--bg-dark);color:#fff;border-radius:var(--r-xl);padding:52px 0;margin-top:20px}
+.svc-block h2{color:#fff}
+.svc-block .tile{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#fff}
+.svc-block .tile span{color:rgba(255,255,255,.66)}
+.svc-block .tile .ico{background:rgba(227,0,15,.18);color:#FF6B75}
+.photo-empty{aspect-ratio:4/3;display:grid;place-items:center;background:
+  linear-gradient(135deg,#1C2129,#2B323C);color:rgba(255,255,255,.5);text-align:center;padding:20px}
+.photo-empty b{display:block;color:#fff;font-size:16px;margin-bottom:4px}
+
+/* ── кнопка входа и окно входа/регистрации ──────────────────────────────────────────── */
+.btn-auth{gap:7px}
+/* Окно стоит по верхнему краю (place-items:start), а не по центру. При центрировании блок
+   «Вход и регистрация» при переключении на «Регистрацию» рос в обе стороны одновременно: шапка и
+   вкладки уезжали вверх, форма — вниз, а на окне ниже ~760 px блок вообще выходил за экран
+   (кнопку «Создать аккаунт» приходилось искать прокруткой). Теперь верх блока закреплён, вниз
+   блок растёт только до края экрана, а длинная форма прокручивается внутри окна.
+   Заказчик 2026-09-28: «Окно - Вход и регистрация, там есть прокрутка справа, сделай, чтобы не
+   было прокрутки и окно не выходило за экран монитора вниз». Прокрутка была следствием ограничения
+   окна высотой экрана: «Регистрация» требовала 505 px панели, поэтому на 1366×768 появлялись 30 px
+   прокрутки (и полоса справа), на 1440×700 — 92 px, на 1280×620 — 166 px. Окно и форма сжаты по
+   вертикали так, чтобы прокрутки не было вовсе: отступ сверху снижен (clamp 8vh/84px → 5vh/56px),
+   отступы шапки, вкладок и полей уменьшены, а на экранах ниже 740 px дополнительно ужимаются шапка,
+   вкладки и поля (см. @media (max-height:740px) ниже). Прокрутка панели оставлена страховкой для
+   совсем низких окон (ниже 620 px), где форма физически не помещается. */
+.modal-back{position:fixed;inset:0;z-index:300;display:grid;place-items:start center;
+  --mp-top:clamp(12px,5vh,56px);--mp-side:22px;--mp-bottom:14px;
+  padding:var(--mp-top) var(--mp-side) var(--mp-bottom);
+  background:rgba(20,23,28,.45);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+  overflow-y:auto;animation:an-fade .18s ease both}
+.modal-back[hidden]{display:none}
+@keyframes an-fade{from{opacity:0}to{opacity:1}}
+@keyframes an-pop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.modal{position:relative;width:100%;max-width:468px;background:#fff;border-radius:var(--r-xl);
+  box-shadow:var(--shadow-lg);padding:26px 26px 24px;animation:an-pop .24s cubic-bezier(.2,.8,.2,1) both;
+  max-height:calc(100vh - var(--mp-top) - var(--mp-bottom));
+  max-height:calc(100dvh - var(--mp-top) - var(--mp-bottom));
+  overflow-y:auto;overscroll-behavior:contain}
+/* Форма «Регистрации» длиннее «Входа»: прокручивается только она, шапка и вкладки стоят на месте
+   и не дёргаются при переключении. Селектор с :has(.auth-pane) — потому что класс .modal-auth носят
+   оба окна (вход/регистрация и бронь), а свою прокрутку внутрь отдаёт только окно входа. */
+.modal-auth:has(.auth-pane){display:flex;flex-direction:column;overflow:hidden}
+/* Поля окна входа компактнее общих (26/24 → 22/18): вместе с уменьшенными отступами вкладок,
+   полей и подписи это убирает прокрутку формы на ноутбучных высотах. */
+.modal-auth:has(.auth-pane){padding:22px 24px 18px}
+.modal-auth .auth-pane{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.modal-x{position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);
+  background:#fff;color:var(--text-2);display:grid;place-items:center;cursor:pointer;transition:.18s}
+.modal-x:hover{background:var(--paper-3);color:var(--text)}
+.modal-head{display:flex;gap:13px;align-items:flex-start;padding-right:40px}
+.modal-ico{flex:0 0 auto;width:44px;height:44px;border-radius:14px;background:var(--accent-soft);color:var(--accent);
+  display:grid;place-items:center}
+.modal-h{font-size:22px;margin:2px 0 3px}
+.modal-sub{margin:0;font-size:13.5px;color:var(--text-2);line-height:1.45}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--paper-soft);border:1px solid var(--line);
+  border-radius:var(--r-btn);padding:5px;margin:14px 0 13px}
+.auth-tab{border:0;background:transparent;border-radius:var(--r-btn);padding:9px 12px;font:inherit;font-weight:600;
+  font-size:14.5px;color:var(--text-2);cursor:pointer;transition:.18s}
+.auth-tab:hover{color:var(--text)}
+.auth-tab.on{background:#fff;color:var(--accent);box-shadow:var(--shadow)}
+.auth-pane .field+.field,.auth-pane .field+.auth-row{margin-top:10px}
+.auth-pane .btn-block{margin-top:14px}
+/* Кнопка отправки в окнах, чья форма не обёрнута в .auth-pane — заказ звонка [data-call-form],
+   бронь [data-book-form] и связь с продавцом [data-car-contact-form]: отступ от последнего поля
+   тот же стандартный 14 px, что у кнопок окна входа. Без него кнопка прилипала к полю вплотную
+   (заказчик: «в окне заказать звонок, блок — удобное время…, сильно близко к кнопке — жду звонка,
+   сделай стандартно»). Правило идёт после .auth-pane, но при равных 14 px это ничего не меняет,
+   а на низких экранах отступ внутри окна входа по-прежнему ужимают правила ниже (12/11 px). */
+.modal form>.btn-block{margin-top:14px}
+.auth-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.auth-pane .check{margin-top:10px}
+.auth-alt{margin:11px 0 0;text-align:center;font-size:13.5px;color:var(--text-2)}
+.auth-alt a{color:var(--accent);font-weight:600}
+/* Окно связи с продавцом на странице автомобиля (lib/view.mjs: carContactModalHtml). Вид — как у
+   брони и заказа звонка: те же .modal-back с полупрозрачным фоном и размытием, .modal, .modal-head,
+   .modal-x. Своё только переключатель: две вкладки (Написать / Своя цена) — звонок окна не
+   открывает, он набирает номер сразу (заказчик 2026-09-30), поэтому колонок две, как у входа.
+   Класс окна — .car-contact-modal, а не .car-contact: последний занят блоком связи в ценовой
+   колонке (.car-contact в .price-box), и общее имя ломало и вид того блока, и проверки страницы. */
+.car-contact-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.car-contact-tabs .auth-tab{padding:9px 6px;font-size:14px}
+/* Скругление поля «Сообщение» — как у всех полей сайта (--r-field, 14 px), а не --r-btn (999 px).
+   С кнопочным радиусом многострочное поле превращалось в капсулу: боковые стороны — дуги радиусом
+   в половину высоты (54 px при боксе 108 px), и текст подписи первой строкой упирался в дугу рамки,
+   а вторая строка стояла далеко от края (заказчик 2026-09-30: «Поле - Сообщение, в окне которое
+   появляется при нажатии на отправить сообщение, криво реализовано окно для текста, текст подписи
+   заходит за рамки поля»). У однострочных полей окна тот же --r-field приходит из общего правила
+   input/select/textarea (site.css: 97), поэтому рамки теперь совпадают. */
+.car-contact-modal textarea{width:100%;font:inherit;font-size:14px;color:var(--text);background:#fff;
+  border:1px solid var(--line);border-radius:var(--r-field);padding:11px 13px;resize:vertical;min-height:88px}
+.car-contact-modal textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+@media (max-height:740px){
+  .car-contact-tabs .auth-tab{padding:7px 5px;font-size:13px}
+  .car-contact-modal textarea{min-height:66px;padding:9px 12px}
+}
+/* На телефоне окно занимает почти весь экран: формы читаются одной колонкой, высоту держим по
+   содержимому — прокрутка остаётся внутри окна (.modal overflow-y:auto). Заголовок в две строки
+   («Связаться с / продавцом») на 390 px выглядел рвано, поэтому здесь шапка компактнее: значок
+   меньше и заголовок влезает одной строкой. */
+@media (max-width:520px){
+  .car-contact-tabs .auth-tab{font-size:12.6px}
+  .car-contact-modal .modal-head{gap:10px}
+  .car-contact-modal .modal-ico{width:34px;height:34px;border-radius:11px}
+  .car-contact-modal .modal-ico svg{width:17px;height:17px}
+  .car-contact-modal .modal-h{font-size:19px;margin:1px 0 3px}
+}
+body.modal-open{overflow:hidden}
+/* Низкие экраны (ноутбук 1366×768 при масштабе 125 % — это ~740 px высоты, 1920×1080 при 150 % —
+   720 px): окно входа ужимается по вертикали, чтобы «Регистрация» помещалась целиком и прокрутки
+   не было. На обычных высотах (900 px и выше) вид окна не меняется. */
+@media (max-height:740px){
+  .modal-auth:has(.auth-pane){padding:16px 20px 14px}
+  .modal-auth .modal-ico{width:36px;height:36px}
+  .modal-auth .modal-h{font-size:19px}
+  .modal-auth .modal-sub{font-size:12.5px;line-height:1.35}
+  .modal-auth .auth-tabs{margin:10px 0 10px;padding:4px}
+  .modal-auth .auth-tab{padding:7px 10px;font-size:13.5px}
+  .modal-auth .field>span{font-size:12.8px}
+  .modal-auth .field input{padding:9px 13px}
+  .modal-auth .auth-pane .field+.field,.modal-auth .auth-pane .field+.auth-row{margin-top:8px}
+  .modal-auth .auth-pane .btn-block{margin-top:12px}
+  .modal-auth .auth-pane .check{margin-top:9px;padding:3px 0}
+  .modal-auth .auth-alt{margin:8px 0 0;font-size:12.5px}
+}
+@media (max-width:560px){
+  .modal-back{--mp-side:12px;--mp-bottom:12px;--mp-top:12px}
+  .modal{padding:22px 18px 20px}
+  .auth-row{grid-template-columns:1fr}
+  .btn-auth span{display:none}
+  .btn-auth{padding:0 12px}
+}
+/* Телефон с невысоким экраном (390×667 и ниже): форма «Регистрации» идёт в одну колонку и потому
+   выше, чем на ноутбуке, — ужимаем её чуть сильнее, чтобы и здесь прокрутки не было и ссылка
+   «Уже есть аккаунт?» оставалась видна под кнопкой. */
+@media (max-width:560px) and (max-height:740px){
+  .modal-back:has(.auth-pane){--mp-top:8px;--mp-bottom:8px}
+  .modal-auth .modal-sub{font-size:12px;line-height:1.3}
+  .modal-auth .auth-tabs{margin:8px 0 8px}
+  .modal-auth .auth-tab{padding:6px 10px}
+  .modal-auth .field>span{font-size:12.4px}
+  .modal-auth .field input{padding:8px 12px}
+  .modal-auth .auth-pane .field+.field,.modal-auth .auth-pane .field+.auth-row{margin-top:6px}
+  .modal-auth .auth-pane .btn-block{margin-top:11px}
+  .modal-auth .auth-pane .check{margin-top:8px;padding:2px 0}
+  .modal-auth .auth-alt{margin:7px 0 0;font-size:12px}
+}
+/* Совсем низкий и узкий экран (360×640 и такие же): места не хватает даже на подпись под заголовком —
+   прячем её и подтягиваем поля, чтобы окно по-прежнему помещалось целиком. */
+@media (max-width:560px) and (max-height:660px){
+  .modal-auth .modal-sub{display:none}
+  /* Кроме окна связи с продавцом: у него под заголовком не подсказка «зачем регистрироваться», а
+     предмет заявки (какая машина) — без этой строки окно теряет смысл. */
+  .modal-auth.car-contact-modal .modal-sub{display:block}
+  .modal-auth .field input{padding:7px 12px}
+  .modal-auth .auth-pane .field+.field,.modal-auth .auth-pane .field+.auth-row{margin-top:5px}
+  .modal-auth .auth-alt{margin:6px 0 0}
+}
+
+/* ── «Разместить объявление»: форма на всю ширину и загрузка фотографий ────────────────
+   Просьбы заказчика 2026-09-27: «блок разместить объявление сделай уже и на всю страницу, а
+   также сделай чтобы он был полностью виден при загрузке странице» и «переработай кнопку
+   выбрать файлы по стилю сайта, а также предусмотри возможность перетягивания файлов с папок
+   компьютера». Форма была колонкой 900 px, справа от неё оставалась пустота; теперь панель
+   занимает всю ширину листа, а шестнадцать полей идут в четыре колонки. Шаг полей и отступы
+   страницы подтянуты (12 вместо 20 px, крошки 8 вместо 16 px, поля ниже на 3 px) — вместе это
+   укладывает форму целиком в первый экран, что и проверяет tests/regression.mjs (группа ui). */
+.sell-wrap .breadcrumbs,.breadcrumbs-tight{padding:8px 0}
+.sell-head{margin-bottom:12px;align-items:flex-start}
+.sell-head h1{margin-bottom:0;font-size:clamp(24px,2.6vw,36px)}
+.sell-head p{max-width:none;margin-top:4px}
+.sell-wrap .alert{padding:9px 14px;margin-bottom:10px}
+.sell-form{max-width:none;padding:16px 18px}
+.sell-fields{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 16px}
+.sell-form input[type=text],.sell-form input[type=number],.sell-form input[type=tel],.sell-form select{padding:9px 12px}
+.sell-form .field>span{font-size:13px}
+.sell-desc{margin-top:12px}
+.sell-form textarea{min-height:64px}
+/* Описание и фотографии стоят рядом: на всю ширину листа эти два блока отлично делят строку,
+   а форма становится на 70 px ниже — так она целиком попадает в первый экран. */
+.sell-media{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:12px 16px;margin-top:12px;align-items:start}
+.sell-media>.sell-desc,.sell-media>.upload{margin-top:0}
+.sell-send{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:12px}
+.sell-send .check{padding:0}
+.sell-send .check span{max-width:640px}
+@media (max-width:1080px){.sell-fields{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:820px){.sell-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:820px){.sell-media{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.sell-fields{grid-template-columns:1fr}}
+
+/* Блоки формы «Разместить объявление» (заказчик 2026-09-27: «сделай наполнение блоков как на
+   сайте av.by» и «перемести кнопку город и телефон ниже блока цвет»). Поля собраны в блоки с
+   заголовками — «Автомобиль», «Характеристики», «Комплектация», фото с описанием и «Контакты»;
+   «Город» и «Телефон» уехали из общей сетки в нижний блок, поэтому стоят ниже «Цвета кузова».
+   Сетка полей внутри блока та же .sell-fields — четыре колонки. */
+.sell-form>.sell-block{margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
+.sell-form>.sell-block:first-child{margin-top:0;padding-top:0;border-top:0}
+.sell-block-head{margin:0 0 9px;font-size:15px;font-weight:700}
+
+/* «Комплектация»: выбор готового набора и его содержимое — список опций как в справочнике av.by
+   (lib/car-options.mjs). Список прокручивается: 87 опций целиком растянули бы форму на экран с
+   лишним, а так видно заголовок блока, выбранную комплектацию и первые строки опций. */
+.sell-options{margin-top:10px}
+.sell-options-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:6px}
+.sell-options-title{font-size:13px;font-weight:600;color:var(--text-2)}
+.sell-options-count{margin-left:auto;font-family:var(--f-num);font-size:13px;color:var(--text-3)}
+.sell-options-count.has-sel{color:var(--accent);font-weight:600}
+.sell-options-top .btn{flex:0 0 auto}
+.sell-options-sum{margin:0 0 8px}
+.sell-options-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px 14px;
+  max-height:126px;overflow:auto;padding:8px 11px;border:1px solid var(--line);
+  border-radius:var(--r-field);background:var(--paper-soft)}
+.sell-opt{display:flex;align-items:center;gap:7px;font-size:13px;line-height:1.3;cursor:pointer;
+  padding:1px 0;min-width:0}
+.sell-opt input{flex:0 0 auto;width:15px;height:15px;margin:0;accent-color:var(--accent);cursor:pointer}
+.sell-opt span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sell-opt:has(input:checked) span{font-weight:600}
+@media (max-width:1080px){.sell-options-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:820px){.sell-options-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:168px}}
+@media (max-width:560px){.sell-options-grid{grid-template-columns:1fr;max-height:216px}}
+
+/* Загрузка фотографий: вместо системной кнопки «Выбрать файлы» — своя зона в стиле сайта.
+   Файлы можно перетащить из папки на компьютере (в том числе папкой целиком) — см.
+   public/assets/js/site.js, initUploads: перетащенное складывается в настоящее поле формы. */
+.upload{margin-top:12px}
+.sell-media>.upload{display:flex;flex-direction:column}
+.upload-label{font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+.upload-zone{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1.5px dashed var(--line-2);
+  border-radius:var(--r-field);background:var(--paper-soft);cursor:pointer;transition:.18s ease}
+.upload-zone:hover{border-color:var(--text-3);background:#fff}
+.upload-zone:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.upload-zone.is-over{border-style:solid;border-color:var(--accent);background:var(--accent-soft)}
+.upload-ico{flex:0 0 auto;width:36px;height:36px;border-radius:12px;background:#fff;border:1px solid var(--line);
+  color:var(--accent);display:grid;place-items:center}
+.upload-zone.is-over .upload-ico{border-color:var(--accent)}
+.upload-text{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.upload-text b{font-size:14.5px}
+.upload-text span{font-size:13px;color:var(--text-2)}
+.upload-count{flex:0 0 auto;font-family:var(--f-num);font-size:13px;color:var(--text-3)}
+.upload-zone.is-over .upload-count{color:var(--accent)}
+/* Поле остаётся обычным полем формы (multipart/form-data) — его работу делает зона, поэтому
+   сам инпут скрыт визуально, но не отключён: без JavaScript он остаётся доступен с клавиатуры. */
+.upload-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.upload-err{font-size:13px;color:var(--err);margin:8px 0 0}
+.upload-list{list-style:none;display:flex;flex-wrap:wrap;gap:12px;margin:12px 0 0;padding:0}
+.upload-list:empty{margin:0}
+.upload-item{position:relative;width:106px;display:flex;flex-direction:column;gap:6px}
+.upload-item img{width:106px;height:76px;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:var(--paper-soft)}
+.upload-item .upload-name{font-size:12.4px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.upload-del{position:absolute;top:-7px;right:-7px;width:24px;height:24px;padding:0;border-radius:50%;
+  border:1px solid var(--line);background:#fff;color:var(--text-2);display:grid;place-items:center;cursor:pointer;transition:.15s}
+.upload-del:hover{background:var(--err);border-color:var(--err);color:#fff}
+/* На средних ширинах (1024–1080) подпись, кнопка и счётчик в одну строку не помещаются, и
+   «Перетащите фотографии сюда» рвётся по словам: переносим кнопку со счётчиком во вторую
+   строку зоны, а текст оставляем занимать всю первую. */
+@media (max-width:1080px){
+  .upload-zone{flex-wrap:wrap;row-gap:10px}
+  .upload-text{flex:1 1 calc(100% - 50px)}
+  .upload-pick{order:3}
+  .upload-count{order:4;margin-left:auto}
+}
+@media (max-width:640px){
+  .upload-zone{flex-wrap:wrap}
+  .upload-text{flex:1 1 100%;order:2}
+  .upload-pick{order:3;flex:1 1 auto}
+  .upload-count{order:4}
+}
+/* Палец вместо курсора: цели в карточке крупнее не только на телефоне (там их задаёт
+   @media(max-width:600px)), но и на тач-планшете, где карточка уже широкая, а базовые размеры
+   рассчитаны на курсор. Блок стоит в самом конце файла намеренно: базовые `.car-head .check input`
+   (16 px) и `.car-more` объявлены выше по файлу и при равной специфичности перебили бы его. */
+@media(hover:none) and (min-width:601px){
+  .car-head .check{padding:3px;margin:-3px}
+  .car-head .check input{width:20px;height:20px}
+  .car-more{padding:4px 0}
+}
+

@@ -1,0 +1,18 @@
+# Служебное и рабочее — в поставку не идёт
+_ref/
+out/
+*.log
+tests/last-run.json
+tests/logs/
+
+# База создаётся при первом запуске (data/seed-cars.json — источник каталога)
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# Загруженные через админку фото
+public/uploads/user/
+
+# Windows/macOS
+Thumbs.db
+.DS_Store
