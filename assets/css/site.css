@@ -2417,6 +2417,48 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
 .car-contact-modal textarea{width:100%;font:inherit;font-size:14px;color:var(--text);background:#fff;
   border:1px solid var(--line);border-radius:var(--r-field);padding:11px 13px;resize:vertical;min-height:88px}
 .car-contact-modal textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+/* Окно быстрой заявки «Поставить авто на продажу» (третья кнопка героя главной; разметка —
+   lib/view.mjs: saleModalHtml, поведение — initLeadModal в site.js). Вид целиком из общих классов
+   окна (.modal-back / .modal.modal-auth / .modal-head / .modal-x), своё только раскладка полей:
+   пять полей стоят парами в две колонки (.auth-row — та же сетка 1fr 1fr, что у полей входа,
+   брони и связи с продавцом), «Желаемая цена» — одной строкой во всю ширину окна.
+   Ряд из двух полей в форме окна (.auth-pane) уже получает margin-top:10px; эта форма без
+   .auth-pane, поэтому тот же зазор ставим здесь, иначе пары полей слипаются. */
+.sale-modal form .auth-row+.auth-row,
+.sale-modal form .auth-row+.field,
+.sale-modal form .field+.auth-row{margin-top:10px}
+.sale-modal form .check{margin-top:12px}
+/* Поля окна — как у окна входа и заказа звонка (22/18 вместо общих 26/26): форма продажи на
+   пять полей выше их, и на телефоне 844 px эти 8 px по бокам заметны. */
+.modal-auth.sale-modal{padding:22px 18px 20px}
+/* Заголовок «Поставить авто на продажу» в 22 px на узком экране переносился на две строки и
+   поджимал форму, поэтому на телефоне шапка компактнее — как у окна связи с продавцом.
+   Пары полей остаются парными и на 390 px: в одну колонку выходит 9 полей подряд, окно
+   вырастает до 976 px по замеру и уже не влезает в экран телефона (844 px), а в две колонки
+   поле шириной 161 px свободно держит и «2022», и «45 000». Пара разъезжается в столбик
+   только на самых узких экранах (≤360 px), где 161 px уже не хватает. */
+@media (max-width:520px){
+  .sale-modal{--mp-side:12px}
+  .sale-modal .modal-head{gap:10px}
+  .sale-modal .modal-ico{width:34px;height:34px;border-radius:11px}
+  .sale-modal .modal-h{font-size:19px}
+  /* Общее правило .auth-row из медиазапроса ≤560 px раскладывает пары в один столбец: для форм
+     входа и брони это верно, а короткой заявке про машину — нет. Девять полей подряд дают окно
+     высотой 948 px и внутреннюю прокрутку на телефоне, пары же помещаются целиком (161 px на поле
+     держит и «2022», и «45 000»). Поэтому здесь пары остаются парными до 361 px. */
+  .sale-modal .auth-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .sale-modal form .auth-row+.auth-row,
+  .sale-modal form .auth-row+.field,
+  .sale-modal form .field+.auth-row{margin-top:8px}
+}
+@media (max-width:360px){
+  .sale-modal .auth-row{grid-template-columns:minmax(0,1fr);gap:7px}
+}
+/* Третья кнопка героя («Поставить авто на продажу», разметка — lib/pages.mjs, hero-cta) нарочно
+   без своего цвета и рамки: правила .home-page .hero-cta .btn красят все три кнопки одной
+   фирменной красной заливкой --accent с белыми буквами, как и было у пары «Заказать звонок /
+   Разместить объявление» (заказчик 2026-09-30: «верни красный цвет кнопкам»). Класс .btn-sale
+   оставлен только как якорь для проверок регрессии — глазами кнопка не отличается от соседних. */
 @media (max-height:740px){
   .car-contact-tabs .auth-tab{padding:7px 5px;font-size:13px}
   .car-contact-modal textarea{min-height:66px;padding:9px 12px}
