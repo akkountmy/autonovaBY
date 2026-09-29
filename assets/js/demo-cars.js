@@ -103,39 +103,57 @@
       + '</div></div></div></article>';
   }
 
-  /* ── таблица для «Сравнения» (та же разметка, что у сервера, lib/pages.mjs) ─────────────── */
-  function specRows(cars) {
-    var rows = [
-      ['Цена', function (c) { return c.price_text; }],
-      ['Год', function (c) { return c.year; }],
-      ['Пробег', function (c) { return num(c.mileage) + ' км'; }],
-      ['Коробка', function (c) { return c.trans || '—'; }],
-      ['Двигатель', function (c) { return String(c.volume || 0).replace('.', ',') + ' л'; }],
-      ['Топливо', function (c) { return c.fuel || '—'; }],
-      ['Кузов', function (c) { return c.body || '—'; }],
-      ['Привод', function (c) { return c.drive || '—'; }],
-      ['Мощность', function (c) { return c.power ? c.power + ' л.с.' : '—'; }],
-    ];
-    return '<tbody>' + rows.map(function (r) {
-      return '<tr><td class="muted">' + esc(r[0]) + '</td>'
-        + cars.map(function (c) { return '<td>' + esc(r[1](c)) + '</td>'; }).join('') + '</tr>';
-    }).join('') + '</tbody>';
+  /* ── «Сравнение» (та же разметка, что у сервера, lib/pages.mjs) ───────────────────────────
+     Широкий экран — таблица .cmp-table, телефон — блок .cmp-cards: те же данные колонками-
+     карточками, по две в ряд без горизонтальной прокрутки (site.css: .cmp-cards-only,
+     @media(max-width:820px) переключает таблицу и карточки). Список характеристик — общий
+     массив rows, из него собираются и строка таблицы, и <dl> карточки. */
+  var rows = [
+    ['Цена', function (c) { return c.price_text; }],
+    ['Год', function (c) { return c.year; }],
+    ['Пробег', function (c) { return num(c.mileage) + ' км'; }],
+    ['Коробка', function (c) { return c.trans || '—'; }],
+    ['Двигатель', function (c) { return String(c.volume || 0).replace('.', ',') + ' л'; }],
+    ['Топливо', function (c) { return c.fuel || '—'; }],
+    ['Кузов', function (c) { return c.body || '—'; }],
+    ['Привод', function (c) { return c.drive || '—'; }],
+    ['Мощность', function (c) { return c.power ? c.power + ' л.с.' : '—'; }],
+  ];
+  function specList(c) {
+    return '<dl class="cmp-list">' + rows.map(function (r) {
+      return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1](c)) + '</dd></div>';
+    }).join('') + '</dl>';
+  }
+
+  function cmpCards(cars) {
+    return '<div class="cmp-cards-only cmp-cards">' + cars.map(function (c) {
+      return '<article class="cmp-card">'
+        + (c.photo ? '<img class="cmp-photo" src="' + esc(photo(c)) + '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'' + esc(photoFull(c)) + '\'">' : '')
+        + '<a class="cmp-name" href="' + esc(carHref(c)) + '">' + esc(c.brand + ' ' + c.model) + '</a>'
+        + '<button class="btn btn-sm btn-ghost" type="button" data-compare-remove="' + c.id + '">Убрать</button>'
+        + specList(c)
+        + '<a class="btn btn-sm cmp-open" href="' + esc(carHref(c)) + '">Открыть</a></article>';
+    }).join('') + '</div>';
   }
 
   function cmpTable(cars) {
-    return '<div style="overflow:auto"><table class="tbl" style="min-width:' + (180 + cars.length * 220) + 'px">'
+    return cmpCards(cars)
+      + '<div class="cmp-scroll"><table class="tbl cmp-table" style="min-width:' + (180 + cars.length * 220) + 'px">'
       + '<thead><tr><th></th>' + cars.map(function (c) {
-        return '<th><div style="display:flex;flex-direction:column;gap:8px">'
-          + (c.photo ? '<img src="' + esc(photo(c)) + '" alt="" loading="lazy" decoding="async" style="width:100%;border-radius:10px;aspect-ratio:4/3;object-fit:cover" onerror="this.onerror=null;this.src=\'' + esc(photoFull(c)) + '\'">' : '')
-          + '<a href="' + esc(carHref(c)) + '" style="font-weight:700;text-transform:none;letter-spacing:0;font-size:15px;color:var(--text)">' + esc(c.brand + ' ' + c.model) + '</a>'
+        return '<th><div class="cmp-head">'
+          + (c.photo ? '<img class="cmp-photo" src="' + esc(photo(c)) + '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'' + esc(photoFull(c)) + '\'">' : '')
+          + '<a class="cmp-name" href="' + esc(carHref(c)) + '">' + esc(c.brand + ' ' + c.model) + '</a>'
           + '<button class="btn btn-sm btn-ghost" type="button" data-compare-remove="' + c.id + '">Убрать</button>'
           + '</div></th>';
       }).join('') + '</tr></thead>'
-      + specRows(cars)
+      + '<tbody>' + rows.map(function (r) {
+        return '<tr><td class="muted">' + esc(r[0]) + '</td>'
+          + cars.map(function (c) { return '<td>' + esc(r[1](c)) + '</td>'; }).join('') + '</tr>';
+      }).join('') + '</tbody>'
       + '<tfoot><tr><td></td>' + cars.map(function (c) {
         return '<td><a class="btn btn-sm" href="' + esc(carHref(c)) + '">Открыть</a></td>';
       }).join('') + '</tr></tfoot></table></div>'
-      + '<p style="margin:14px 0 0"><button class="btn btn-ghost" type="button" data-compare-clear>Очистить сравнение</button></p>';
+      + '<p class="cmp-clear"><button class="btn btn-ghost" type="button" data-compare-clear>Очистить сравнение</button></p>';
   }
 
   /* ── отрисовка ──────────────────────────────────────────── */
