@@ -155,14 +155,19 @@ const SECTIONS = {
        Вторая кнопка — «Заказать звонок» (заказчик, 2026-09-28: «над кнопкой разместить объявление
        на титульной странице размести кнопку заказать звонок и чтобы при нажатии открывалась окно
        как на кнопке бронь»): стоит строкой выше и открывает окно заказа звонка (lib/view.mjs:
-       callModalHtml, поведение — initCallModal в public/assets/js/site.js). Значки вырезаем из
-       разметки, чтобы в отчёте остался чистый текст кнопок. */
+       callModalHtml, поведение — initLeadModal в public/assets/js/site.js). Значки вырезаем из
+       разметки, чтобы в отчёте остался чистый текст кнопок.
+
+       Заказчик, 2026-10-02: «перемести кнопку - заказать звонок, под кнопкой - Разместить
+       объявление, а на ее месте сделай кнопку - поставить авто на продажу». Кнопок в герое стало
+       три, порядок: заказать звонок → разместить объявление → поставить авто на продажу. */
     const heroHtml = homeHtml.slice(homeHtml.indexOf('<section class="hero"'), homeHtml.indexOf('</section>', homeHtml.indexOf('<section class="hero"')));
     const heroNoSvg = heroHtml.replace(/<svg[\s\S]*?<\/svg>/g, ' ');
     const heroBtns = [...heroNoSvg.matchAll(/<(?:a|button) class="btn[^"]*"[^>]*>([^<]*)<\/(?:a|button)>/g)]
       .map((m) => m[1].trim());
-    check('pages', 'в герое главной две кнопки — «Заказать звонок» над «Разместить объявление»',
-      heroBtns.length === 2 && heroBtns[0] === 'Заказать звонок' && heroBtns[1] === 'Разместить объявление',
+    check('pages', 'в герое главной три кнопки — «Заказать звонок», «Разместить объявление», «Поставить авто на продажу»',
+      heroBtns.length === 3 && heroBtns[0] === 'Заказать звонок' && heroBtns[1] === 'Разместить объявление'
+        && heroBtns[2] === 'Поставить авто на продажу',
       heroBtns.join(' | ') || 'кнопок в герое нет');
     const callModal = (homeHtml.match(/<div class="modal-back" data-call-modal[\s\S]*?<\/form>/) || [''])[0];
     check('pages', 'на главной есть окно заказа звонка — как у брони, с заявкой kind=call',
@@ -171,6 +176,24 @@ const SECTIONS = {
         && /name="kind" value="call"/.test(callModal) && /name="text"/.test(callModal)
         && !/name="car_id"/.test(callModal) && /data-book-modal/.test(homeHtml),
       callModal.replace(/\s+/g, ' ').slice(0, 200) || 'окно заказа звонка не найдено');
+    /* Окно «Поставить авто на продажу» (заказчик, 2026-10-02: «на ее месте сделай кнопку -
+       поставить авто на продажу и сделай при нажатии, чтобы открывалось окно для короткого
+       заполнения информации об авто в нашем стиле»). Проверяем разметку: третья кнопка героя
+       открывает окно той же вёрстки, что бронь и заказ звонка, заявка уходит на /lead с kind=sale,
+       из полей — только короткий набор про машину и контакты, а полная форма со всеми полями
+       осталась отдельной страницей /sell (ссылка под кнопкой отправки). */
+    const saleModal = (homeHtml.match(/<div class="modal-back" data-sale-modal[\s\S]*?<\/form>/) || [''])[0];
+    check('pages', 'на главной есть окно «Поставить авто на продажу» — короткая форма в стиле сайта',
+      /<button class="btn[^"]*" type="button" data-sale-open>/.test(heroNoSvg)
+        && /class="modal modal-auth sale-modal"/.test(saleModal) && /data-sale-form/.test(saleModal)
+        && /data-sale-close/.test(saleModal) && /name="kind" value="sale"/.test(saleModal)
+        && !/name="car_id"/.test(saleModal)
+        && ['brand', 'model', 'year', 'mileage', 'price', 'name', 'phone'].every((n) => new RegExp('name="' + n + '"').test(saleModal))
+        && (saleModal.match(/<input/g) || []).length === 10
+        && /href="\/sell"/.test(saleModal)
+        && /name="brand" required[^>]*data-sale-first/.test(saleModal)
+        && !/enctype|type="file"/.test(saleModal),
+      saleModal.replace(/\s+/g, ' ').slice(0, 220) || 'окно продажи не найдено');
     check('pages', 'кнопок «Смотреть каталог» и «Продать автомобиль» в герое главной нет',
       !/Смотреть каталог|Продать автомобиль/.test(heroHtml));
     check('pages', 'в герое пять карточек «Горящей продажи» с фото, ценой и ссылкой на авто',
@@ -2963,11 +2986,15 @@ const SECTIONS = {
         !!heroWide && heroWide.dealerTop >= heroWide.leadBottom && heroWide.dealerTop > heroWide.h1Bottom
           && /^Официальный дилер\s+Geely\s+BelGee\s+SRM$/.test(heroWide.dealerText) && heroWide.over <= 1,
         JSON.stringify(heroWide));
-      check('ui', 'кнопки героя стоят под строкой дилера, «Заказать звонок» — над «Разместить объявление», обе на всю левую колонку',
-        !!heroWide && heroWide.btnCount === 2 && heroWide.ctaTop >= heroWide.dealerBottom
+      /* Кнопок в герое теперь три (заказчик, 2026-10-02: «перемести кнопку - заказать звонок, под
+         кнопкой - Разместить объявление, а на ее месте сделай кнопку - поставить авто на продажу»),
+         поэтому здесь проверяем порядок и то, что третья кнопка идёт следом за второй. */
+      check('ui', 'кнопки героя стоят под строкой дилера: «Заказать звонок», «Разместить объявление», «Поставить авто на продажу» — все на всю левую колонку',
+        !!heroWide && heroWide.btnCount === 3 && heroWide.ctaTop >= heroWide.dealerBottom
           && heroWide.ctaLeft === heroWide.leadLeft && heroWide.ctaLeft === heroWide.h1Left
           && heroWide.btnTexts[0] === 'Заказать звонок' && heroWide.btnTexts[1] === 'Разместить объявление'
-          && heroWide.btnTops[1] >= heroWide.btnTops[0] + 46
+          && heroWide.btnTexts[2] === 'Поставить авто на продажу'
+          && heroWide.btnTops[1] >= heroWide.btnTops[0] + 46 && heroWide.btnTops[2] >= heroWide.btnTops[1] + 46
           && heroWide.btnLefts.every((l) => l === heroWide.ctaLeft)
           && heroWide.btnRights.every((r) => r === heroWide.ctaRight)
           && heroWide.ctaRight < heroWide.hotLeft && heroWide.btnWidths.every((w) => w > 500),
@@ -3055,8 +3082,8 @@ const SECTIONS = {
             && s.some((x) => /^(седан|внедорожник|универсал|минивэн|хэтчбек|лифтбек|купе|фургон)$/.test(x)))
           && heroWide.cardBodyOver.every((n) => n <= 1),
         JSON.stringify(heroWide && heroWide.cardSpecs));
-      check('ui', 'кнопки героя «Заказать звонок» и «Разместить объявление» — красные, как остальные кнопки сайта',
-        !!heroWide && heroWide.heroBtnBg.length === 2
+      check('ui', 'кнопки героя «Заказать звонок», «Разместить объявление» и «Поставить авто на продажу» — красные, как остальные кнопки сайта',
+        !!heroWide && heroWide.heroBtnBg.length === 3
           && heroWide.heroBtnBg.every((c) => c === 'rgb(227, 0, 15)')
           && heroWide.heroBtnInk.every((c) => c === 'rgb(255, 255, 255)')
           && heroWide.heroBtnBorder.every((c) => c === 'rgb(227, 0, 15)'),
@@ -3080,11 +3107,12 @@ const SECTIONS = {
       check('ui', 'на узком экране строка дилера тоже идёт сразу за лидом',
         !!heroNarrow && heroNarrow.dealerTop >= heroNarrow.leadBottom && heroNarrow.over <= 1,
         JSON.stringify(heroNarrow));
-      check('ui', 'на узком экране обе кнопки и «Горящая продажа» идут столбиком за строкой дилера',
-        !!heroNarrow && heroNarrow.btnCount === 2 && heroNarrow.ctaTop >= heroNarrow.dealerBottom
+      check('ui', 'на узком экране три кнопки героя и «Горящая продажа» идут столбиком за строкой дилера',
+        !!heroNarrow && heroNarrow.btnCount === 3 && heroNarrow.ctaTop >= heroNarrow.dealerBottom
           && heroNarrow.hotTop >= heroNarrow.ctaBottom && heroNarrow.cards === 5 && heroNarrow.cardsWithPhoto === 5
           && heroNarrow.btnTexts[0] === 'Заказать звонок' && heroNarrow.btnTexts[1] === 'Разместить объявление'
-          && heroNarrow.btnTops[1] >= heroNarrow.btnTops[0] + 46
+          && heroNarrow.btnTexts[2] === 'Поставить авто на продажу'
+          && heroNarrow.btnTops[1] >= heroNarrow.btnTops[0] + 46 && heroNarrow.btnTops[2] >= heroNarrow.btnTops[1] + 46
           && heroNarrow.btnLefts.every((l) => l === heroNarrow.ctaLeft)
           && heroNarrow.btnRights.every((r) => r === heroNarrow.ctaRight)
           && heroNarrow.btnWidths.every((w) => w === heroNarrow.vw - 40) && heroNarrow.over <= 1,
@@ -3183,6 +3211,165 @@ const SECTIONS = {
       await new Promise((r) => setTimeout(r, 200));
       check('ui', 'Escape закрывает окно заказа звонка',
         await page.$eval('[data-call-modal]', (el) => el.hidden));
+
+      /* Окно «Поставить авто на продажу» (заказчик, 2026-10-02: «на ее месте сделай кнопку -
+         поставить авто на продажу и сделай при нажатии, чтобы открывалось окно для короткого
+         заполнения информации об авто в нашем стиле»). Разметка — lib/view.mjs: saleModalHtml,
+         поведение — initLeadModals (общий initLeadModal) в public/assets/js/site.js.
+         Проверяем устройство окна и заявку целиком: короткая форма про машину, склейка
+         «Авто на продажу…: Geely Monjaro, 2022 г., пробег 45 000 км, цена 50 000 руб.» в поле text
+         (в базе у заявки только name/phone/text), отправка без перезагрузки, закрытие крестиком. */
+      await page.evaluate(() => {
+        const f = document.querySelector('[data-sale-form]');
+        if (f) f.reset();
+      });
+      check('ui', 'окно «Поставить авто на продажу» скрыто до клика по третьей кнопке героя',
+        await page.$eval('[data-sale-modal]', (el) => el.hidden));
+      /* Открываем третьей кнопкой героя. Клик делаем из страницы, а не нативным кликом puppeteer:
+         окна сайта закрываются кликом по фону (.modal-back), а фон перекрывает кнопки под собой —
+         нативный клик по координатам попал бы в фон открытого окна звонка и просто закрыл его.
+         Заодно проверяем, что к этому моменту окно звонка закрыто. */
+      check('ui', 'окно заказа звонка закрыто к моменту открытия окна продажи',
+        await page.$eval('[data-call-modal]', (el) => el.hidden));
+      await page.evaluate(() => document.querySelector('[data-sale-open]').click());
+      await new Promise((r) => setTimeout(r, 250));
+      const saleBox = await page.evaluate(() => {
+        const back = document.querySelector('[data-sale-modal]');
+        const modal = back.querySelector('.modal');
+        const form = back.querySelector('[data-sale-form]');
+        const r = modal.getBoundingClientRect();
+        const row = form.querySelector('.auth-row');
+        const fields = [...form.querySelectorAll('.auth-row .field')].map((f) => Math.round(f.getBoundingClientRect().left));
+        return {
+          open: !back.hidden && getComputedStyle(back).display !== 'none',
+          dx: Math.round(Math.abs((r.left + r.right) / 2 - innerWidth / 2)),
+          top: Math.round(r.top), bottom: Math.round(r.bottom), vh: innerHeight,
+          title: back.querySelector('.modal-h').textContent.trim(),
+          kind: form.querySelector('[name=kind]').value,
+          action: form.getAttribute('action'),
+          names: [...form.querySelectorAll('input')].map((i) => i.name),
+          tel: form.querySelector('[name=phone]').type,
+          pair: row ? row.querySelectorAll('.field').length : 0,
+          twoCols: fields.length >= 2 && fields[0] < fields[1],
+          agreeRequired: form.querySelector('[name=agree]').required,
+          sellLink: !!form.querySelector('a[href="/sell"]'),
+          focused: document.activeElement === form.querySelector('[name=brand]'),
+          bodyOpen: document.body.classList.contains('modal-open'),
+          pageOver: document.documentElement.scrollWidth - innerWidth,
+          over: modal.scrollHeight > modal.clientHeight + 1,
+        };
+      });
+      check('ui', 'третья кнопка героя открывает короткое окно продажи — по центру, с полями про авто',
+        saleBox.open && saleBox.dx < 12 && saleBox.top >= 0 && saleBox.bottom <= saleBox.vh
+          && saleBox.title === 'Поставить авто на продажу' && saleBox.kind === 'sale' && saleBox.action === '/lead'
+          && saleBox.names.join(',') === 'kind,text,brand,model,year,mileage,price,name,phone,agree'
+          && saleBox.tel === 'tel' && saleBox.pair === 2 && saleBox.twoCols
+          && saleBox.agreeRequired && saleBox.sellLink && saleBox.pageOver <= 1,
+        JSON.stringify(saleBox));
+      check('ui', 'в открытом окне продажи фокус в поле «Марка», тело помечено modal-open',
+        saleBox.focused && saleBox.bodyOpen, JSON.stringify(saleBox));
+      /* Заполняем машину и смотрим, что склеенная строка заявки складывается ещё до отправки. */
+      await page.type('[data-sale-form] [name=brand]', 'Geely');
+      await page.type('[data-sale-form] [name=model]', 'Monjaro');
+      await page.type('[data-sale-form] [name=year]', '2022');
+      await page.type('[data-sale-form] [name=mileage]', '45000');
+      await page.type('[data-sale-form] [name=price]', '50000');
+      /* Строка заявки про автомобиль собирается при открытии окна (beforeOpen) — проверяем её
+         после повторного открытия, когда все пять полей про машину уже заполнены. Это же
+         открытие — «как было» для админки: менеджер видит машину прямо в тексте заявки. */
+      await page.evaluate(() => document.querySelector('[data-sale-open]').click());
+      await new Promise((r) => setTimeout(r, 200));
+      const saleText = await page.$eval('[data-sale-form] [name=text]', (el) => el.value);
+      check('ui', 'в заявке из окна продажи собирается строка про авто — марка, год, пробег, цена',
+        saleText === 'Авто на продажу с главной страницы: Geely Monjaro, 2022 г., пробег 45 000 км, цена 50 000 руб.',
+        saleText);
+      /* Пустая форма не должна уходить на сервер: у полей стоит required, отправку держит
+         checkValidity — окно после клика остаётся открытым. Клик по кнопке проверяем изнутри
+         страницы: нативный клик по невалидной форме запускает встроенную подсказку браузера,
+         и puppeteer считает кнопку недоступной. Заодно убеждаемся, что страница не ушла на
+         отправку: url и счётчик записей навигации остаются прежними. */
+      const saleEmpty = await page.evaluate(() => {
+        const form = document.querySelector('[data-sale-form]');
+        form.querySelector('[name=brand]').value = '';
+        form.querySelector('[name=phone]').value = '';
+        const url = location.href;
+        const nav = performance.getEntriesByType('navigation').length;
+        form.querySelector('button[type=submit]').click();
+        return {
+          valid: form.checkValidity(), hidden: document.querySelector('[data-sale-modal]').hidden,
+          sameUrl: url === location.href, nav: performance.getEntriesByType('navigation').length === nav,
+        };
+      });
+      check('ui', 'окно продажи не отправляет заявку без обязательных полей',
+        !saleEmpty.valid && !saleEmpty.hidden && saleEmpty.sameUrl && saleEmpty.nav, JSON.stringify(saleEmpty));
+      const { run: runLead } = await import('../lib/db.mjs');
+      runLead("DELETE FROM leads WHERE phone LIKE '+375%111 22 33'");
+      await page.evaluate(() => {
+        const set = (n, v) => { document.querySelector('[data-sale-form] [name=' + n + ']').value = v; };
+        set('brand', 'Geely'); set('model', 'Monjaro'); set('year', '2022');
+        set('mileage', '45000'); set('price', '50000');
+        set('name', 'Клиент');
+        document.querySelector('[data-sale-form] [name=agree]').checked = true;
+      });
+      /* Телефон набираем посимвольно: у поля маска +375 XX XXX XX XX (initPhone), и простого
+         присваивания значения мало — по маске номер должен быть разбит на группы. */
+      await page.click('[data-sale-form] [name=phone]');
+      await page.type('[data-sale-form] [name=phone]', '291112233');
+      /* Открываем окно заново — как это делает посетитель после того, как поля дозаполнило
+         автозаполнение браузера: строку заявки окно собирает при открытии. */
+      await page.evaluate(() => document.querySelector('[data-sale-open]').click());
+      await new Promise((r) => setTimeout(r, 250));
+      await page.evaluate(() => document.querySelector('[data-sale-form] button[type=submit]').click());
+      await new Promise((r) => setTimeout(r, 700));
+      const saleSent = await page.evaluate(() => ({
+        hidden: document.querySelector('[data-sale-modal]').hidden,
+        bodyOpen: document.body.classList.contains('modal-open'),
+        toast: (document.querySelector('[data-toast-msg]') || {}).textContent || '',
+        brand: document.querySelector('[data-sale-form] [name=brand]').value,
+      }));
+      const { num: numLead } = await import('../lib/db.mjs');
+      check('ui', 'заявка из окна продажи уходит на /lead с kind=sale и ложится в базу',
+        numLead("SELECT COUNT(*) FROM leads WHERE phone LIKE '+375%111 22 33' AND kind='sale'") === 1
+          && /Geely Monjaro/.test(String(numLead("SELECT text FROM leads WHERE phone LIKE '+375%111 22 33'") || '')),
+        String(numLead("SELECT kind || ' | ' || phone || ' | ' || text FROM leads WHERE phone LIKE '+375%111 22 33'")));
+      check('ui', 'после отправки окно продажи закрывается, форма очищается, всплывает подтверждение',
+        saleSent.hidden && !saleSent.bodyOpen && saleSent.brand === ''
+          && saleSent.toast === 'Заявка на продажу авто отправлена — перезвоним в течение 15 минут',
+        JSON.stringify(saleSent));
+      runLead("DELETE FROM leads WHERE phone LIKE '+375%111 22 33'");
+      await page.evaluate(() => document.querySelector('[data-sale-open]').click());
+      await new Promise((r) => setTimeout(r, 250));
+      await page.evaluate(() => document.querySelector('[data-sale-close]').click());
+      await new Promise((r) => setTimeout(r, 200));
+      check('ui', 'крестик закрывает окно продажи',
+        await page.$eval('[data-sale-modal]', (el) => el.hidden));
+      /* На телефоне окно не растягивает страницу вбок, держит пары полей в две колонки и
+         укладывается в экран целиком: 640 px содержимого при 844 px высоты — прокрутки внутри
+         окна нет. Так пары и задуманы (см. комментарий к .sale-modal .auth-row в site.css). */
+      await page.setViewport({ width: 390, height: 844 });
+      await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+      await page.evaluate(() => document.querySelector('[data-sale-open]').click());
+      await new Promise((r) => setTimeout(r, 300));
+      const salePhone = await page.evaluate(() => {
+        const back = document.querySelector('[data-sale-modal]');
+        const modal = back.querySelector('.modal');
+        const r = modal.getBoundingClientRect();
+        const btn = back.querySelector('[data-sale-form] button[type=submit]').getBoundingClientRect();
+        const rows = [...back.querySelectorAll('.auth-row')].map((row) => row.querySelectorAll('.field').length);
+        return {
+          dx: Math.round(Math.abs((r.left + r.right) / 2 - innerWidth / 2)),
+          left: Math.round(r.left), right: Math.round(r.right), vw: innerWidth,
+          rows, btnW: Math.round(btn.width),
+          over: document.documentElement.scrollWidth - innerWidth,
+          scroll: modal.scrollHeight, client: modal.clientHeight,
+        };
+      });
+      check('ui', 'на телефоне окно продажи держит пары полей, влезает в экран и не растягивает страницу вбок',
+        salePhone.dx < 8 && salePhone.left >= 0 && salePhone.right <= salePhone.vw
+          && salePhone.rows.every((n) => n === 2) && salePhone.btnW > 300 && salePhone.over <= 1
+          && salePhone.scroll - salePhone.client <= 2,
+        JSON.stringify(salePhone));
+      await page.click('[data-sale-close]');
 
       /* Кадры «Горящей продажи» листаются сами и по стрелке, плашка «Горящая продажа» стоит на
          фото справа внизу и подсвечивается пульсацией («как диммер»), скидка — второй плашкой на
@@ -4596,3 +4783,4 @@ const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 fs.writeFileSync(path.join(ROOT, 'tests', 'last-run.json'), JSON.stringify({ base: BASE, at: new Date().toISOString(), total, fails, results }, null, 2));
 fs.writeFileSync(path.join(outDir, stamp + '.json'), JSON.stringify({ base: BASE, at: new Date().toISOString(), total, fails, results }, null, 2));
 process.exit(fails ? 1 : 0);
+

@@ -653,9 +653,9 @@
 
   /* ── отправка форм заявки (без перезагрузки) ────────── */
   /* Отправка одной формы заявки на /lead. Вынесено отдельной функцией, потому что те же поля
-     отправляют окна брони (initCarBook), заказа звонка (initCallModal) и связи с продавцом
-     (initCarContact): у всех форма с method=post action=/lead, отличается только what делать
-     после успеха. При ошибке сети форма отправляется обычным способом — заявка не теряется. */
+     отправляют окна брони (initCarBook), заказа звонка и продажи авто (initLeadModals) и связи
+     с продавцом (initCarContact): у всех форма с method=post action=/lead, отличается только что
+     делать после успеха. При ошибке сети форма отправляется обычным способом — заявка не теряется. */
   function sendLead(form, done) {
     var fd = new FormData(form);
     fetch(form.action, {
@@ -1636,26 +1636,41 @@
     });
   }
 
-  /* ── заказ звонка ──────────────────────────────────────
+  /* ── заказ звонка и «Поставить авто на продажу» ─────────
      Заказчик, 2026-09-28: «над кнопкой разместить объявление на титульной странице размести
      кнопку заказать звонок и чтобы при нажатии открывалась окно как на кнопке бронь». Работает
      ровно как бронь (initCarBook): открытие по кнопке с data-call-open, закрытие по крестику,
      клику по фону и Escape, отправка формы на /lead без перезагрузки страницы. Разметка окна —
-     lib/view.mjs: callModalHtml. */
-  function initCallModal() {
-    var back = $('[data-call-modal]');
+     lib/view.mjs: callModalHtml.
+
+     Заказчик, 2026-10-02: «на ее месте сделай кнопку - поставить авто на продажу и сделай при
+     нажатии, чтобы открывалось окно для короткого заполнения информации об авто в нашем стиле».
+     Второе окно (data-sale-modal, lib/view.mjs: saleModalHtml) — того же устройства, отличается
+     только адресом открывающей кнопки, подписью кнопки отправки и текстом после успеха. Поэтому
+     поведение вынесено в общую функцию initLeadModal(short, open, form, message): окон заявки в
+     один клик на сайте теперь два, и копия обработчика означала бы две правки на каждое изменение
+     (закрытие, фокус, поведение при ошибке сети). Поля с именем comment у окон нет, поэтому
+     отдельной склейки комментария в текст заявки здесь тоже нет: всё, что нужно менеджеру,
+     собирается в скрытое поле text ещё в разметке. */
+  function initLeadModal(backAttr, openAttr, closeAttr, formAttr, message, beforeOpen, beforeSend) {
+    var back = $('[' + backAttr + ']');
     if (!back) return;
-    var form = back.querySelector('[data-call-form]');
+    var form = back.querySelector('[' + formAttr + ']');
     if (!form) return;
     var lastFocus = null;
 
     function open() {
       lastFocus = document.activeElement;
+      if (beforeOpen) beforeOpen();
       back.hidden = false;
       back.classList.add('is-open');
       document.body.classList.add('modal-open');
       setTimeout(function () {
-        var f = form.querySelector('input[name=name]');
+        /* Первое поле окна: у заказа звонка это имя; у окна продажи марка авто помечена
+           data-sale-first — спрашивать имя раньше марки в форме про машину нелогично. Если ни
+           того, ни другого нет — самое первое видимое поле. */
+        var f = form.querySelector('[data-sale-first]') || form.querySelector('input[name=name]')
+          || form.querySelector('input:not([type=hidden]):not([type=checkbox])');
         if (f) f.focus();
       }, 60);
     }
@@ -1668,14 +1683,14 @@
     }
 
     document.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-call-open]');
+      var b = e.target.closest && e.target.closest('[' + openAttr + ']');
       if (!b) return;
       e.preventDefault();
       open();
     });
 
     back.addEventListener('click', function (e) {
-      if (e.target === back || e.target.closest('[data-call-close]')) close();
+      if (e.target === back || (e.target.closest && e.target.closest('[' + closeAttr + ']'))) close();
     });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !back.hidden) close();
@@ -1684,21 +1699,45 @@
     form.addEventListener('submit', function (e) {
       if (!form.checkValidity()) return;
       e.preventDefault();
-      var fd = new FormData(form);
-      var comment = fd.get('comment');
-      if (comment) fd.set('text', (fd.get('text') || '') + (fd.get('text') ? ' · ' : '') + comment);
-      fetch(form.action, {
-        method: 'POST',
-        body: new URLSearchParams(fd),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      })
-        .then(function () {
-          close();
-          form.reset();
-          toast('Заявка на звонок отправлена — перезвоним в течение 15 минут');
-        })
-        .catch(function () { form.submit(); });
+      if (beforeSend) beforeSend();
+      sendLead(form, function () {
+        close();
+        form.reset();
+        toast(message);
+      });
     });
+  }
+
+  function initLeadModals() {
+    initLeadModal('data-call-modal', 'data-call-open', 'data-call-close', 'data-call-form',
+      'Заявка на звонок отправлена — перезвоним в течение 15 минут');
+    /* Короткое окно продажи собирает заявку само: в таблице leads у заявки есть только колонки
+       name/phone/text, отдельного поля под автомобиль нет, поэтому марка, модель, год, пробег и
+       цена складываются в скрытое поле text — так менеджер видит машину прямо в списке заявок
+       админки (кнопки админки читают text, а не поля формы). Пробег и цена печатаются с
+       разрядами, пустые поля в строку не попадают. Сборка идёт и при открытии окна (в форме уже
+       видно, что уйдёт менеджеру), и ещё раз прямо перед отправкой: поля могли дозаполнить
+       автозаполнением браузера или скриптом, а строка заявки должна совпадать с тем, что в форме. */
+    function saleText() {
+      var form = document.querySelector('[data-sale-form]');
+      if (!form) return;
+      var box = form.querySelector('[name=text]');
+      if (!box) return;
+      var val = function (name) {
+        var el = form.querySelector('[name=' + name + ']');
+        return el ? String(el.value || '').trim() : '';
+      };
+      var num = function (v) { return v.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ' '); };
+      var car = (val('brand') + ' ' + val('model')).trim();
+      var parts = [];
+      if (car) parts.push(car);
+      if (val('year')) parts.push(val('year') + ' г.');
+      if (val('mileage')) parts.push('пробег ' + num(val('mileage')) + ' км');
+      if (val('price')) parts.push('цена ' + num(val('price')) + ' руб.');
+      box.value = 'Авто на продажу с главной страницы' + (parts.length ? ': ' + parts.join(', ') : '');
+    }
+    initLeadModal('data-sale-modal', 'data-sale-open', 'data-sale-close', 'data-sale-form',
+      'Заявка на продажу авто отправлена — перезвоним в течение 15 минут', saleText, saleText);
   }
 
   /* ── связь с продавцом на странице автомобиля ──────────
@@ -2283,7 +2322,7 @@
     initSelects();
     initCombos();
     initCarBook();
-    initCallModal();
+    initLeadModals();
     initCarContact();
     initInfinite();
     initUploads();
