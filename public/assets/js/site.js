@@ -5,6 +5,31 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
+  /* ── адреса данных ────────────────────────────────────────────────────────────────────────────
+     На боевом сайте корень — сам сервер, поэтому пути к служебным файлам каталога av.by
+     (/data/avby/*.json) и к снимкам (/data/avby-img/...) абсолютные. Статичная копия на GitHub
+     Pages живёт в подпапке (/autonovaBY/), а 166 МБ снимков в неё не копируются: фото каталога
+     отдаёт CDN jsDelivr из ветки main. Сборщик копии (_ref/deploy/build-pages.mjs) проставляет
+     на <html> два атрибута — data-site-base (относительный префикс страницы: '' или '../') и
+     data-site-cdn (адрес CDN), — а этот код по ним строит пути. Без этого на Pages не грузился
+     список моделей в «Разместить объявление»: заказчик (02.10.2026) «В - разместить объявление в
+     - модели, не все модели в раскрывающемся списке». */
+  var htmlEl = document.documentElement;
+  var SITE_BASE = htmlEl.getAttribute('data-site-base');
+  var SITE_CDN = htmlEl.getAttribute('data-site-cdn') || '';
+  var DATA_BASE = SITE_BASE === null ? '/' : SITE_BASE;
+  function dataUrl(p) {
+    if (!p) return p;
+    if (/^https?:/i.test(p)) return p;
+    return DATA_BASE + String(p).replace(/^\//, '');
+  }
+  /* Снимок каталога av.by: в копии берём с CDN, на боевом сайте — как есть с сервера. */
+  function photoUrl(p) {
+    if (!p) return p;
+    if (SITE_CDN && String(p).indexOf('/data/avby-img/') === 0) return SITE_CDN + p;
+    return p;
+  }
+
   /* ── cookies ─────────────────────────────────────────── */
   function getCookie(name) {
     var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
@@ -251,7 +276,10 @@
     if (!main) return;
     var counter = $('[data-gallery-counter]');
     var thumbs = $$('[data-thumb]');
-    var srcs = thumbs.map(function (t) { return t.getAttribute('src'); });
+    /* Крупный просмотр берёт исходный снимок из data-full, а не src: в полосе миниатюр лежит
+       уменьшенная копия /thumbs/....webp (заказчик 02.10.2026: «груз... быстро и не терял качество»),
+       и подставлять её в большое окно нельзя — качество потерялось бы. */
+    var srcs = thumbs.map(function (t) { return t.getAttribute('data-full') || t.getAttribute('src'); });
     if (!srcs.length) srcs = [main.getAttribute('src')];
     var alt = main.getAttribute('alt') || '';
     var cur = 0, box = null, boxImg = null, boxNum = null, lastFocus = null;
@@ -1181,7 +1209,7 @@
     function avbyIndex() {
       if (avby.map || avby.asked.index) return;
       avby.asked.index = true;
-      fetch('/data/avby/index.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      fetch(dataUrl('data/avby/index.json')).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
         var map = {};
         ((j && j.brands) || []).forEach(function (b) { map[key(b.name)] = b; });
         avby.map = map;
@@ -1197,7 +1225,7 @@
       if (avby.byBrand[b.slug]) return avby.byBrand[b.slug];
       if (!avby.asked[b.slug]) {
         avby.asked[b.slug] = true;
-        fetch('/data/avby/' + b.slug + '.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+        fetch(dataUrl('data/avby/' + b.slug + '.json')).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
           avby.byBrand[b.slug] = (j && j.models) || {};
           if (opened) opened.rebuild();
         }).catch(function () { avby.byBrand[b.slug] = {}; });
@@ -1333,7 +1361,7 @@
             if (item.p) {
               var im = document.createElement('img');
               im.className = 'opt-img';
-              im.src = item.p;
+              im.src = photoUrl(item.p);
               im.alt = '';
               im.width = 54;
               im.height = 38;

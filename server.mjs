@@ -2,6 +2,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { migrate, all, one, run, getSetting, setSetting, DB_PATH } from './lib/db.mjs';
 import { seedAll, slugify } from './lib/seed.mjs';
@@ -55,9 +56,44 @@ migrate();
 seedAll({});
 
 /* ── helpers ───────────────────────────────────────────── */
+/* Сжатие ответов. Заказчик 02.10.2026: «Сделай, что бы сайт грузился быстро и не терял качество».
+   Качество не трогаем (сжатие без потерь), а вес текста падает в 3–6 раз: HTML главной 141 КБ →
+   ~24 КБ, site.css 265 КБ → ~40 КБ, site.js 118 КБ → ~30 КБ. Браузер присылает Accept-Encoding,
+   он же есть в res.req, поэтому ничего не передаём через вызовы send(). Картинки (jpeg/png/webp)
+   уже сжаты — их не трогаем, им только заголовки кэша. */
+const COMPRESSIBLE = new Set(['.html', '.css', '.js', '.mjs', '.json', '.svg', '.txt', '.xml', '.webmanifest']);
+const packCache = new Map();          // «файл:mtime:size» → { raw, gzip, br }
+function pickEncoding(req) {
+  const accept = String((req && req.headers && req.headers['accept-encoding']) || '');
+  if (/\bbr\b/.test(accept)) return 'br';
+  if (/\bgzip\b/.test(accept)) return 'gzip';
+  return '';
+}
+function packFile(file, key, enc) {
+  let e = packCache.get(key);
+  if (!e) {
+    e = { raw: fs.readFileSync(file), gzip: null, br: null };
+    if (packCache.size > 64) packCache.clear();     // держим только свежие (css/js/иконки, единицы файлов)
+    packCache.set(key, e);
+  }
+  const body = enc === 'br' ? (e.br || (e.br = zlib.brotliCompressSync(e.raw)))
+    : (e.gzip || (e.gzip = zlib.gzipSync(e.raw, { level: 8 })));
+  return { enc, body };
+}
 function send(res, status, body, headers = {}) {
-  res.writeHead(status, { 'Cache-Control': 'no-store', ...headers });
-  res.end(body);
+  const h = { 'Cache-Control': 'no-store', ...headers };
+  let buf = Buffer.isBuffer(body) ? body : Buffer.from(String(body), 'utf8');
+  const type = String(h['Content-Type'] || '');
+  const text = /^(text\/|application\/(json|javascript|xml|manifest\+json|rss\+xml)|image\/svg)/.test(type);
+  const enc = text && buf.length >= 1024 ? pickEncoding(res.req) : '';
+  if (enc) {
+    buf = enc === 'br' ? zlib.brotliCompressSync(buf) : zlib.gzipSync(buf, { level: 8 });
+    h['Content-Encoding'] = enc;
+    h.Vary = 'Accept-Encoding';
+  }
+  h['Content-Length'] = buf.length;
+  res.writeHead(status, h);
+  res.end(buf);
 }
 function html(res, body, status = 200) {
   send(res, status, body, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
@@ -157,13 +193,24 @@ function serveStatic(req, res, pathname, versioned = false) {
      Без версии (загруженные в кабинет фото) держим сутки — их имена не меняются. */
   const cache = versioned ? 'public, max-age=31536000, immutable'
     : (['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.ico', '.woff2'].includes(ext) ? 'public, max-age=86400' : 'public, max-age=300');
+  /* Текстовые ассеты (site.css, site.js, логотипы-svg, данные каталога av.by) отдаём сжатыми:
+     браузер, который умеет brotli, получает brotli, остальные — gzip. Сжатая версия считается
+     один раз на файл и живёт в памяти. ETag не меняем: он описывает исходный файл, а Vary
+     подсказывает прокси, что ответ зависит от Accept-Encoding. Если браузер сжатия не просил —
+     отдаём файл как есть: подсунуть gzip без заголовка Content-Encoding нельзя (клиент получил бы
+     мусор), поэтому сжатие включается только при явно выбранной кодировке. */
+  const wantEnc = COMPRESSIBLE.has(ext) && st.size >= 1024 ? pickEncoding(req) : '';
+  const packed = COMPRESSIBLE.has(ext) && st.size >= 1024 && wantEnc ? packFile(file, `${file}:${st.mtimeMs}:${st.size}`, wantEnc) : null;
   res.writeHead(200, {
     'Content-Type': fileType(file, MIME[ext] || 'application/octet-stream'),
-    'Content-Length': st.size,
+    'Content-Length': packed ? packed.body.length : st.size,
     'Cache-Control': cache,
     ETag: etag,
+    ...(COMPRESSIBLE.has(ext) ? { Vary: 'Accept-Encoding' } : {}),
+    ...(packed && packed.enc ? { 'Content-Encoding': packed.enc } : {}),
   });
-  fs.createReadStream(file).pipe(res);
+  if (packed) res.end(packed.body);
+  else fs.createReadStream(file).pipe(res);
   return true;
 }
 
@@ -199,7 +246,7 @@ async function handle(req, res) {
   if (method === 'GET' || method === 'HEAD') {
     /* /data — справочники каталога av.by для комбобоксов формы /sell
        (public/data/avby: марки, модели, поколения с фото и годами). */
-    if (pathname.startsWith('/assets/') || pathname.startsWith('/uploads/') || pathname.startsWith('/data/') || pathname === '/favicon.ico' || pathname === '/robots.txt') {
+    if (pathname.startsWith('/assets/') || pathname.startsWith('/uploads/') || pathname.startsWith('/thumbs/') || pathname.startsWith('/data/') || pathname === '/favicon.ico' || pathname === '/robots.txt') {
       if (pathname === '/robots.txt') return send(res, 200, `User-agent: *\nAllow: /\nSitemap: ${siteBase()}/sitemap.xml\n`, { 'Content-Type': 'text/plain; charset=utf-8' });
       if (pathname === '/favicon.ico') { if (serveStatic(req, res, '/assets/logo/favicon.ico')) return; }
       if (serveStatic(req, res, pathname, url.searchParams.has('v'))) return;

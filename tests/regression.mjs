@@ -851,10 +851,14 @@ const SECTIONS = {
       check('pages', `/news/${a.slug}: «Читайте также» в правой колонке`, aside.includes('Читайте также') && (aside.match(/class="tile(?: has-photo)?"/g) || []).length === 3 && r.text.includes('class="art-main"') && r.text.includes('class="art-head"') && r.text.includes('class="art-body"'));
       /* Фото статей в блоке «Читайте также» (заказчик 2026-09-30: «На страницах статей справа блок —
          Читайте также — добавь туда соответствующие фото в статьи»): у каждой плитки обложка ровно
-         той статьи, на которую она ведёт, — свой файл `/uploads/news/<slug>.jpg` из её же href. */
-      const asideTiles = [...aside.matchAll(/class="tile has-photo" href="([^"]+)"[\s\S]{0,120}?<img class="tile-photo" src="([^"]+)"/g)];
+         той статьи, на которую она ведёт, — свой файл из её же href. С 2026-10-02 плитка берёт
+         миниатюру /thumbs/news/<slug>.webp (заказчик: «груз... быстро и не терял качество»), а
+         большой обложкой статьи остаётся исходный снимок — это проверяется ниже строкой про art-cover. */
+      const asideTiles = [...aside.matchAll(/class="tile has-photo" href="([^"]+)"[\s\S]{0,200}?<img src="([^"]+)"[^>]*class="tile-photo"/g)];
+      const asideSlug = (href) => href.replace('/news/', '');
       check('pages', `/news/${a.slug}: в «Читайте также» у каждой плитки фото своей статьи`,
-        asideTiles.length === 3 && asideTiles.every(([, href, src]) => src === '/uploads/news/' + href.replace('/news/', '') + '.jpg'),
+        asideTiles.length === 3 && asideTiles.every(([, href, src]) => src === '/thumbs/news/' + asideSlug(href) + '.webp'
+          || src === '/uploads/news/' + asideSlug(href) + '.jpg'),
         asideTiles.map(([, href, src]) => `${href} → ${src}`).join(' | '));
       /* Обложка статьи — тот же файл, что и в карточке Автожурнала (lib/pages.mjs: articlePage). */
       check('pages', `/news/${a.slug}: обложка статьи на месте`, r.text.includes('class="art-cover" src="/uploads/news/' + a.slug + '.jpg"'));
@@ -1160,7 +1164,8 @@ const SECTIONS = {
     check('assets', 'каталог av.by: у BMW все поколения «5 серии» (G30, F10, E39 …)',
       (bmw.models['5 серия'] || []).length >= 5, `поколений ${(bmw.models['5 серия'] || []).length}`);
     check('assets', 'JS подтягивает каталог av.by в списки формы',
-      js.includes('function avbyIndex()') && js.includes('/data/avby/index.json') && js.includes('function avbyModels(') && js.includes('avbyIndex();'));
+      js.includes('function avbyIndex()') && (js.includes("dataUrl('data/avby/index.json')") || js.includes("'/data/avby/index.json'"))
+        && js.includes('function avbyModels(') && js.includes('avbyIndex();'));
     check('assets', 'JS рисует строку поколения со снимком и годами',
       js.includes("im.className = 'opt-img'") && js.includes("yrs.className = 'opt-years'") && js.includes("row.setAttribute('data-v', name)"));
     check('assets', 'CSS: строка каталога со снимком и своим списком шире поля',
@@ -1203,6 +1208,93 @@ const SECTIONS = {
       buildPages.includes('/data/avby-img/credits.html')
         && buildPages.includes('href="${prefix}data/avby-img/credits.html"')
         && checkPages.includes('commons.wikimedia.org') && checkPages.includes('creditsRel'));
+
+    /* ── Копия: страницы сравнения и избранного, списки моделей ────────────────────────────────
+       Жалобы заказчика от 2026-10-02: «При нажатии на кнопку - сравнение, в шапке, - машины
+       выбрал, а на странице ничего нет, тоже самое касается кнопки лайк-избраное» и «В - разместить
+       объявление в - модели, не все модели в раскрывающемся списке». На боевом сайте эти страницы
+       собирает сервер, а в статичной копии на GitHub Pages сервера нет: выбор машин живёт в cookie
+       an_cmp/an_fav, список моделей — в data/avby/*.json. Поэтому сборщик копии кладёт рядом данные
+       (192 файла av.by + индекс автомобилей cars.json), а страницы достраивает demo-cars.js. */
+    const carsDemo = path.join(ROOT, '_ref/deploy/demo-cars.js');
+    const carsDemoSrc = fs.existsSync(carsDemo) ? fs.readFileSync(carsDemo, 'utf8') : '';
+    check('assets', 'копия: скрипт сравнения и избранного читает an_cmp/an_fav и data/cars.json',
+      carsDemoSrc.includes("'an_cmp'") && carsDemoSrc.includes("'an_fav'")
+        && carsDemoSrc.includes("data/cars.json") && carsDemoSrc.includes('data-compare-remove')
+        && carsDemoSrc.includes('data-compare-clear') && carsDemoSrc.includes('data-unfav')
+        && carsDemoSrc.includes('/compare/') && carsDemoSrc.includes('/favorites/'));
+    check('assets', 'сборка копии: данные av.by, индекс автомобилей и подключение demo-cars.js',
+      buildPages.includes("path.join(DEST, 'data', 'avby')") && buildPages.includes("'cars.json'")
+        && buildPages.includes('demo-cars.js') && buildPages.includes('/^\\/(compare|favorites)(\\/|$)/')
+        && buildPages.includes('data-site-base=') && buildPages.includes('data-site-cdn=')
+        && checkPages.includes('demo-cars.js'));
+    const siteJs = fs.readFileSync(path.join(ROOT, 'public/assets/js/site.js'), 'utf8');
+    check('assets', 'site.js: в копии берёт адреса из data-site-base/data-site-cdn (модели и снимки каталога)',
+      siteJs.includes("getAttribute('data-site-base')") && siteJs.includes("getAttribute('data-site-cdn')")
+        && siteJs.includes('function dataUrl(') && siteJs.includes('function photoUrl(')
+        && siteJs.includes("dataUrl('data/avby/index.json')") && siteJs.includes('photoUrl(item.p)'));
+
+    /* ── Скорость загрузки ─────────────────────────────────────────────────────────────────────
+       Заказчик 02.10.2026: «Сделай, что бы сайт грузился быстро и не терял качество». Два рычага:
+       сжатие текста (HTML/CSS/JS — brotli или gzip) и миниатюры фото для карточек и каруселей.
+       Качество не теряется: страница автомобиля по-прежнему показывает исходный снимок, а
+       миниатюра — только там, где кадр рисуется мелко (карточка, карусель, список, сравнение). */
+    const serverSrc = fs.readFileSync(path.join(ROOT, 'server.mjs'), 'utf8');
+    check('assets', 'сервер сжимает текстовые ответы (brotli/gzip) и сообщает об этом в Vary',
+      serverSrc.includes('brotliCompressSync') && serverSrc.includes('gzipSync')
+        && serverSrc.includes('function pickEncoding(') && serverSrc.includes("'accept-encoding'")
+        && serverSrc.includes("Vary: 'Accept-Encoding'") && serverSrc.includes('const COMPRESSIBLE'));
+    check('assets', 'сервер не отдаёт сжатие тому, кто его не просил (нет Content-Encoding без запроса)',
+      /const wantEnc = COMPRESSIBLE\.has\(ext\)[^;]*pickEncoding\(req\) : ''/.test(serverSrc)
+        && serverSrc.includes('packed && packed.enc ?'));
+    const cssFile = fs.readFileSync(path.join(ROOT, 'public/assets/css/site.css'));
+    const gz = await fetch(BASE + '/assets/css/site.css');
+    const gzLen = Number(gz.headers.get('content-length') || 0);
+    check('assets', 'site.css по сети приходит сжатым (в разы меньше файла)',
+      gz.status === 200 && !!gz.headers.get('content-encoding') && gzLen > 0 && gzLen < cssFile.length / 2,
+      `файл ${cssFile.length} → сеть ${gzLen} (${gz.headers.get('content-encoding') || 'без сжатия'})`);
+    const favGz = await fetch(BASE + '/assets/css/site.css', { headers: { 'accept-encoding': 'br' } });
+    check('assets', 'при поддержке brotli уходит brotli (легче gzip)', favGz.status === 200 && !!favGz.headers.get('content-encoding'));
+
+    const thumbsDir = path.join(ROOT, 'public/thumbs');
+    const thumbsTool = fs.readFileSync(path.join(ROOT, '_ref/make-thumbs.mjs'), 'utf8');
+    check('assets', 'инструмент миниатюр собирает WebP через Chrome (AVIF умеет только он)',
+      thumbsTool.includes("type: 'image/webp'") && thumbsTool.includes("imageOrientation: 'from-image'")
+        && thumbsTool.includes('puppeteer-core') && fs.existsSync(thumbsDir));
+    const viewSrcFast = fs.readFileSync(path.join(ROOT, 'lib/view.mjs'), 'utf8');
+    check('assets', 'карточки берут миниатюру, а при её отсутствии — исходный снимок (onerror)',
+      viewSrcFast.includes('export const thumb =') && viewSrcFast.includes('/thumbs/')
+        && viewSrcFast.includes('export function photoTag(') && viewSrcFast.includes('this.onerror=null;this.src='));
+    const carsHtml = (await get('/cars')).text;
+    const thumbPath = (carsHtml.match(/src="(\/thumbs\/[^"]+\.webp)"/) || [])[1];
+    check('assets', 'выдача каталога отдаёт <img> с миниатюрой и запасным исходником',
+      !!thumbPath && /onerror="this\.onerror=null;this\.src='\/uploads\//.test(carsHtml), thumbPath || 'миниатюр в разметке нет');
+    if (thumbPath) {
+      const tr = await fetch(BASE + thumbPath);
+      const trLen = Number(tr.headers.get('content-length') || 0);
+      const srcPath = thumbPath.replace('/thumbs/', '/uploads/').replace(/\.webp$/, '.jpg');
+      const sr = await fetch(BASE + srcPath);
+      const srLen = Number(sr.headers.get('content-length') || 0);
+      check('assets', 'миниатюра существует, отдаётся как WebP и легче исходника',
+        tr.status === 200 && /image\/webp/.test(tr.headers.get('content-type') || '') && sr.status === 200 && trLen > 0 && trLen < srLen,
+        `${srcPath} ${srLen} → ${thumbPath} ${trLen}`);
+    }
+    const carSlug = all("SELECT slug FROM cars WHERE status='published' AND id IN (SELECT car_id FROM car_photos) LIMIT 1")[0].slug;
+    const carHtml = (await get('/car/' + carSlug)).text;
+    check('assets', 'страница автомобиля показывает исходный снимок (качество не потеряно)',
+      carHtml.includes('data-gallery-img') && /<img src="\/uploads\/[^"]+"[^>]*data-gallery-img/.test(carHtml));
+
+    /* ── Ссылка на отзывы Яндекса ──────────────────────────────────────────────────────────────
+       Заказчик 2026-10-02: «При нажатии на кнопку - Все отзывы на Яндесе, не переходит на страницу
+       компании с отзывами в яндексе». Проверено Chrome: глубокие адреса .../reviews/ Яндекс отдаёт
+       с 429 «limited» (ограничение частоты), а карточка организации отвечает 200 и уже содержит
+       вкладку отзывов, поэтому кнопка ведёт на карточку. */
+    const yandexSrc = fs.readFileSync(path.join(ROOT, 'lib/yandex.mjs'), 'utf8');
+    const pagesSrc = fs.readFileSync(path.join(ROOT, 'lib/pages.mjs'), 'utf8');
+    check('assets', 'кнопка «Все отзывы на Яндексе» ведёт на карточку организации (её открывает Яндекс)',
+      /url: 'https:\/\/yandex\.by\/maps\/org\/avtonova_s_probegom\/27584324640\/'/.test(yandexSrc)
+        && yandexSrc.includes('reviewsUrl:') && pagesSrc.includes('href="${YANDEX_ORG.url}"')
+        && pagesSrc.includes('Все отзывы на Яндексе'));
 
     /* ── Подвал: жалобы заказчика от 2026-10-02 ────────────────────────────────────────────────
        «в мобильной версии в подвале переносится слово калькулятор, — исправь», «Переносится в
@@ -1572,8 +1664,13 @@ const SECTIONS = {
             tile: [Math.round(tb.width), Math.round(tb.height)],
           };
         }));
+        /* Плитка «Читайте также» показывает миниатюру /thumbs/news/<slug>.webp — тот же кадр, но
+           уменьшенный (2026-10-02). Проверяем, что это фото именно той статьи, на которую ведёт
+           плитка, что оно загрузилось, лежит во всю ширину и держит пропорцию 16:9. */
+        const sameSlug = (t) => t.src === '/thumbs/news/' + t.href.replace('/news/', '') + '.webp'
+          || t.src === '/uploads/news/' + t.href.replace('/news/', '') + '.jpg';
         check('ui', 'в статье «Читайте также»: у каждой плитки фото своей статьи во всю ширину',
-          tiles.length === 3 && tiles.every((t) => t.src === '/uploads/news/' + t.href.replace('/news/', '') + '.jpg'
+          tiles.length === 3 && tiles.every((t) => sameSlug(t)
             && t.ok && t.full && t.ratio && Math.abs(t.ratio - 16 / 9) < 0.05),
           tiles.map((t) => `${t.href} → ${t.src} (${t.ok ? 'загружено' : 'НЕТ'}, во всю ширину ${t.full}, ${t.ratio}, плитка ${t.tile.join('×')})`).join(' | '));
       }
@@ -3292,10 +3389,11 @@ const SECTIONS = {
       check('ui', 'на узком экране марки так же без линий и по левому краю заголовка',
         !!brandsNarrow && brandsNarrow.border === '0px/0px/0px/0px' && brandsNarrow.itemBorder === '0px/0px'
           && brandsNarrow.itemLeft === brandsNarrow.h1Left && brandsNarrow.over <= 1, JSON.stringify(brandsNarrow));
-      check('ui', 'на узком экране марки идут в две колонки, количество так же рядом с названием',
-        !!brandsNarrow && brandsNarrow.cols === 2 && brandsNarrow.rowsCount === Math.ceil(brandsNarrow.count / 2)
+      check('ui', 'на узком экране марки в три ровных колонки, количество так же рядом с названием',
+        !!brandsNarrow && brandsNarrow.cols === 3 && brandsNarrow.rowsCount === Math.ceil(brandsNarrow.count / 3)
           && brandsNarrow.maxNameGap <= 12 && brandsNarrow.alphabet && !brandsNarrow.allPlaque,
-        `колонок ${brandsNarrow && brandsNarrow.cols}, рядов ${brandsNarrow && brandsNarrow.rowsCount} на ${brandsNarrow && brandsNarrow.count} марок`);
+        `колонок ${brandsNarrow && brandsNarrow.cols}, рядов ${brandsNarrow && brandsNarrow.rowsCount} на ${brandsNarrow && brandsNarrow.count} марок;`
+          + ` зазор ≤${brandsNarrow && brandsNarrow.maxNameGap}px, алфавит ${brandsNarrow && brandsNarrow.alphabet}, плашка «Все марки» ${brandsNarrow && brandsNarrow.allPlaque}`);
       check('ui', 'на телефоне марки тоже читаются сверху вниз по колонкам',
         !!brandsNarrow && brandsNarrow.autoFlow === 'column' && brandsNarrow.colAlphabet
           && brandsNarrow.colOrder[2] === 'Belgee' && brandsNarrow.colOrder.length === brandsNarrow.count,
@@ -3342,13 +3440,37 @@ const SECTIONS = {
       await page.setViewport({ width: 390, height: 844 });
       await page.goto(BASE + '/cars', { waitUntil: 'domcontentloaded' });
       const catBrandsNarrow = await catalogBrands();
-      check('ui', '/cars: на телефоне марки в две колонки, страница не уезжает вбок',
-        !!catBrandsNarrow && catBrandsNarrow.cols === 2 && catBrandsNarrow.count === BRANDS_N
+      check('ui', '/cars: на телефоне марки в три ровных колонки, страница не уезжает вбок',
+        !!catBrandsNarrow && catBrandsNarrow.cols === 3 && catBrandsNarrow.count === BRANDS_N
+          && catBrandsNarrow.rowsCount === Math.ceil(BRANDS_N / 3)
           && catBrandsNarrow.over <= 1,
         JSON.stringify(catBrandsNarrow));
       check('ui', '/cars: на телефоне марки тоже читаются сверху вниз по колонкам',
         !!catBrandsNarrow && catBrandsNarrow.autoFlow === 'column' && catBrandsNarrow.colAlphabet,
         `/cars 390: flow ${catBrandsNarrow && catBrandsNarrow.autoFlow}, алфавит по колонкам ${catBrandsNarrow && catBrandsNarrow.colAlphabet}`);
+
+      /* Узкий телефон (320 px, iPhone SE первого поколения): страница не должна уезжать вбок.
+         Замер 2026-10-02: коробка «Сортировка» с inline min-width:210px занимала 304 px при
+         доступных 280 (подпись + список) и выталкивала документ на 4 px. Проверяем сразу три
+         страницы — каталог, главную и карточку авто. */
+      await page.setViewport({ width: 320, height: 844 });
+      const narrowOverflow = {};
+      for (const path of ['/cars', '/', '/car/geely-emgrand-ii-139143093']) {
+        await page.goto(BASE + path, { waitUntil: 'domcontentloaded' });
+        narrowOverflow[path] = await page.evaluate(() => ({
+          vw: window.innerWidth, doc: document.documentElement.scrollWidth,
+          sortW: (() => { const s = document.querySelector('.sort-box select'); return s ? Math.round(s.getBoundingClientRect().width) : 0; })(),
+          sortRight: (() => { const s = document.querySelector('.sort-box select'); return s ? Math.round(s.getBoundingClientRect().right) : 0; })(),
+        }));
+      }
+      check('ui', 'на 320 px ни одна страница не уезжает вбок',
+        Object.values(narrowOverflow).every((m) => m.doc - m.vw <= 0),
+        JSON.stringify(narrowOverflow));
+      check('ui', 'на 320 px список сортировки занимает почти всю ширину и не выходит за экран',
+        narrowOverflow['/cars'].sortW >= narrowOverflow['/cars'].vw - 60
+          && narrowOverflow['/cars'].sortRight <= narrowOverflow['/cars'].vw,
+        `ширина списка ${narrowOverflow['/cars'].sortW}px, правый край ${narrowOverflow['/cars'].sortRight}px при экране ${narrowOverflow['/cars'].vw}px`);
+      await page.setViewport({ width: 390, height: 844 });
 
       /* Страница «Проданные автомобили»: заявка на подбор стоит справа от таблицы и вровень с её
          верхом, таблица подтянута влево ровно на ширину колонки заявки. На узком экране колонки
