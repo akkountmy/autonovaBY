@@ -1194,6 +1194,15 @@ const SECTIONS = {
     check('assets', 'сборка копии догружает все партии карточек и подключает скрипт каталога',
       buildPages.includes('/api/cars/cards?page=') && buildPages.includes("'<article data-extra class=\"car\"'")
         && buildPages.includes('catalog-demo.js') && checkPages.includes('catalog-demo.js'));
+    /* Ссылка на страницу атрибуции снимков стоит на /sell (лицензии CC BY / CC BY-SA требуют
+       указывать автора; из подвала её убрал заказчик). Путь /data/... обходчик копии пропускает как
+       служебный, поэтому в копии ссылка вела в никуда — на GitHub Pages отдавался 404. Теперь
+       сборщик кладёт страницу в копию отдельным файлом (снимки внутри — с CDN), переписывает ссылку
+       на файл копии, а проверка копии это стережёт. */
+    check('assets', 'копия: страница атрибуции снимков попадает в копию, а ссылка ведёт внутрь копии',
+      buildPages.includes('/data/avby-img/credits.html')
+        && buildPages.includes('href="${prefix}data/avby-img/credits.html"')
+        && checkPages.includes('commons.wikimedia.org') && checkPages.includes('creditsRel'));
 
     /* ── Подвал: жалобы заказчика от 2026-10-02 ────────────────────────────────────────────────
        «в мобильной версии в подвале переносится слово калькулятор, — исправь», «Переносится в
@@ -1413,10 +1422,11 @@ const SECTIONS = {
       const soldList = await get('/cars-sold');
       /* Свежая продажа (запись только что сделана, sold_at = сегодня) обязана быть первой строкой
          таблицы: строки идут ORDER BY sold_at DESC, а строки-подписи «Проданные автомобили в этом
-         месяце» над ними больше нет — заказчик 2026-10-01 попросил её убрать. */
+         месяце» над ними больше нет — заказчик 2026-10-01 попросил её убрать. В теге <td> теперь
+         есть data-label (на телефоне таблица собирается в карточки), поэтому проверяем <td[^>]*>. */
       const soldBody = soldList.text.slice(soldList.text.indexOf('<tbody>'));
       check('moderation', 'проданное авто видно на /cars-sold, и таблица начинается со строки авто',
-        /^<tbody>[\s\S]{0,80}?<td><div class="sold-car">/.test(soldBody)
+        /^<tbody>[\s\S]{0,80}?<td[^>]*><div class="sold-car">/.test(soldBody)
           && soldBody.includes(`class="sold-photo" src="${upPhotos[0].path}"`)
           && soldBody.includes(`${c.brand} ${c.model}`),
         `фото ${upPhotos[0].path}`);
