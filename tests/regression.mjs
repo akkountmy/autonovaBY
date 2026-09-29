@@ -4496,6 +4496,57 @@ const SECTIONS = {
           && drawerMid.labels.includes('Автомобили с пробегом') && drawerMid.labels.includes('Отзывы')
           && drawerMid.right <= drawerMid.inner && drawerMid.left >= 400 && drawerMid.scrollW <= drawerMid.inner,
         JSON.stringify(drawerMid));
+
+      /* ── Страница «Сравнение» на телефоне ───────────────────────────────────────────────────
+         Просьба заказчика 2026-10-02 (с телефона): «На странице - Сравнения авто в мобильной
+         версии, сделай, что бы били показаны минимум два автомобиля без прокрутки содержимого
+         блока в право». До правки таблица была 840 px при трёх машинах: на 390 px экране от
+         первой колонки видно 246 px, от второй — 26 px. Теперь на телефоне таблица скрыта,
+         а вместо неё .cmp-cards — сетка колонок-карточек. Проверяем на 320 и 390 px: колонок
+         ровно две, каждая карточка целиком в экране, горизонтальной прокрутки нет ни у страницы,
+         ни у блока сравнения, а значения характеристик не обрезаны многоточием. */
+      const cmpCookie = { name: 'an_cmp', value: '1,2,3', url: BASE };
+      for (const w of [320, 390]) {
+        await page.setViewport({ width: w, height: 900, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+        await page.setCookie(cmpCookie);
+        await page.goto(BASE + '/compare/', { waitUntil: 'load' });
+        await new Promise((r) => setTimeout(r, 400));
+        const cm = await page.evaluate(() => {
+          const cards = document.querySelector('.cmp-cards-only');
+          const grid = cards ? getComputedStyle(cards) : null;
+          const items = [...(cards ? cards.querySelectorAll('.cmp-card') : [])];
+          const right = Math.max(0, ...items.map((c) => c.getBoundingClientRect().right));
+          const vals = [...document.querySelectorAll('.cmp-list dd')];
+          const scroller = document.querySelector('.cmp-scroll');
+          return {
+            cols: grid ? grid.gridTemplateColumns.split(' ').filter(Boolean).length : 0,
+            cards: items.length,
+            cardsShown: grid ? grid.display !== 'none' : false,
+            tableShown: scroller ? getComputedStyle(scroller).display !== 'none' : false,
+            right: Math.round(right), innerW: innerWidth,
+            scrollW: document.documentElement.scrollWidth,
+            blockOver: scroller ? scroller.scrollWidth - scroller.clientWidth : 0,
+            clipped: vals.filter((dd) => dd.scrollWidth > dd.clientWidth + 1).length,
+            specs: vals.length,
+            empty: !!document.querySelector('.empty'),
+          };
+        });
+        check('ui', `${w}: сравнение — две колонки-карточки в экране без прокрутки блока вправо`,
+          cm.cardsShown && !cm.tableShown && cm.cols === 2 && cm.cards === 3 && !cm.empty
+            && cm.right <= cm.innerW + 1 && cm.scrollW <= cm.innerW && cm.blockOver === 0,
+          JSON.stringify(cm));
+        check('ui', `${w}: сравнение — характеристики не обрезаны (${cm.specs} значений)`,
+          cm.specs >= 33 && cm.clipped === 0, `обрезано ${cm.clipped} из ${cm.specs}`);
+      }
+      /* «Убрать» в карточке: машина уходит из сравнения, остальные остаются. */
+      await page.evaluate(() => document.querySelectorAll('.cmp-card [data-compare-remove]')[1].click());
+      await new Promise((r) => setTimeout(r, 700));
+      const cmpAfter = await page.evaluate(() => ({
+        cards: document.querySelectorAll('.cmp-card').length,
+        badge: (document.querySelector('[data-count-cmp]') || {}).textContent || '',
+      }));
+      check('ui', 'сравнение: «Убрать» в карточке убирает одну машину, остальные остаются',
+        cmpAfter.cards === 2 && cmpAfter.badge.trim() === '2', JSON.stringify(cmpAfter));
     } finally {
       await browser.close();
     }
