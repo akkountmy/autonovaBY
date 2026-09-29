@@ -421,11 +421,20 @@
 
   /* ── фильтры и сортировка ───────────────────────────── */
   function initFilters() {
+    /* Куда встаёт страница после перестройки списка. Заказчик 2026-10-02: «Сортировка — при
+       выборе метода сортировки, при нажатии на кнопку сайт пролистывается вверх, не надо,
+       должно показывать первые карточки выбранной модели авто». Переход был без якоря,
+       поэтому браузер открывал страницу с самого верха (замер на 390 px: панель поиска
+       занимает 801 px, шапка выдачи — на 1304 px, то есть после сортировки карточек не видно
+       вовсе). Теперь сортировка добавляет #list — это шапка выдачи в каталоге («Найдено N …»
+       с самой сортировкой, lib/pages.mjs), а .list-head держит scroll-margin-top под прилипшую
+       шапку сайта. Селект сортировки есть только в каталоге, где #list всегда на месте. */
     $$('select[data-sort]').forEach(function (sel) {
       sel.addEventListener('change', function () {
         var u = new URL(location.href);
         u.searchParams.set('sort', sel.value);
         u.searchParams.delete('page');
+        u.hash = 'list';
         location.href = u.toString();
       });
     });
@@ -516,7 +525,18 @@
       if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
       if (scrim) scrim.addEventListener('click', closeDrawer);
       nav.addEventListener('click', function (e) {
-        if (e.target.closest('a')) closeDrawer();
+        var link = e.target.closest('a');
+        if (!link) return;
+        /* «Услуги» в панели — не переход, а раскрытие списка: первый тап по нему гасит переход
+           и раскрывает подпункты (обработчик [data-nav-dd] ниже). Панель при этом закрывать
+           нельзя — она уезжала вместе со списком, и получалось, что кнопка «Услуги» в
+           бутерброде не работает (заказчик 2026-10-02). Панель закрывается на переходе по
+           подпункту, по обычному пункту меню и на втором тапе по «Услуги» (когда список уже
+           раскрыт — тогда это честный переход на /services). */
+        var dd = link.parentNode;
+        if (link.classList.contains('nav-dd-btn') && dd && !dd.classList.contains('open')
+            && window.matchMedia && window.matchMedia('(hover:none)').matches) return;
+        closeDrawer();
       });
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && drawerOpen) { closeDrawer(); burger.focus(); }
@@ -810,6 +830,61 @@
     });
   }
 
+  /* ── куда встаёт раскрытый список (.sel-pop) ────────────
+     Общая раскладка для списков панели поиска (initSelects) и полей формы продажи (initCombos).
+     Заказчик 2026-10-02 про форму «Подача объявления»: «нажимаю на марка и списки раскрываются
+     вверх и большая часть марок не видно, возможно и в остальных есть такие нюансы, проверь и
+     исправь». Что было не так:
+       1) место считалось по window.innerHeight и с жёстким потолком 302 px, поэтому список
+          показывал 9–10 строк из 166, даже когда под полем было пол-экрана свободного места;
+       2) порог в 160 px (Math.max(160, …)) вынуждал открывать список вверх даже при 200 px
+          свободного места внизу — а «Марка» и «Модель» стоят примерно на середине формы, так что
+          вверх он и уходил;
+       3) на телефоне видимую часть окна ужимает клавиатура, а направление и потолок считались
+          один раз при открытии.
+     Теперь: направление выбирается по тому, где места больше, потолок — 60 % видимой высоты
+     (не больше 480 px и не меньше 280 px), вместо 160 px — мягкий пол 120 px, а место
+     пересчитывается при изменении видимой части окна (см. watchViewport). Видимая высота
+     берётся у visualViewport, когда он есть: с открытой клавиатурой это единственный верный
+     ориентир. */
+  function placePop(wrap, pop, anchor, cap) {
+    var vv = window.visualViewport;
+    var top = vv ? vv.offsetTop : 0;
+    var bottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+    var max = cap || Math.min(480, Math.max(280, Math.round((bottom - top) * 0.6)));
+    wrap.classList.remove('sel--up');
+    pop.style.maxHeight = '';
+    var r = anchor.getBoundingClientRect();
+    var need = Math.min(pop.scrollHeight, max);
+    var below = bottom - r.bottom - 8;
+    var above = r.top - top - 8;
+    if (below < need + 12 && above > below) {
+      wrap.classList.add('sel--up');
+      pop.style.maxHeight = Math.min(max, Math.max(120, above - 6)) + 'px';
+      return 'up';
+    }
+    pop.style.maxHeight = Math.min(max, Math.max(120, below - 6)) + 'px';
+    return 'down';
+  }
+
+  /* Изменение видимой части окна (клавиатура, адресная строка, поворот экрана) не закрывает
+     открытый список, а переставляет его: раньше на resize и на любой прокрутке список просто
+     закрывался (initSelects: resize/scroll → shutOpen; initCombos: resize → shut), и на телефоне
+     он пропадал ровно в тот момент, когда браузер прокручивал поле под клавиатуру. */
+  function watchViewport(place) {
+    var raf = 0;
+    var soon = function () {
+      if (raf) return;
+      var tick = function () { raf = 0; place(); };
+      raf = window.requestAnimationFrame ? window.requestAnimationFrame(tick) : setTimeout(tick, 16);
+    };
+    window.addEventListener('resize', soon);
+    window.addEventListener('scroll', soon, { passive: true });
+    var vv = window.visualViewport;
+    if (vv) { vv.addEventListener('resize', soon); vv.addEventListener('scroll', soon); }
+    return soon;
+  }
+
   /* ── выпадающие списки панели поиска и формы продажи ────
      Системный список <select> в браузере не оформляется: белый прямоугольник без скругления и
      тени, системным шрифтом, вылезает поверх шапки и обрезается по краю окна (снимок
@@ -901,20 +976,10 @@
         else btn.removeAttribute('aria-activedescendant');
       }
 
-      /* Снизу мало места — открываем вверх (последний ряд полей у низа окна). */
+      /* Куда встаёт список: общая раскладка placePop (см. выше). Потолок 302 px — как в CSS
+         (.sel-pop), он же рассчитан на панель поиска, где выше списка ещё поля. */
       function place() {
-        wrap.classList.remove('sel--up');
-        pop.style.maxHeight = '';
-        var r = btn.getBoundingClientRect();
-        var need = Math.min(pop.scrollHeight, 302);
-        var below = window.innerHeight - r.bottom - 8;
-        var above = r.top - 8;
-        if (below < need + 12 && above > below) {
-          wrap.classList.add('sel--up');
-          pop.style.maxHeight = Math.min(302, Math.max(160, above - 6)) + 'px';
-        } else {
-          pop.style.maxHeight = Math.min(302, Math.max(160, below - 6)) + 'px';
-        }
+        return placePop(wrap, pop, btn, 302);
       }
 
       function openPop() {
@@ -986,7 +1051,7 @@
         }
       }
 
-      var api = { wrap: wrap, shut: shut };
+      var api = { wrap: wrap, shut: shut, place: place };
 
       btn.addEventListener('click', function (e) {
         e.preventDefault();
@@ -1053,8 +1118,8 @@
       if (opened && !opened.wrap.contains(e.target)) opened.shut();
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutOpen(); });
-    window.addEventListener('resize', shutOpen);
-    window.addEventListener('scroll', shutOpen, { passive: true });
+    /* Окно изменилось или страница прокрутилась — список не закрываем, а переставляем. */
+    watchViewport(function () { if (opened) opened.place(); });
   }
 
   /* ── марка, модель и поколение формы продажи ───────────
@@ -1229,7 +1294,7 @@
       var active = -1;
       /* Пока идут программные события выбора, список не раскрываем заново. */
       var quiet = false;
-      var self = { wrap: wrap, input: input, shut: shut };
+      var self = { wrap: wrap, input: input, shut: shut, place: place };
 
       function rows() { return $$('.sel-opt', pop); }
 
@@ -1324,19 +1389,11 @@
         return list.length ? 0 : -1;
       }
 
-      /* Снизу мало места — открываем вверх (поля «Поколение» и «Год» стоят у низа окна). */
+      /* Списки марок, моделей и поколений длинные (марок — 166), поэтому потолок здесь не 302,
+         а 60 % видимой высоты окна (placePop считает сам): на телефоне это ~480 px вместо
+         прежних 302 px — видно вдвое больше марок сразу. */
       function place() {
-        wrap.classList.remove('sel--up');
-        var r = input.getBoundingClientRect();
-        var need = Math.min(pop.scrollHeight, 302);
-        var below = window.innerHeight - r.bottom - 8;
-        var above = r.top - 8;
-        if (below < need + 12 && above > below) {
-          wrap.classList.add('sel--up');
-          pop.style.maxHeight = Math.min(302, Math.max(160, above - 6)) + 'px';
-        } else {
-          pop.style.maxHeight = Math.min(302, Math.max(160, below - 6)) + 'px';
-        }
+        return placePop(wrap, pop, input);
       }
 
       function openPop() {
@@ -1464,7 +1521,9 @@
       if (opened && !opened.wrap.contains(e.target)) opened.shut();
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && opened) opened.shut(); });
-    window.addEventListener('resize', function () { if (opened) opened.shut(); });
+    /* Окно изменилось (в том числе клавиатура на телефоне) — список не закрываем, а
+       переставляем: он остаётся у поля и получает всё свободное место. */
+    watchViewport(function () { if (opened) opened.place(); });
 
     /* Каталог av.by подтягиваем сразу: к первому клику по полю список марок уже полный. */
     avbyIndex();

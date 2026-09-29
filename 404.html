@@ -45,7 +45,7 @@
        фото в покое стрелки скрыты совсем (opacity 0) и появляются при наведении на снимок.
        Формулировки здесь намеренно обтекаемые: этот комментарий уезжает в HTML каждой страницы, и
        проверки «на карточке нет такой-то строки» искали бы её в собственном комментарии. -->
-<link rel="stylesheet" href="assets/css/site.css?v=188">
+<link rel="stylesheet" href="assets/css/site.css?v=193">
 <link rel="stylesheet" href="assets/css/photo-focus.css?v=3">
 
 </head>
@@ -163,12 +163,17 @@
     </div>
   </div>
   <div class="fbottom">
-    <span>© 2026 ООО «Автонова», УНП 490323534. Все права защищены.</span>
-    <span>Информация на сайте не является публичной офертой.</span>
+    <!-- УНП — одной неразрывной группой: иначе на узком экране балансировка строк рвала её пополам
+         («…УНП» / «490323534. Все права защищены.»). Компания приходит из настроек одной строкой
+         («ООО «Автонова», УНП 490323534»), поэтому хвост после запятой заворачиваем в .nowrap:
+         строка ломается перед ним, и обе части читаются целиком. -->
+    <span class="fb-copy">© 2026 ООО «Автонова», <span class="nowrap">УНП 490323534</span>. Все права защищены.</span>
+    <span class="fb-note">Информация на сайте не является публичной офертой.</span>
     <!-- Снимки поколений в форме «Разместить объявление» — из свободных источников (Wikimedia
-         Commons). По лицензиям CC BY / CC BY-SA автора указывать обязательно, поэтому в подвале
-         стоит ссылка на страницу атрибуции (заказчик 2026-09-28: «фото другие без 100% плагиата»). -->
-    <span><a href="/data/avby-img/credits.html">Фотографии каталога: авторы и лицензии</a></span>
+         Commons). По лицензиям CC BY / CC BY-SA автора указывать обязательно. Из подвала ссылка
+         убрана по просьбе заказчика 2026-10-02 («Убери в подвале Фотографии каталога…»), страница
+         атрибуции осталась и доступна с самой формы: ссылка стоит под блоком «Фотографии»
+         (lib/pages.mjs, sellPage). -->
   </div>
 </div></footer>
 <div class="toast" data-toast><span data-toast-msg></span><a class="btn btn-sm toast-go" href="/autonovaBY/compare/"">Сравнить</a></div>
@@ -262,7 +267,7 @@
   </div>
 </div>
 <button class="back-top" data-top type="button" aria-label="Наверх"><svg class="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg></button>
-<script src="assets/js/site.js?v=34" defer></script>
+<script src="assets/js/site.js?v=35" defer></script>
 <script src="assets/js/demo-pages.js" defer></script>
 </body>
 </html>

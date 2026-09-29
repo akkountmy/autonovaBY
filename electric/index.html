@@ -45,7 +45,7 @@
        фото в покое стрелки скрыты совсем (opacity 0) и появляются при наведении на снимок.
        Формулировки здесь намеренно обтекаемые: этот комментарий уезжает в HTML каждой страницы, и
        проверки «на карточке нет такой-то строки» искали бы её в собственном комментарии. -->
-<link rel="stylesheet" href="../assets/css/site.css?v=188">
+<link rel="stylesheet" href="../assets/css/site.css?v=193">
 <link rel="stylesheet" href="../assets/css/photo-focus.css?v=3">
 
 </head>
@@ -151,7 +151,7 @@
 <script type="application/json" data-ps-models="1">{"Geely":["Emgrand II","Atlas Pro","Atlas I","Coolray I","EX5","Geometry C","Monjaro","Tugella I"],"Belgee":["X50","X70 I"],"Nissan":["X-Trail III (T32)","Note II (E12)","Qashqai I","Qashqai II"],"Renault":["Kaptur I","Sandero Stepway II","Duster I","Scenic III","Scenic IV"],"Alfa Romeo":["Romeo 159"],"Audi":["A5 F5","Q5 8R"],"BMW":["3 серия E90, E91, E92, E93","5 серия F07 (GT)","X5 G05"],"Chevrolet":["Cruze J300","Trax I"],"Citroën":["Berlingo II","C1 II"],"Ford":["Escape IV","Focus II","Fusion USA II"],"Honda":["Jazz II"],"Hyundai":["Creta I","Tucson I"],"Lada (ВАЗ)":["Vesta I"],"Mercedes-Benz":["E-Класс W212, S212, C207, A207"],"Opel":["Zafira C"],"Peugeot":["3008 I","408 I","5008 I"],"Toyota":["Corolla Verso II (AR10)"],"Volkswagen":["Golf VI"]}</script>
 </div></section>
   <div class="wrap page-pb">
-    <div class="list-head">
+    <div class="list-head" id="list">
       <h2>Найдено <b class="num">1</b> автомобиль</h2>
       <div class="sort-box">
         <span class="small muted">Сортировка</span>
@@ -160,7 +160,13 @@
         </select>
       </div>
     </div>
-    <div class="cars"><article class="car" data-car-id="267" data-car-title="Geely EX5, 2026">
+    <div class="cars"><article class="car" data-car-id="267" data-car-title="Geely EX5, 2026"
+    data-brand="Geely" data-model="EX5" data-year="2026"
+    data-price="67900" data-mileage="9405"
+    data-added="2026-09-26" data-views="748"
+    data-body="suv" data-trans="at"
+    data-fuel="electric" data-drive="fwd"
+    data-volume="0">
     <div class="car-media">
       <div class="carousel" data-carousel>
       <div class="carousel-track" data-track><img src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-ex5-139858749/01.jpg" alt="Geely EX5" loading="lazy" decoding="async"><img src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-ex5-139858749/02.jpg" alt="Geely EX5" loading="lazy" decoding="async"><img src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-ex5-139858749/03.jpg" alt="Geely EX5" loading="lazy" decoding="async"><img src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-ex5-139858749/04.jpg" alt="Geely EX5" loading="lazy" decoding="async"><img src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-ex5-139858749/05.jpg" alt="Geely EX5" loading="lazy" decoding="async"><img src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-ex5-139858749/06.jpg" alt="Geely EX5" loading="lazy" decoding="async"><img src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-ex5-139858749/07.jpg" alt="Geely EX5" loading="lazy" decoding="async"><img src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-ex5-139858749/08.jpg" alt="Geely EX5" loading="lazy" decoding="async"></div>
@@ -251,12 +257,17 @@
     </div>
   </div>
   <div class="fbottom">
-    <span>© 2026 ООО «Автонова», УНП 490323534. Все права защищены.</span>
-    <span>Информация на сайте не является публичной офертой.</span>
+    <!-- УНП — одной неразрывной группой: иначе на узком экране балансировка строк рвала её пополам
+         («…УНП» / «490323534. Все права защищены.»). Компания приходит из настроек одной строкой
+         («ООО «Автонова», УНП 490323534»), поэтому хвост после запятой заворачиваем в .nowrap:
+         строка ломается перед ним, и обе части читаются целиком. -->
+    <span class="fb-copy">© 2026 ООО «Автонова», <span class="nowrap">УНП 490323534</span>. Все права защищены.</span>
+    <span class="fb-note">Информация на сайте не является публичной офертой.</span>
     <!-- Снимки поколений в форме «Разместить объявление» — из свободных источников (Wikimedia
-         Commons). По лицензиям CC BY / CC BY-SA автора указывать обязательно, поэтому в подвале
-         стоит ссылка на страницу атрибуции (заказчик 2026-09-28: «фото другие без 100% плагиата»). -->
-    <span><a href="/data/avby-img/credits.html">Фотографии каталога: авторы и лицензии</a></span>
+         Commons). По лицензиям CC BY / CC BY-SA автора указывать обязательно. Из подвала ссылка
+         убрана по просьбе заказчика 2026-10-02 («Убери в подвале Фотографии каталога…»), страница
+         атрибуции осталась и доступна с самой формы: ссылка стоит под блоком «Фотографии»
+         (lib/pages.mjs, sellPage). -->
   </div>
 </div></footer>
 <div class="toast" data-toast><span data-toast-msg></span><a class="btn btn-sm toast-go" href="../compare/"">Сравнить</a></div>
@@ -350,7 +361,8 @@
   </div>
 </div>
 <button class="back-top" data-top type="button" aria-label="Наверх"><svg class="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg></button>
-<script src="../assets/js/site.js?v=34" defer></script>
+<script src="../assets/js/site.js?v=35" defer></script>
+<script src="../assets/js/catalog-demo.js?v=mumxj2lz" defer></script>
 <script src="../assets/js/demo-pages.js" defer></script>
 </body>
 </html>

@@ -45,7 +45,7 @@
        фото в покое стрелки скрыты совсем (opacity 0) и появляются при наведении на снимок.
        Формулировки здесь намеренно обтекаемые: этот комментарий уезжает в HTML каждой страницы, и
        проверки «на карточке нет такой-то строки» искали бы её в собственном комментарии. -->
-<link rel="stylesheet" href="../assets/css/site.css?v=188">
+<link rel="stylesheet" href="../assets/css/site.css?v=193">
 <link rel="stylesheet" href="../assets/css/photo-focus.css?v=3">
 
 </head>
@@ -107,37 +107,37 @@
     <div class="sold-layout">
       <div class="sold-main">
         <div class="tbl-wrap">
-        <table class="tbl">
+        <table class="tbl tbl-cards">
           <thead><tr><th>Автомобиль</th><th>Год</th><th>Пробег</th><th>Цена</th><th class="tbl-ctr">Дата продажи</th></tr></thead>
           <tbody><tr>
-            <td><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-atlas-i-136028422/01.jpg" alt="Geely Atlas I, 2019" width="64" height="48" loading="lazy" decoding="async"><b>Geely Atlas I</b></div></td>
-            <td>2019</td>
-            <td class="num">128 000 км</td><td class="num">41 900 руб.</td>
-            <td class="num tbl-ctr">2026-09-23</td></tr><tr>
-            <td><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/sold/hyundai-solaris-i.jpg" alt="Hyundai Solaris I, 2015" width="64" height="48" loading="lazy" decoding="async"><b>Hyundai Solaris I</b></div></td>
-            <td>2015</td>
-            <td class="num">156 000 км</td><td class="num">29 900 руб.</td>
-            <td class="num tbl-ctr">2026-09-22</td></tr><tr>
-            <td><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/chevrolet-cruze-j300-137864321/01.jpg" alt="Chevrolet Cruze J300, 2012" width="64" height="48" loading="lazy" decoding="async"><b>Chevrolet Cruze J300</b></div></td>
-            <td>2012</td>
-            <td class="num">289 000 км</td><td class="num">24 900 руб.</td>
-            <td class="num tbl-ctr">2026-09-21</td></tr><tr>
-            <td><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/renault-duster-i-139070543/01.jpg" alt="Renault Duster I, 2016" width="64" height="48" loading="lazy" decoding="async"><b>Renault Duster I</b></div></td>
-            <td>2016</td>
-            <td class="num">174 000 км</td><td class="num">31 900 руб.</td>
-            <td class="num tbl-ctr">2026-09-19</td></tr><tr>
-            <td><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-coolray-2023/01.jpg" alt="Geely Coolray I, 2021" width="64" height="48" loading="lazy" decoding="async"><b>Geely Coolray I</b></div></td>
-            <td>2021</td>
-            <td class="num">82 000 км</td><td class="num">46 500 руб.</td>
-            <td class="num tbl-ctr">2026-09-18</td></tr><tr>
-            <td><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/sold/kia-sportage-iii.jpg" alt="Kia Sportage III, 2012" width="64" height="48" loading="lazy" decoding="async"><b>Kia Sportage III</b></div></td>
-            <td>2012</td>
-            <td class="num">241 000 км</td><td class="num">39 900 руб.</td>
-            <td class="num tbl-ctr">2026-09-15</td></tr><tr>
-            <td><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/sold/volkswagen-passat-b7.jpg" alt="Volkswagen Passat B7, 2013" width="64" height="48" loading="lazy" decoding="async"><b>Volkswagen Passat B7</b></div></td>
-            <td>2013</td>
-            <td class="num">268 000 км</td><td class="num">43 900 руб.</td>
-            <td class="num tbl-ctr">2026-09-12</td></tr></tbody>
+            <td data-label="Автомобиль"><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-atlas-i-136028422/01.jpg" alt="Geely Atlas I, 2019" width="64" height="48" loading="lazy" decoding="async"><b>Geely Atlas I</b></div></td>
+            <td data-label="Год">2019</td>
+            <td class="num" data-label="Пробег">128 000 км</td><td class="num" data-label="Цена">41 900 руб.</td>
+            <td class="num tbl-ctr" data-label="Продано">2026-09-23</td></tr><tr>
+            <td data-label="Автомобиль"><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/sold/hyundai-solaris-i.jpg" alt="Hyundai Solaris I, 2015" width="64" height="48" loading="lazy" decoding="async"><b>Hyundai Solaris I</b></div></td>
+            <td data-label="Год">2015</td>
+            <td class="num" data-label="Пробег">156 000 км</td><td class="num" data-label="Цена">29 900 руб.</td>
+            <td class="num tbl-ctr" data-label="Продано">2026-09-22</td></tr><tr>
+            <td data-label="Автомобиль"><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/chevrolet-cruze-j300-137864321/01.jpg" alt="Chevrolet Cruze J300, 2012" width="64" height="48" loading="lazy" decoding="async"><b>Chevrolet Cruze J300</b></div></td>
+            <td data-label="Год">2012</td>
+            <td class="num" data-label="Пробег">289 000 км</td><td class="num" data-label="Цена">24 900 руб.</td>
+            <td class="num tbl-ctr" data-label="Продано">2026-09-21</td></tr><tr>
+            <td data-label="Автомобиль"><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/renault-duster-i-139070543/01.jpg" alt="Renault Duster I, 2016" width="64" height="48" loading="lazy" decoding="async"><b>Renault Duster I</b></div></td>
+            <td data-label="Год">2016</td>
+            <td class="num" data-label="Пробег">174 000 км</td><td class="num" data-label="Цена">31 900 руб.</td>
+            <td class="num tbl-ctr" data-label="Продано">2026-09-19</td></tr><tr>
+            <td data-label="Автомобиль"><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-coolray-2023/01.jpg" alt="Geely Coolray I, 2021" width="64" height="48" loading="lazy" decoding="async"><b>Geely Coolray I</b></div></td>
+            <td data-label="Год">2021</td>
+            <td class="num" data-label="Пробег">82 000 км</td><td class="num" data-label="Цена">46 500 руб.</td>
+            <td class="num tbl-ctr" data-label="Продано">2026-09-18</td></tr><tr>
+            <td data-label="Автомобиль"><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/sold/kia-sportage-iii.jpg" alt="Kia Sportage III, 2012" width="64" height="48" loading="lazy" decoding="async"><b>Kia Sportage III</b></div></td>
+            <td data-label="Год">2012</td>
+            <td class="num" data-label="Пробег">241 000 км</td><td class="num" data-label="Цена">39 900 руб.</td>
+            <td class="num tbl-ctr" data-label="Продано">2026-09-15</td></tr><tr>
+            <td data-label="Автомобиль"><div class="sold-car"><img class="sold-photo" src="https://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/sold/volkswagen-passat-b7.jpg" alt="Volkswagen Passat B7, 2013" width="64" height="48" loading="lazy" decoding="async"><b>Volkswagen Passat B7</b></div></td>
+            <td data-label="Год">2013</td>
+            <td class="num" data-label="Пробег">268 000 км</td><td class="num" data-label="Цена">43 900 руб.</td>
+            <td class="num tbl-ctr" data-label="Продано">2026-09-12</td></tr></tbody>
         </table>
         </div>
         <p class="form-note" style="margin-top:14px">Не нашли подходящий автомобиль? Оставьте заявку — сообщим, когда появится нужная комплектация.</p>
@@ -213,12 +213,17 @@
     </div>
   </div>
   <div class="fbottom">
-    <span>© 2026 ООО «Автонова», УНП 490323534. Все права защищены.</span>
-    <span>Информация на сайте не является публичной офертой.</span>
+    <!-- УНП — одной неразрывной группой: иначе на узком экране балансировка строк рвала её пополам
+         («…УНП» / «490323534. Все права защищены.»). Компания приходит из настроек одной строкой
+         («ООО «Автонова», УНП 490323534»), поэтому хвост после запятой заворачиваем в .nowrap:
+         строка ломается перед ним, и обе части читаются целиком. -->
+    <span class="fb-copy">© 2026 ООО «Автонова», <span class="nowrap">УНП 490323534</span>. Все права защищены.</span>
+    <span class="fb-note">Информация на сайте не является публичной офертой.</span>
     <!-- Снимки поколений в форме «Разместить объявление» — из свободных источников (Wikimedia
-         Commons). По лицензиям CC BY / CC BY-SA автора указывать обязательно, поэтому в подвале
-         стоит ссылка на страницу атрибуции (заказчик 2026-09-28: «фото другие без 100% плагиата»). -->
-    <span><a href="/data/avby-img/credits.html">Фотографии каталога: авторы и лицензии</a></span>
+         Commons). По лицензиям CC BY / CC BY-SA автора указывать обязательно. Из подвала ссылка
+         убрана по просьбе заказчика 2026-10-02 («Убери в подвале Фотографии каталога…»), страница
+         атрибуции осталась и доступна с самой формы: ссылка стоит под блоком «Фотографии»
+         (lib/pages.mjs, sellPage). -->
   </div>
 </div></footer>
 <div class="toast" data-toast><span data-toast-msg></span><a class="btn btn-sm toast-go" href="../compare/"">Сравнить</a></div>
@@ -312,7 +317,7 @@
   </div>
 </div>
 <button class="back-top" data-top type="button" aria-label="Наверх"><svg class="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg></button>
-<script src="../assets/js/site.js?v=34" defer></script>
+<script src="../assets/js/site.js?v=35" defer></script>
 <script src="../assets/js/demo-pages.js" defer></script>
 </body>
 </html>

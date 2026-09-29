@@ -18,6 +18,11 @@
   }
   function pathOf(p) { p = String(p || '').split('#')[0].split('?')[0].replace(/\/index\.html$/, '').replace(/\/+$/, ''); return p || '/'; }
   document.addEventListener('submit', function (e) {
+    var f = e.target;
+    /* Подбор по параметрам в каталоге считает catalog-demo.js прямо в браузере — форму не трогаем
+       и пояснение не показываем (иначе вместо выдачи посетитель видел бы «работает на боевом
+       сервере»). Заказчик 2026-10-02: «Нажимаю в блоке поиска авто марку, а оно не ищется». */
+    if (f && f.hasAttribute && f.hasAttribute('data-param-form') && document.querySelector('.cars')) return;
     e.preventDefault();
     toast('Это демонстрационная копия сайта. Отправка форм работает на боевом сервере.');
   }, true);
