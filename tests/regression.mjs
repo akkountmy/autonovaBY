@@ -945,7 +945,7 @@ const SECTIONS = {
     check('pages', '/cars-new: панель поиска помечена режимом «новые»', newCarsPage.includes('data-ps-mode="new"'));
     check('pages', '/electric: панель поиска помечена режимом «электро»', (await get('/electric')).text.includes('data-ps-mode="electric"'));
     check('pages', 'в кнопке поиска есть место под счётчик',
-      /Показать автомобили<span class="btn-cnt num">[\d\s\u00a0]*<\/span>/.test(carsPage));
+      /Показать автомобили\s*<span class="btn-cnt num">[\d\s\u00a0]*<\/span>/.test(carsPage));
   },
   api: async () => {
     const init = await get('/bxapi/v1/init');
@@ -971,7 +971,9 @@ const SECTIONS = {
     const cntBmw = await cnt('?brand=BMW');
     const apiBmw = await (await fetch(BASE + '/bxapi/v1/cars?brand=BMW')).json();
     const pageBmw = (await get('/cars?brand=BMW')).text;
-    const btnNum = (t) => { const m = t.match(/Показать автомобили<span class="btn-cnt num">([^<]*)<\/span>/); return m ? m[1].replace(/[\s\u00a0]/g, '') : null; };
+    /* Пробел перед числом — часть подписи: «Показать автомобили 57» (жалоба заказчика 02.10.2026
+       называет кнопку именно так). */
+    const btnNum = (t) => { const m = t.match(/Показать автомобили\s*<span class="btn-cnt num">([^<]*)<\/span>/); return m ? m[1].replace(/[\s\u00a0]/g, '') : null; };
     check('api', 'счётчик совпадает с фильтром марки', cntBmw.total === apiBmw.total && String(cntBmw.total) === btnNum(pageBmw), `api=${cntBmw.total} кнопка=${btnNum(pageBmw)}`);
     const cntNew = await cnt('?mode=new');
     check('api', 'счётчик режима «новые» совпадает со страницей', String(cntNew.total) === btnNum((await get('/cars-new')).text), `api=${cntNew.total} кнопка=${btnNum((await get('/cars-new')).text)}`);
@@ -1015,6 +1017,17 @@ const SECTIONS = {
     check('filters', '/cars-used: подсвечена кнопка «С пробегом»', /class="ps-mode on" href="\/cars-used">С пробегом/.test(usedPage));
     check('filters', '/cars-used: пункт меню подсвечен', /<a href="\/cars-used" class="on" title="Автомобили с пробегом"/.test(usedPage));
     check('filters', '/cars: пункт меню подсвечен и дальше', /<a href="\/cars-used" class="on" title="Автомобили с пробегом"/.test((await get('/cars')).text));
+    /* Марка в блоке выбора авто (список марок с количеством над панелью поиска) ведёт в тот же
+       раздел, который открыт сейчас, и несёт фильтр в адресе: с «С пробегом» — «/cars-used?brand=…».
+       Раньше ссылка всегда вела в «/cars?brand=…», то есть марка сбрасывала раздел, а в статичной
+       копии GitHub Pages адрес вообще терял «?brand=…» (заказчик 02.10.2026, с телефона: «во всех
+       версиях при нажатии на авто из блока выбора авто и их количества, не меняется количество
+       карточек авто и не происходит фильтр в кнопке — Показать автомобили 57»). */
+    const tileHref = (t) => (t.match(/class="bl-item" href="([^"]+)"/) || [])[1];
+    check('filters', 'марка из блока выбора авто ведёт в текущий раздел и с фильтром',
+      /^\/cars-used\?brand=/.test(tileHref(usedPage) || '') && /^\/cars\?brand=/.test(tileHref((await get('/cars')).text) || '')
+        && /^\/cars-new\?brand=/.test(tileHref((await get('/cars-new')).text) || ''),
+      `с пробегом: ${tileHref(usedPage)}, все: ${tileHref((await get('/cars')).text)}, новые: ${tileHref((await get('/cars-new')).text)}`);
     /* сортировка по цене: «по запросу» (0) не должны занимать первые места */
     const asc = await (await fetch(BASE + '/bxapi/v1/cars?sort=price_asc&per_page=100')).json();
     const prices = asc.items.map((i) => i.price);
@@ -3872,6 +3885,34 @@ const SECTIONS = {
       await page.goto(BASE + '/electric', { waitUntil: 'domcontentloaded' });
       check('ui', '/electric: счётчик считает электро, а не всю базу',
         (await readCnt()) === String(totalEl) && totalEl < totalAll, `кнопка=${await readCnt()} электро=${totalEl} база=${totalAll}`);
+      /* Марка из блока выбора авто на телефоне: тап по марке должен отфильтровать выдачу и обновить
+         число на кнопке — и остаться в том же разделе. Проверяем живым кликом с переходом, а не
+         разметкой: заказчик 02.10.2026 жаловался, что после тапа «не меняется количество карточек
+         авто и не происходит фильтр в кнопке — Показать автомобили 57». */
+      await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+      await page.goto(BASE + '/cars-used', { waitUntil: 'domcontentloaded' });
+      const tileBefore = await page.$eval('.brands-top .bl-item:not(.bl-all)',
+        (a) => ({ href: a.getAttribute('href'), text: a.textContent.replace(/[\s\u00a0]+/g, ' ').trim() }));
+      await page.click('.brands-top .bl-item:not(.bl-all)');
+      await page.waitForFunction(() => /[?&]brand=/.test(location.search), { timeout: 8000 });
+      const tileAfter = await page.evaluate(() => {
+        const btn = document.querySelector('[data-param-form] button[type="submit"] .btn-cnt');
+        const found = document.querySelector('.list-head h2 b.num');
+        return {
+          url: location.pathname + location.search,
+          cards: document.querySelectorAll('.cars .car').length,
+          btn: btn && btn.textContent.replace(/[\s\u00a0]/g, ''),
+          found: found && found.textContent.replace(/[\s\u00a0]/g, ''),
+          btnText: (document.querySelector('[data-param-form] button[type="submit"]') || {}).textContent.replace(/[\s\u00a0]+/g, ' ').trim(),
+        };
+      });
+      check('ui', '/cars-used: тап по марке фильтрует выдачу, меняет число на кнопке и не сбрасывает раздел',
+        /^\/cars-used\?brand=/.test(tileAfter.url) && /^\/cars-used\?brand=/.test(tileBefore.href)
+          && Number(tileAfter.btn) > 0 && Number(tileAfter.btn) < Number(totalAll)
+          && tileAfter.found === tileAfter.btn && tileAfter.cards >= 1 && tileAfter.cards <= Number(tileAfter.btn)
+          && /^Показать автомобили \d/.test(tileAfter.btnText),
+        JSON.stringify({ tileBefore, tileAfter }));
+      await page.goto(BASE + '/cars', { waitUntil: 'domcontentloaded' });
       check('ui', 'нет ошибок JS на страницах', errors.length === 0, errors.slice(0, 3).join(' | '));
 
       /* Вошедшему в шапке показываются «Кабинет» и «Выход» — это .btn.btn-ghost.btn-sm, а не
@@ -4165,6 +4206,38 @@ const SECTIONS = {
           && lead390.hotTop > lead390.ctaBottom && lead390.scrollW <= lead390.avail + 40,
         `кнопки→карусель ${lead390.gapBtnHot} px, точки→первая марка ${lead390.gapDotsBrand} px, высота героя ${lead390.heroH} px`);
 
+      /* Вкладки режимов в панели поиска на телефоне: «Электро» уходила за правую границу экрана
+         (заказчик 02.10.2026: «в мобильной версии в блоке поиска авто есть вкладки - все авто, с
+         пробегом, новые, электро, - кнопка электро заходит за правую границу экрана телефона»).
+         Раньше ряд из четырёх вкладок (≈353 px) прокручивался свайпом внутри панели шириной
+         262–332 px, и последняя вкладка была видна не целиком. Теперь это сетка 4×1: у каждой
+         вкладки своя доля ширины, подпись «С пробегом» укладывается в одну строку, горизонтальной
+         прокрутки нет и документ не шире экрана. */
+      const modeTabs = [];
+      for (const w of [430, 390, 375, 360, 320]) {
+        await page.setViewport({ width: w, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+        await page.goto(BASE + '/cars', { waitUntil: 'domcontentloaded' });
+        modeTabs.push(await page.evaluate(() => {
+          const box = document.querySelector('.ps-modes');
+          const items = [...box.children].map((a) => {
+            const b = a.getBoundingClientRect();
+            const range = document.createRange(); range.selectNodeContents(a);
+            return { label: a.textContent.trim(), right: Math.round(b.right), w: Math.round(b.width), lines: range.getClientRects().length };
+          });
+          return {
+            vw: innerWidth, n: items.length, labels: items.map((i) => i.label), lines: items.map((i) => i.lines),
+            minW: Math.min(...items.map((i) => i.w)), right: Math.max(...items.map((i) => i.right)),
+            overflow: box.scrollWidth - box.clientWidth, scrollW: document.documentElement.scrollWidth,
+          };
+        }));
+      }
+      check('ui', 'телефон: четыре вкладки режимов встают в строку целиком — без прокрутки и обрезки',
+        modeTabs.every((r) => r.n === 4 && r.labels.join('|') === 'Все авто|С пробегом|Новые|Электро'
+          && r.lines.every((n) => n === 1) && r.minW >= 50 && r.right <= r.vw && r.overflow <= 1 && r.scrollW <= r.vw),
+        JSON.stringify(modeTabs));
+      await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+      await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+
       const drawer = await page.evaluate(() => {
         const el = document.querySelector('[data-mobile-nav]');
         const cs = getComputedStyle(el);
@@ -4211,6 +4284,48 @@ const SECTIONS = {
       });
       check('ui', '390: тап по подложке закрывает меню',
         drawerClosed.display === 'none' && drawerClosed.scrimHidden && !/open/.test(drawerClosed.cls), JSON.stringify(drawerClosed));
+
+      /* «Услуги» в бутерброде: первый тап раскрывает список услуг, панель при этом остаётся открытой,
+         и только по подпункту происходит переход (заказчик 02.10.2026: «в мобильной версии в
+         бутерброде при нажатии вкладки - Услуги, не раскрывается список услуг и не происходит переход
+         на страницы»). Причина была в порядке обработчиков: обработчик [data-nav-dd] висит на самой
+         ссылке и срабатывает раньше обработчика панели, тот видел уже раскрытый пункт и закрывал
+         меню — список не показывался. Теперь первый тап помечен (e.__navDdOpened), и панель остаётся. */
+      await page.click('[data-burger]');
+      await new Promise((r) => setTimeout(r, 450));
+      const servTap = await page.evaluate(() => {
+        const r = document.querySelector('[data-mobile-nav] .nav-dd-btn').getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+      });
+      await page.mouse.click(servTap.x, servTap.y);
+      await new Promise((r) => setTimeout(r, 450));
+      const servOpen = await page.evaluate(() => {
+        const panel = document.querySelector('[data-mobile-nav]');
+        const dd = panel.querySelector('.nav-dd');
+        const menu = dd.querySelector('.nav-dd-menu');
+        const box = menu.getBoundingClientRect();
+        const links = [...menu.querySelectorAll('a')].map((a) => ({ t: a.textContent.trim(), href: a.getAttribute('href') }));
+        return {
+          cls: panel.className, dd: dd.className, display: getComputedStyle(menu).display,
+          w: Math.round(box.width), h: Math.round(box.height), n: links.length, links: links.slice(0, 3),
+          url: location.pathname,
+        };
+      });
+      check('ui', '390: «Услуги» в бутерброде раскрывает список и не закрывает панель',
+        /open/.test(servOpen.cls) && /open/.test(servOpen.dd) && servOpen.display !== 'none'
+          && servOpen.h >= 40 && servOpen.n >= 4 && servOpen.url === '/'
+          && servOpen.links.every((l) => /^\/services/.test(l.href)),
+        JSON.stringify(servOpen));
+      /* Второй тап по «Услуги» (список уже раскрыт) — это честный переход на страницу услуг. */
+      await page.mouse.click(servTap.x, servTap.y);
+      await page.waitForFunction(() => location.pathname === '/services', { timeout: 8000 });
+      const servPage = await page.evaluate(() => ({
+        path: location.pathname, h1: (document.querySelector('h1') || { textContent: '' }).textContent.trim().slice(0, 40),
+        sub: [...document.querySelectorAll('a[href^="/services/"]')].length,
+      }));
+      check('ui', '390: второй тап по «Услуги» ведёт на страницу услуг',
+        servPage.path === '/services' && /Услуги/.test(servPage.h1) && servPage.sub >= 3, JSON.stringify(servPage));
+      await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
 
       const foot390 = await page.evaluate(() => {
         const row = document.querySelector('.footer .soc-row');
