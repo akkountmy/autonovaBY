@@ -302,7 +302,7 @@ const SECTIONS = {
     const soldMain = soldHtml.slice(soldMainAt, soldSideAt);
     const soldSide = soldHtml.slice(soldSideAt, soldSideAt + 900);
     check('pages', '«Заявка на подбор» на странице проданных — отдельная колонка справа от таблицы',
-      soldHtml.includes('class="sold-layout"') && soldMain.includes('table class="tbl"')
+      soldHtml.includes('class="sold-layout"') && /table class="tbl( tbl-cards)?"/.test(soldMain)
         && soldSide.includes('class="panel"') && soldSide.includes('Заявка на подбор автомобиля')
         && soldSide.includes('action="/lead"')
         && !/max-width:560px/.test(soldHtml),
@@ -313,7 +313,9 @@ const SECTIONS = {
     /* Маленькое фото у каждой проданной строки. Подпись месяца под шапкой заказчик 2026-10-01
        попросил убрать: «в блоке проданные автомобили удали — Проданные автомобили в этом месяце
        7 автомобилей» — она повторяла заголовок страницы. Кадр — <img class="sold-photo"> со
-       ссылкой на файл сайта. */
+       ссылкой на файл сайта. У ячеек таблицы есть data-label: до 640 px таблица превращается в
+       карточки, и подпись колонки рисует CSS (заказчик 2026-10-02: «На странице — проданные
+       автомобили много переносов на следующие строки, не красиво»). */
     const { num: dbNum } = await import('../lib/db.mjs');
     const soldN = dbNum('SELECT COUNT(*) FROM sold_cars');
     const soldShots = (soldMain.match(/class="sold-photo"/g) || []).length;
@@ -324,7 +326,7 @@ const SECTIONS = {
     const soldInMonth = dbNum(`SELECT COUNT(*) FROM sold_cars WHERE substr(sold_at,1,7)='${soldMonth}'`);
     check('pages', 'в таблице проданных нет строки-подписи «Проданные автомобили в этом месяце»',
       !soldMain.includes('Проданные автомобили в этом месяце')
-        && (soldInMonth === 0 || /<tbody>[\s\S]{0,60}?<td><div class="sold-car">/.test(soldMain)),
+        && (soldInMonth === 0 || /<tbody>[\s\S]{0,60}?<td[^>]*><div class="sold-car">/.test(soldMain)),
       `${soldInMonth} продаж этого месяца, начало таблицы: ${soldMain.replace(/\s+/g, ' ').slice(soldMain.indexOf('<tbody>'), soldMain.indexOf('<tbody>') + 120)}`);
 
     /* Калькулятор: поле «Ставка, % годовых» и примечание про оферту убраны, в разметке остаются
@@ -1165,6 +1167,50 @@ const SECTIONS = {
       css.includes('.sel-opt .opt-img{') && css.includes('.sel-opt .opt-years{') && css.includes('.sel-pop:has(.opt-img){min-width:340px'));
     check('assets', 'JS: выбор в списке формы сворачивает его (клик по строке не всплывает в поле)',
       js.includes('quiet = true;') && /\$\$\('\[data-combo\]'\)/.test(js) && js.includes("pop.addEventListener('mousedown', function (e) { e.preventDefault(); });"));
+
+    /* ── Копия сайта на GitHub Pages ────────────────────────────────────────────────────────────
+       Заказчик смотрит статичную копию (ветка gh-pages), где нет сервера: подбор по параметрам,
+       сортировка и «Показать ещё» там мертвы, потому что фильтр живёт в SQL. Два пункта его
+       списка от 2026-10-02 — «Нажимаю в блоке поиска авто марку, а оно не ищется и на кнопке —
+       показать автомобили не меняется реальное количество выбранной марки» и «Кнопка — Показать
+       объявления не открывает остальные авто» — на живом сервере работали всегда, а в копии
+       закрыты скриптом _ref/deploy/catalog-demo.js: сборщик догружает в страницу все партии
+       карточек сервера (помечены data-extra, внутри сетки .cars), а скрипт считает подбор,
+       сортировку и листание прямо в браузере. Стережём три опоры этой схемы: карточка отдаёт
+       данные для подбора, скрипт лежит на месте, сборщик и проверка копии о нём знают. */
+    check('assets', 'карточка авто отдаёт данные подбора (марка, модель, цена, пробег, дата) — их читает каталог копии',
+      viewSrc.includes('data-brand="${esc(c.brand)}"') && viewSrc.includes('data-model="${esc(c.model)}"')
+        && viewSrc.includes('data-price="${Number(c.price) || 0}"') && viewSrc.includes('data-mileage="${Number(c.mileage) || 0}"')
+        && viewSrc.includes("data-added=\"${esc(String(c.created_at || '').slice(0, 10))}\"")
+        && css.includes('.car[data-extra],') && css.includes('.car[data-off]{display:none!important}'));
+    const catDemo = path.join(ROOT, '_ref/deploy/catalog-demo.js');
+    const catDemoSrc = fs.existsSync(catDemo) ? fs.readFileSync(catDemo, 'utf8') : '';
+    check('assets', 'скрипт каталога копии: подбор, сортировка и «Показать ещё» в браузере',
+      catDemoSrc.includes("querySelector('.cars')") && catDemoSrc.includes('data-per-page')
+        && catDemoSrc.includes('SORTERS') && catDemoSrc.includes('new_desc:') && catDemoSrc.includes('price_asc:')
+        && catDemoSrc.includes('history.replaceState') && catDemoSrc.includes("'#list'"));
+    const buildPages = fs.readFileSync(path.join(ROOT, '_ref/deploy/build-pages.mjs'), 'utf8');
+    const checkPages = fs.readFileSync(path.join(ROOT, '_ref/deploy/check-pages.mjs'), 'utf8');
+    check('assets', 'сборка копии догружает все партии карточек и подключает скрипт каталога',
+      buildPages.includes('/api/cars/cards?page=') && buildPages.includes("'<article data-extra class=\"car\"'")
+        && buildPages.includes('catalog-demo.js') && checkPages.includes('catalog-demo.js'));
+
+    /* ── Подвал: жалобы заказчика от 2026-10-02 ────────────────────────────────────────────────
+       «в мобильной версии в подвале переносится слово калькулятор, — исправь», «Переносится в
+       подвале слово защищены, — исправь», «Убери в подвале Фотографии каталога…». Ссылку на
+       копирайты снимков убрали из подвала в блок загрузки на /sell (лицензия CC BY требует, чтобы
+       она осталась на сайте), а «УНП 490323534» держим неразрывной группой: без этого балансировка
+       строк рвала её пополам. Комментарии из разметки выкидываем — в них цитаты заказчика. */
+    const noComments = (t) => t.replace(/<!--[\s\S]*?-->/g, '');
+    const home = (await get('/')).text;
+    const foot = home.slice(home.indexOf('class="fbottom"'), home.indexOf('class="fbottom"') + 600);
+    check('assets', 'подвал: «УНП 490323534» одной неразрывной группой (не рвётся пополам)',
+      foot.includes('class="fb-copy"') && foot.includes('<span class="nowrap">УНП 490323534</span>')
+        && foot.includes('Все права защищены.') && css.includes('.nowrap{white-space:nowrap}'));
+    const sell = (await get('/sell')).text;
+    check('assets', 'подвал: «Фотографии каталога» убраны, ссылка на копирайты живёт на /sell',
+      !noComments(home).includes('Фотографии каталога') && !noComments(home).includes('credits.html')
+        && noComments(sell).includes('href="/data/avby-img/credits.html"'));
   },
   deltas: async () => {
     const home = (await get('/')).text;
