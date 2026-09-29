@@ -1,0 +1,38 @@
+name: Публикация статичной копии на GitHub Pages
+
+on:
+  push:
+    branches: [gh-pages]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Забрать копию
+        uses: actions/checkout@v4
+      - name: Подготовить Pages (включить, если ещё не включены)
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Убрать служебные каталоги из публикации
+        run: rm -rf .git .github
+      - name: Собрать артефакт сайта
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Опубликовать
+        id: deploy
+        uses: actions/deploy-pages@v4
