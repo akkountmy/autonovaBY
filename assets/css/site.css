@@ -855,6 +855,17 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
 
 .param-card{padding:24px;border-radius:var(--r-card);background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}
 .ps-modes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+/* Телефон: вкладки «Все авто / С пробегом / Новые / Электро» в одну строку без переноса.
+   Заказчик (02.10.2026, с телефона): «Переносится в блоке поиск авто на нижнюю строчку, вкладки -
+   Все авто, с пробегом ....». В панели шириной 234–244 px четыре вкладки текстом не влезают
+   (нужно ~375 px), поэтому вкладки прокручиваются по горизонтали свайпом: без переноса, с
+   прокруткой до края, полосой прокрутки не видной и «прилипанием» к началу вкладки. */
+@media(max-width:600px){
+  .ps-modes{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;
+    margin:0 -14px 14px;padding:2px 14px 4px;scrollbar-width:none;-ms-overflow-style:none}
+  .ps-modes::-webkit-scrollbar{display:none}
+  .ps-modes .ps-mode{flex:0 0 auto;scroll-snap-align:start;padding:7px 11px;font-size:12.4px}
+}
 .ps-mode{padding:8px 15px;border-radius:999px;border:1px solid var(--line-2);background:#fff;font-size:13.5px;font-weight:600;color:var(--text-2);transition:.18s}
 .ps-mode:hover{border-color:var(--accent);color:var(--accent)}
 .ps-mode.on{background:var(--ink);border-color:var(--ink);color:#fff}
@@ -1036,14 +1047,33 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
 @media(max-width:1180px){.home-brands .bl-grid{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(3,auto)}}
 @media(max-width:900px){.home-brands .bl-grid{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(5,auto)}}
 /* Телефон: 19 марок в одну колонку — это 720 px и панель поиска уезжает за экран, поэтому
-   на главной список идёт в две колонки (в каталоге он под поиском, там это не мешает).
-   Низ списка здесь тоже 6 px (было 10), чтобы разрыв «марки → панель поиска» был тем же, что
-   на широком экране: 16 px. */
+   список идёт в три колонки. Заказчик (02.10.2026, с телефона): «В мобильной версии блок с
+   перечнем и количеством авто, сделай в три столбца, а не два столбца, и размести красиво,
+   читабельной и симметрично остальным блокам». Было две колонки по 134–181 px: список из 19
+   марок вытягивался на 10 рядов (720 px высоты) и разрывал панель поиска. В три колонки те же
+   марки читаются (кегль 12,6 px, «Mercedes-Benz» влезает), а счётчик количества остаётся справа
+   от названия. Ряды берём из переменной --bl-rows: её считает brandLine() от числа марок, чтобы
+   при заполнении по колонкам столбцы были ровными (18 марок → 6+6+6; жёсткие 7 рядов давали
+   7+7+4 — последний столбец обрывался на середине, заказчик просил «красиво и симметрично»).
+   Низ списка тоже 6 px (было 10), чтобы разрыв «марки → панель поиска» был тем же, что на широком
+   экране: 16 px. */
 @media(max-width:560px){
   .home-brands{padding-top:10px}
   .home-brands .brand-line{padding:8px 0 6px}
-  .home-brands .bl-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(9,auto);gap:0 12px}
-  .home-brands .bl-item{font-size:13.2px;padding:4px 0}
+  .home-brands .bl-grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(var(--bl-rows,6),auto);gap:0 8px}
+  /* justify-content здесь именно flex-start (как в базовом .bl-item): количество стоит сразу за
+     названием марки, а не у правого края колонки — этого заказчик просил ещё 2026-09-29
+     («количество стоит рядом с названием»), и на узком экране с широкими колонками
+     space-between разносил их на 80 px. */
+  .home-brands .bl-item{font-size:12.6px;padding:3px 0;gap:5px;justify-content:flex-start}
+  .home-brands .bl-item i{font-size:11px}
+}
+/* Очень узкие телефоны (320–340 px): в трёх колонках по 88 px «Mercedes-Benz» и «Volkswagen»
+   уже не влезают — кегль на шаг меньше, отступы между колонками теснее. */
+@media(max-width:340px){
+  .home-brands .bl-grid{gap:0 5px}
+  .home-brands .bl-item{font-size:10.8px;gap:4px}
+  .home-brands .bl-item i{font-size:10px}
 }
 /* Тень панели рассчитана на светлую главную: раньше под белой карточкой лежала винная
    заливка и тень была почти чёрной (0 22px 46px -28px rgba(0,0,0,.65)). */
@@ -1319,16 +1349,13 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
 .car-body{padding:17px 18px 18px;display:flex;flex-direction:column;gap:10px;flex:1}
 .car-title{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
 .car-title:hover{color:var(--accent)}
-/* Шапка карточки: название и «сравнить» — всегда одна строка. Раньше строка была .spread
-   с flex-wrap и выравниванием по верху: длинное название («Renault Sandero Stepway II, II»)
-   выдавливало галочку с подписью на вторую строку, и они уезжали вниз под название. Теперь
-   название сжимается первым (min-width:0 + «…»), галочка не сжимается вовсе, а по высоте
-   обе части выровнены по центру строки. Полное название остаётся в title. */
+/* Шапка карточки — только название, во всю ширину. Заказчик (02.10.2026, с телефона):
+   «Переносятся названия авто на нижнюю строчку, - исправь». Раньше рядом в той же строке стояла
+   галочка сравнения: на карточке 134–181 px она съедала 30–60 px, и «Geely EX5» ломался на две
+   строки. Ячейка сравнения переехала в нижнюю строку (.car-bar), название получило всю ширину
+   и обрезается многоточием только у очень длинных имён; полное имя — в title и на странице авто. */
 .car-head{gap:8px;align-items:center;flex-wrap:nowrap}
 .car-head .car-title{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.car-head .check{flex:0 0 auto;white-space:nowrap;gap:7px}
-.car-head .check input{width:16px;height:16px}
-.car-head .check .small{font-size:12.6px}
 /* Теснее поля внутри карточки на 1081–1239 px (там 4 узкие колонки по 262–286 px): название
    выигрывает 6 px и обрезается позже. */
 @media(min-width:1081px){.car-body{padding:15px 15px 16px}}
@@ -1339,10 +1366,26 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
 .car-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
 .car-actions{display:grid;gap:8px}
 .car-actions .btn{width:100%;justify-content:center;white-space:nowrap}
-.car-more{display:inline-flex;align-items:center;gap:2px;font-size:13.4px;font-weight:600;color:var(--text-2);white-space:nowrap;align-self:center}
+.car-more{display:inline-flex;align-items:center;gap:2px;font-size:13.4px;font-weight:600;color:var(--text-2);white-space:nowrap;align-self:flex-start}
 .car-more:hover{color:var(--accent)}
 .car-more svg{transition:transform .18s}
 .car-more:hover svg{transform:translateX(2px)}
+/* Нижняя строка карточки: «Подробнее» слева, ячейка сравнения справа (заказчик: «Кнопку -
+   Подробнее, перенеси к левому краю»). Раньше «Подробнее» стояла по центру, а сравнение было
+   голой галочкой без подписи — «не понятна, что это для сравнения». Теперь это переключатель в
+   рамке с подписью «Сравнить», с наведением и явным включённым состоянием. */
+.car-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap}
+.cmp-cell{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;padding:4px 10px 4px 8px;
+  border:1px solid var(--line-2);border-radius:999px;background:#fff;color:var(--text-2);cursor:pointer;
+  white-space:nowrap;transition:border-color .18s,color .18s,background .18s}
+.cmp-cell:hover{border-color:var(--accent);color:var(--accent)}
+.cmp-cell input{width:16px;height:16px;flex:0 0 auto;accent-color:var(--accent)}
+.cmp-text{font-size:12.6px;font-weight:600;letter-spacing:-.01em}
+.cmp-cell:has(input:checked){border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.cmp-cell:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+/* Кнопка в той же рамке, что и ячейка сравнения: нужна страницам копии на GitHub Pages
+   («Избранное» — убрать автомобиль из списка), см. _ref/deploy/demo-cars.js. */
+.cmp-cell--btn{font-family:inherit;cursor:pointer}
 @media(min-width:1240px){
   .car-body{padding:15px 15px 16px;gap:9px}
   .car-title{font-size:15.6px}
@@ -1351,7 +1394,7 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
   .car-foot{gap:8px}
   .car-actions{flex:1 1 100%}
   .car-actions .btn-sm{flex:1 1 0;justify-content:center;padding:0 10px}
-  .car-more{width:100%;justify-content:flex-end}
+  .car-more{width:auto;justify-content:flex-start}
 }
 /* ── Телефон: две карточки в ряд ─────────────────────────────────────────────────────
    Заказчик 2026-09-28: «в мобильной версии … карточки авто, сделай, чтобы размещались по две»,
@@ -1363,15 +1406,13 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
 @media(max-width:600px){
   .cars{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .car-body{padding:10px 10px 11px;gap:7px}
-  /* Название — две строки. В одну строку с «…» от «Geely Monjaro, I» оставалось «Geely…»,
-     а машину покупатель выбирает как раз по марке и модели. Высота зафиксирована в две
-     строки, чтобы карточки в ряду были одной высоты (симметрия ряда). */
+  /* Название — одна строка, во всю ширину карточки. Заказчик (02.10.2026): «Переносятся названия
+     авто на нижнюю строчку, - исправь». Раньше название стояло в одной строке с галочкой
+     сравнения и ломалось на две строки (при этом высота была зафиксирована в 2,5em, чтобы
+     карточки в ряду совпадали). Теперь галочка с подписью уехала в нижнюю строку .car-bar,
+     название занимает всю ширину, а ряд остаётся ровным за счёт одной строки у всех карточек. */
   .car-head{gap:6px}
-  .car-head .car-title{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.5em;font-size:14px}
-  /* Подпись «сравнить» на узкой карточке съедала половину строки — остаётся галочка
-     (у неё есть title и aria-label). */
-  .car-head .check .small{display:none}
-  .car-head .check input{width:22px;height:22px}
+  .car-head .car-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.8px;min-height:0}
   .car-price{font-size:16.5px}
   .car-price small{font-size:11px}
   .car-params{font-size:11.6px;gap:2px}
@@ -1387,6 +1428,13 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
   /* «Подробнее» — тоже цель для пальца: строка текста 19 px была слишком мелкой, добавляем
      вертикальные поля (за счёт gap футера раскладка не разъезжается). */
   .car-more{font-size:12.4px;padding:4px 0}
+  /* Строка «Подробнее + сравнение» на карточке 134–181 px: кегли и рамка на шаг меньше, а если
+     обе части всё же не влезают (узкие телефоны 320–380 px), ячейка сравнения переносится на
+     свою строку — подпись «Сравнить» при этом остаётся, читаемость важнее экономии 24 px. */
+  .car-bar{flex-wrap:wrap;gap:4px 8px}
+  .cmp-cell{padding:3px 9px 3px 7px;gap:6px}
+  .cmp-cell input{width:15px;height:15px}
+  .cmp-text{font-size:11.6px}
   /* Плашки над кадром: «VIN проверен» при уменьшенном кегле не влезал рядом с «Новый» и
      обрезался правым краем кадра — теперь плашки не сжимаются, переносятся на вторую строку
      и не заходят под кнопку избранного. */
@@ -1453,6 +1501,14 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
 .list-head h2{font-size:clamp(19px,1.7vw,23px);font-weight:700;letter-spacing:-.01em}
 .list-head h2 b{font-family:var(--f-num)}
 .sort-box{display:flex;align-items:center;gap:10px}
+/* Очень узкие телефоны (320–360 px): список сортировки получает inline min-width:210px, и вместе
+   с подписью «Сортировка» коробка занимает 304 px при доступных 280 — страница уезжала вбок на
+   4 px (замер 2026-10-02 на /cars и в копии). На такой ширине подпись встаёт своей строкой, а
+   список занимает всю ширину; !important нужен, чтобы перебить inline-стиль в разметке. */
+@media(max-width:360px){
+  .list-head .sort-box{flex-wrap:wrap;gap:6px}
+  .list-head .sort-box select{width:100%!important;min-width:0!important}
+}
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
 /* Хвост каталога: кнопок страниц здесь нет — есть прозрачная кнопка «Показать ещё» и подпись
    рядом с ней, «На странице 20 объявлений из 57» (.cars-more-row, см. carsMore в lib/view.mjs).
@@ -2464,11 +2520,13 @@ body.modal-open{overflow:hidden}
 }
 /* Палец вместо курсора: цели в карточке крупнее не только на телефоне (там их задаёт
    @media(max-width:600px)), но и на тач-планшете, где карточка уже широкая, а базовые размеры
-   рассчитаны на курсор. Блок стоит в самом конце файла намеренно: базовые `.car-head .check input`
-   (16 px) и `.car-more` объявлены выше по файлу и при равной специфичности перебили бы его. */
+   рассчитаны на курсор. Блок стоит в самом конце файла намеренно: базовые `.cmp-cell input`
+   (16 px) и `.car-more` объявлены выше по файлу и при равной специфичности перебили бы его.
+   Ячейка сравнения 02.10.2026 переехала из строки названия в нижнюю строку карточки (.car-bar,
+   подпись «Сравнить»), поэтому правила для `.car-head .check` здесь больше не нужны. */
 @media(hover:none) and (min-width:601px){
-  .car-head .check{padding:3px;margin:-3px}
-  .car-head .check input{width:20px;height:20px}
+  .cmp-cell{padding:5px 12px 5px 10px}
+  .cmp-cell input{width:18px;height:18px}
   .car-more{padding:4px 0}
 }
 
