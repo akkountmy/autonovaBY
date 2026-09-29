@@ -5,7 +5,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { migrate, all, one, run, getSetting, setSetting, DB_PATH } from './lib/db.mjs';
-import { seedAll, slugify } from './lib/seed.mjs';
+import { seedAll, seedDemoSeller, slugify } from './lib/seed.mjs';
 import { register, login, parseCookies, userByToken, destroySession, createSession, cleanupSessions, SESSION_DAYS } from './lib/auth.mjs';
 import { carStats, decorate, carById, carBySlug, listCars, SORTS } from './lib/cars.mjs';
 import * as P from './lib/pages.mjs';
@@ -54,6 +54,9 @@ function fileType(file, fallback) {
 
 migrate();
 seedAll({});
+/* Необязательный демо-клиент для публичного хостинга: заводится только когда заданы
+   DEMO_SELLER_EMAIL и DEMO_SELLER_PASSWORD (см. lib/seed.mjs). */
+seedDemoSeller();
 
 /* ── helpers ───────────────────────────────────────────── */
 /* Сжатие ответов. Заказчик 02.10.2026: «Сделай, что бы сайт грузился быстро и не терял качество».
@@ -322,7 +325,11 @@ async function handle(req, res) {
     if (pathname === '/login') {
       const f = parseUrlEncoded(buf);
       const r = login({ email: f.email, password: f.password });
-      if (r.error) return html(res, P.loginPage(state, { error: r.error, next: f.next || '/', modal: true }), 400);      return redirect(res, f.next && f.next.startsWith('/') ? f.next : '/account', setCookieHeader([
+      if (r.error) return html(res, P.loginPage(state, { error: r.error, next: f.next || '/', modal: true }), 400);
+      /* Без явного next администратора ведём сразу в админку, остальных — в кабинет: на публичном
+         хостинге логин один, и админу не приходится потом искать /admin руками (заказчик 02.10.2026:
+         «в публичном доступе можно было заходить как админ и как клиент»). */
+      return redirect(res, f.next && f.next.startsWith('/') ? f.next : (r.user.role === 'admin' ? '/admin' : '/account'), setCookieHeader([
         `${SESSION_COOKIE}=${createSession(r.user.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}`,
       ]));
     }

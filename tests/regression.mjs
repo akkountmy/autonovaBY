@@ -152,27 +152,36 @@ const SECTIONS = {
        освободившееся место справа занимает блок «Горящая продажа» из трёх карточек со
        спецпредложением. Разметка — lib/pages.mjs: home и hotCard, раскладка —
        public/assets/css/site.css (.home-page .hero-*).
-       Вторая кнопка — «Заказать звонок» (заказчик, 2026-09-28: «над кнопкой разместить объявление
-       на титульной странице размести кнопку заказать звонок и чтобы при нажатии открывалась окно
-       как на кнопке бронь»): стоит строкой выше и открывает окно заказа звонка (lib/view.mjs:
-       callModalHtml, поведение — initLeadModal в public/assets/js/site.js). Значки вырезаем из
-       разметки, чтобы в отчёте остался чистый текст кнопок.
+       Значки вырезаем из разметки, чтобы в отчёте остался чистый текст кнопок.
 
        Заказчик, 2026-10-02: «перемести кнопку - заказать звонок, под кнопкой - Разместить
        объявление, а на ее месте сделай кнопку - поставить авто на продажу». Кнопок в герое стало
-       три, порядок: заказать звонок → разместить объявление → поставить авто на продажу. */
+       три, порядок: заказать звонок → разместить объявление → поставить авто на продажу.
+       Заказчик, 2026-10-02 (следом): «Убери кнопку - Заказать звонок, а в кнопке - разместить
+       объявление, добавь иконку по типу как в кнопке - Поставить авто на продажу». Кнопок снова
+       две: сверху «Разместить объявление» со значком листа (ico('doc')), под ней «Поставить авто
+       на продажу» со значком бирки. Окно заказа звонка из разметки главной не исчезло — оно просто
+       осталось без кнопки-открывашки, поэтому проверяем и это. */
     const heroHtml = homeHtml.slice(homeHtml.indexOf('<section class="hero"'), homeHtml.indexOf('</section>', homeHtml.indexOf('<section class="hero"')));
     const heroNoSvg = heroHtml.replace(/<svg[\s\S]*?<\/svg>/g, ' ');
+    const heroIcons = [...heroHtml.matchAll(/<(?:a|button) class="btn[^"]*"[^>]*>[\s\S]*?<\/(?:a|button)>/g)]
+      .reduce((n, m) => n + (m[0].match(/<svg[\s\S]*?<\/svg>/g) || []).length, 0);
     const heroBtns = [...heroNoSvg.matchAll(/<(?:a|button) class="btn[^"]*"[^>]*>([^<]*)<\/(?:a|button)>/g)]
       .map((m) => m[1].trim());
-    check('pages', 'в герое главной три кнопки — «Заказать звонок», «Разместить объявление», «Поставить авто на продажу»',
-      heroBtns.length === 3 && heroBtns[0] === 'Заказать звонок' && heroBtns[1] === 'Разместить объявление'
-        && heroBtns[2] === 'Поставить авто на продажу',
+    check('pages', 'в герое главной две кнопки — «Разместить объявление», «Поставить авто на продажу»',
+      heroBtns.length === 2 && heroBtns[0] === 'Разместить объявление'
+        && heroBtns[1] === 'Поставить авто на продажу',
       heroBtns.join(' | ') || 'кнопок в герое нет');
+    /* Тексты кнопок героя ищем в самой разметке, а не в комментариях: пояснение к кнопкам лежит
+       JS-комментарием в lib/pages.mjs и в HTML не попадает. */
+    const heroBtnsHtml = [...heroNoSvg.matchAll(/<(?:a|button) class="btn[^"]*"[^>]*>([^<]*)<\/(?:a|button)>/g)]
+      .map((m) => m[0]).join(' ');
+    check('pages', 'кнопки героя со значками, «Заказать звонок» с главной убрана',
+      heroIcons === 2 && !/Заказать звонок/.test(heroBtnsHtml) && !/<(?:a|button)[^>]*data-call-open/.test(heroHtml),
+      `значков ${heroIcons}, кнопка звонка ${/<(?:a|button)[^>]*data-call-open/.test(heroHtml) ? 'осталась' : 'убрана'}`);
     const callModal = (homeHtml.match(/<div class="modal-back" data-call-modal[\s\S]*?<\/form>/) || [''])[0];
     check('pages', 'на главной есть окно заказа звонка — как у брони, с заявкой kind=call',
-      /<button class="btn[^"]*" type="button" data-call-open>/.test(heroNoSvg)
-        && /data-call-form/.test(callModal) && /data-call-close/.test(callModal)
+      /data-call-form/.test(callModal) && /data-call-close/.test(callModal)
         && /name="kind" value="call"/.test(callModal) && /name="text"/.test(callModal)
         && !/name="car_id"/.test(callModal) && /data-book-modal/.test(homeHtml),
       callModal.replace(/\s+/g, ' ').slice(0, 200) || 'окно заказа звонка не найдено');
@@ -971,6 +980,11 @@ const SECTIONS = {
       /Показать автомобили\s*<span class="btn-cnt num">[\d\s\u00a0]*<\/span>/.test(carsPage));
   },
   api: async () => {
+    /* /health опрашивает хостинг (Render: healthCheckPath в render.yaml). Если маршрут пропадёт,
+       служба на Render будет считаться нездоровой и не поднимется — проверка дешёвая, пусть будет. */
+    const health = await get('/health');
+    check('api', '/health отвечает 200 для хостинга', health.status === 200 && health.text.trim() === 'ok',
+      `status ${health.status} body ${JSON.stringify(health.text.trim().slice(0, 40))}`);
     const init = await get('/bxapi/v1/init');
     check('api', '/bxapi/v1/init → 200', init.status === 200);
     check('api', 'init отдаёт JSON', (init.headers.get('content-type') || '').includes('application/json'));
@@ -1395,6 +1409,17 @@ const SECTIONS = {
       body: new URLSearchParams({ email: 'admin@autonova.by', password: process.env.ADMIN_PASSWORD || 'autonova2026' }),
     });
     const acookie = (login.headers.getSetCookie ? login.headers.getSetCookie() : []).map((c) => c.split(';')[0]).join('; ');
+    /* Без явного next администратор попадает сразу в админку — на публичном хостинге логин один
+       (клиент → /account, админ → /admin), и искать /admin руками не приходится. */
+    check('auth', 'администратора без next ведёт прямо в админку', login.status === 302 && login.headers.get('location') === '/admin',
+      JSON.stringify(login.headers.get('location')));
+    const admNext = await fetch(BASE + '/login', {
+      method: 'POST', redirect: 'manual',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ email: 'admin@autonova.by', password: process.env.ADMIN_PASSWORD || 'autonova2026', next: '/account' }),
+    });
+    check('auth', 'явный next администратора уважается', admNext.headers.get('location') === '/account',
+      JSON.stringify(admNext.headers.get('location')));
     const adm = await get('/admin', { headers: { Cookie: acookie } });
     check('auth', 'админка доступна администратору', adm.status === 200 && adm.text.includes('Администрирование'));
   },
@@ -2904,6 +2929,10 @@ const SECTIONS = {
           btnLefts: btns.map((a) => Math.round(a.getBoundingClientRect().left)),
           btnRights: btns.map((a) => Math.round(a.getBoundingClientRect().right)),
           btnWidths: btns.map((a) => Math.round(a.getBoundingClientRect().width)),
+          /* Значок у каждой кнопки героя (заказчик 2026-10-02: «в кнопке - разместить объявление,
+             добавь иконку по типу как в кнопке - Поставить авто на продажу») — обе кнопки рисованные,
+             поэтому у каждой должен быть svg. */
+          btnIcons: btns.map((a) => a.querySelectorAll('svg').length),
           /* Заказчик 2026-09-30: сначала «Заказать звонок / Разместить объявление на титульной, сделай
              фон кнопок прозрачный», а следом «верни красный цвет кнопкам». Считаем фон, буквы и рамку
              обеих кнопок героя: снова фирменный красный --accent #E3000F, белые буквы и рамка в тон. */
@@ -2986,15 +3015,16 @@ const SECTIONS = {
         !!heroWide && heroWide.dealerTop >= heroWide.leadBottom && heroWide.dealerTop > heroWide.h1Bottom
           && /^Официальный дилер\s+Geely\s+BelGee\s+SRM$/.test(heroWide.dealerText) && heroWide.over <= 1,
         JSON.stringify(heroWide));
-      /* Кнопок в герое теперь три (заказчик, 2026-10-02: «перемести кнопку - заказать звонок, под
-         кнопкой - Разместить объявление, а на ее месте сделай кнопку - поставить авто на продажу»),
-         поэтому здесь проверяем порядок и то, что третья кнопка идёт следом за второй. */
-      check('ui', 'кнопки героя стоят под строкой дилера: «Заказать звонок», «Разместить объявление», «Поставить авто на продажу» — все на всю левую колонку',
-        !!heroWide && heroWide.btnCount === 3 && heroWide.ctaTop >= heroWide.dealerBottom
+      /* Кнопок в герое две (заказчик, 2026-10-02: «Убери кнопку - Заказать звонок, а в кнопке -
+         разместить объявление, добавь иконку по типу как в кнопке - Поставить авто на продажу»),
+         поэтому проверяем порядок, значки и то, что вторая кнопка идёт следом за первой. */
+      check('ui', 'кнопки героя стоят под строкой дилера: «Разместить объявление» и «Поставить авто на продажу», обе со значком, на всю левую колонку',
+        !!heroWide && heroWide.btnCount === 2 && heroWide.ctaTop >= heroWide.dealerBottom
           && heroWide.ctaLeft === heroWide.leadLeft && heroWide.ctaLeft === heroWide.h1Left
-          && heroWide.btnTexts[0] === 'Заказать звонок' && heroWide.btnTexts[1] === 'Разместить объявление'
-          && heroWide.btnTexts[2] === 'Поставить авто на продажу'
-          && heroWide.btnTops[1] >= heroWide.btnTops[0] + 46 && heroWide.btnTops[2] >= heroWide.btnTops[1] + 46
+          && heroWide.btnTexts[0] === 'Разместить объявление'
+          && heroWide.btnTexts[1] === 'Поставить авто на продажу'
+          && heroWide.btnIcons.every((n) => n === 1)
+          && heroWide.btnTops[1] >= heroWide.btnTops[0] + 46
           && heroWide.btnLefts.every((l) => l === heroWide.ctaLeft)
           && heroWide.btnRights.every((r) => r === heroWide.ctaRight)
           && heroWide.ctaRight < heroWide.hotLeft && heroWide.btnWidths.every((w) => w > 500),
@@ -3082,8 +3112,8 @@ const SECTIONS = {
             && s.some((x) => /^(седан|внедорожник|универсал|минивэн|хэтчбек|лифтбек|купе|фургон)$/.test(x)))
           && heroWide.cardBodyOver.every((n) => n <= 1),
         JSON.stringify(heroWide && heroWide.cardSpecs));
-      check('ui', 'кнопки героя «Заказать звонок», «Разместить объявление» и «Поставить авто на продажу» — красные, как остальные кнопки сайта',
-        !!heroWide && heroWide.heroBtnBg.length === 3
+      check('ui', 'кнопки героя «Разместить объявление» и «Поставить авто на продажу» — красные, как остальные кнопки сайта',
+        !!heroWide && heroWide.heroBtnBg.length === 2
           && heroWide.heroBtnBg.every((c) => c === 'rgb(227, 0, 15)')
           && heroWide.heroBtnInk.every((c) => c === 'rgb(255, 255, 255)')
           && heroWide.heroBtnBorder.every((c) => c === 'rgb(227, 0, 15)'),
@@ -3107,12 +3137,13 @@ const SECTIONS = {
       check('ui', 'на узком экране строка дилера тоже идёт сразу за лидом',
         !!heroNarrow && heroNarrow.dealerTop >= heroNarrow.leadBottom && heroNarrow.over <= 1,
         JSON.stringify(heroNarrow));
-      check('ui', 'на узком экране три кнопки героя и «Горящая продажа» идут столбиком за строкой дилера',
-        !!heroNarrow && heroNarrow.btnCount === 3 && heroNarrow.ctaTop >= heroNarrow.dealerBottom
+      check('ui', 'на узком экране две кнопки героя и «Горящая продажа» идут столбиком за строкой дилера',
+        !!heroNarrow && heroNarrow.btnCount === 2 && heroNarrow.ctaTop >= heroNarrow.dealerBottom
           && heroNarrow.hotTop >= heroNarrow.ctaBottom && heroNarrow.cards === 5 && heroNarrow.cardsWithPhoto === 5
-          && heroNarrow.btnTexts[0] === 'Заказать звонок' && heroNarrow.btnTexts[1] === 'Разместить объявление'
-          && heroNarrow.btnTexts[2] === 'Поставить авто на продажу'
-          && heroNarrow.btnTops[1] >= heroNarrow.btnTops[0] + 46 && heroNarrow.btnTops[2] >= heroNarrow.btnTops[1] + 46
+          && heroNarrow.btnTexts[0] === 'Разместить объявление'
+          && heroNarrow.btnTexts[1] === 'Поставить авто на продажу'
+          && heroNarrow.btnIcons.every((n) => n === 1)
+          && heroNarrow.btnTops[1] >= heroNarrow.btnTops[0] + 46
           && heroNarrow.btnLefts.every((l) => l === heroNarrow.ctaLeft)
           && heroNarrow.btnRights.every((r) => r === heroNarrow.ctaRight)
           && heroNarrow.btnWidths.every((w) => w === heroNarrow.vw - 40) && heroNarrow.over <= 1,
@@ -3125,17 +3156,31 @@ const SECTIONS = {
 
       /* Окно заказа звонка (заказчик, 2026-09-28: «над кнопкой разместить объявление на титульной
          странице размести кнопку заказать звонок и чтобы при нажатии открывалась окно как на
-         кнопке бронь»). Кнопка героя открывает окно той же вёрстки, что у брони и входа
-         (.modal-back / .modal.modal-auth), с формой на /lead и kind=call; окно по центру и целиком
+         кнопке бронь»). С главной кнопку убрали (заказчик, 2026-10-02: «Убери кнопку - Заказать
+         звонок»), но окно и его обработчик остались в разметке как готовый механизм — вернуть его
+         можно одной кнопкой с data-call-open. Окно той же вёрстки, что у брони и входа
+         (.modal-back / .modal.modal-auth), с формой на /lead и kind=call; по центру и целиком
          в экране, закрывают его крестик и Escape. Разметка — lib/view.mjs: callModalHtml,
-         поведение — initCallModal в public/assets/js/site.js. */
+         поведение — initLeadModal в public/assets/js/site.js. Открываем его кликом по DOM-узлу
+         (свой обработчик из initLeadModal никуда не делся): консольного клика по координатам тут
+         быть не может — кнопки-открывашки на странице больше нет. */
       await page.setViewport({ width: 1400, height: 950 });
       await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
-      check('ui', 'окно заказа звонка скрыто до клика по кнопке героя',
-        await page.$eval('[data-call-modal]', (el) => el.hidden));
-      await page.click('[data-call-open]');
+      check('ui', 'окно заказа звонка скрыто и осталось в разметке без кнопки-открывашки',
+        await page.$eval('[data-call-modal]', (el) => el.hidden)
+          && await page.$$eval('[data-call-open]', (nodes) => nodes.length === 0));
+      /* Клик по кнопке героя раньше сам ставил фокус в поле «Имя» (initLeadModal), но кнопки
+         data-call-open на главной больше нет, а прямое снятие hidden фокус не переносит —
+         поэтому окно открываем так же, как это делал обработчик: снимаем hidden и явно
+         фокусируем первое поле, ровно как это делает initLeadModal. */
+      await page.evaluate(() => {
+        const back = document.querySelector('[data-call-modal]');
+        back.hidden = false;
+        const first = back.querySelector('input[name=name]');
+        if (first && !first.disabled) first.focus();
+      });
       await new Promise((r) => setTimeout(r, 250));
-      check('ui', 'кнопка «Заказать звонок» открывает окно заказа звонка',
+      check('ui', 'окно заказа звонка открывается — форма на месте и видна',
         await page.$eval('[data-call-modal]', (el) => !el.hidden && getComputedStyle(el).display !== 'none'));
       const callBox = await page.evaluate(() => {
         const back = document.querySelector('[data-call-modal]');
@@ -3205,7 +3250,7 @@ const SECTIONS = {
       await new Promise((r) => setTimeout(r, 200));
       check('ui', 'крестик закрывает окно заказа звонка',
         await page.$eval('[data-call-modal]', (el) => el.hidden));
-      await page.click('[data-call-open]');
+      await page.evaluate(() => document.querySelector('[data-call-modal]').hidden = false);
       await new Promise((r) => setTimeout(r, 250));
       await page.keyboard.press('Escape');
       await new Promise((r) => setTimeout(r, 200));
@@ -3223,11 +3268,11 @@ const SECTIONS = {
         const f = document.querySelector('[data-sale-form]');
         if (f) f.reset();
       });
-      check('ui', 'окно «Поставить авто на продажу» скрыто до клика по третьей кнопке героя',
+      check('ui', 'окно «Поставить авто на продажу» скрыто до клика по нижней кнопке героя',
         await page.$eval('[data-sale-modal]', (el) => el.hidden));
-      /* Открываем третьей кнопкой героя. Клик делаем из страницы, а не нативным кликом puppeteer:
+      /* Открываем нижней кнопкой героя. Клик делаем из страницы, а не нативным кликом puppeteer:
          окна сайта закрываются кликом по фону (.modal-back), а фон перекрывает кнопки под собой —
-         нативный клик по координатам попал бы в фон открытого окна звонка и просто закрыл его.
+         нативный клик по координатам попал бы в фон открытого окна и просто закрыл его.
          Заодно проверяем, что к этому моменту окно звонка закрыто. */
       check('ui', 'окно заказа звонка закрыто к моменту открытия окна продажи',
         await page.$eval('[data-call-modal]', (el) => el.hidden));
