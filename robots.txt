@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://akkountmy.github.io/autonovaBY/sitemap.xml
