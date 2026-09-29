@@ -252,6 +252,12 @@ async function handle(req, res) {
   if (pathname === '/api/cars/count') {
     return json(res, P.carsCount(state, Object.fromEntries(url.searchParams)), 200, { 'Cache-Control': 'no-store' });
   }
+  /* Проверка живучести для хостинга. Render опрашивает адрес из healthCheckPath и по ответу
+     решает, поднялась ли служба (render.yaml). Отвечаем 200 и не читаем базу: проверка должна
+     говорить о состоянии сервера, а не о содержимом каталога. */
+  if (pathname === '/health') {
+    return send(res, 200, 'ok', { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+  }
   if (pathname === '/sitemap.xml') {
     const staticPages = ['/', '/cars', '/cars-used', '/cars-new', '/electric', '/services', '/news', '/kalkulyator', '/contacts', '/cars-sold', '/reviews'];
     const cars = all("SELECT slug FROM cars WHERE status='published'");

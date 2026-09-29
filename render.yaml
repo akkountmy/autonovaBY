@@ -1,0 +1,40 @@
+# Публикация сайта в интернете на бесплатном тарифе Render (карта не нужна).
+#
+# Что делает Render, прочитав этот файл:
+#   1. клонирует репозиторий akkountmy/autonovaBY (ветка main);
+#   2. поднимет Node.js 24 — внешних зависимостей у сайта нет, сборка не нужна;
+#   3. запустит `node server.mjs`, слушающий 0.0.0.0 и порт из переменной PORT;
+#   4. спросит ADMIN_PASSWORD (значение в репозитории не хранится) и выдаст адрес
+#      вида https://autonova.onrender.com с готовым HTTPS.
+#
+# Канонический адрес сайта (canonical, og:url, sitemap.xml) подставляется сам из
+# RENDER_EXTERNAL_URL — PUBLIC_BASE задавать не нужно.
+#
+# Бесплатная служба засыпает после 15 минут без запросов: первый запрос после паузы
+# поднимает её примерно за минуту. Файловая система не сохраняется между запусками,
+# поэтому база создаётся заново и наполняется демонстрационным каталогом при каждом
+# старте (заявки и регистрации, сделанные на демо, живут до перезапуска).
+services:
+  - type: web
+    name: autonova
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: node --version
+    startCommand: node server.mjs
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      # Без 0.0.0.0 сайт слушал бы только localhost и Render не увидел бы его порт.
+      - key: HOST
+        value: 0.0.0.0
+      - key: NODE_ENV
+        value: production
+      # Пароль администратора admin@autonova.by. sync: false — Render спросит значение
+      # при создании службы и не станет хранить его в репозитории. Читается только при
+      # первом запуске, пока в базе нет пользователей.
+      - key: ADMIN_PASSWORD
+        sync: false
