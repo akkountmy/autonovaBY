@@ -36,6 +36,14 @@
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;font-family:var(--f-text);color:var(--text);background:var(--bg);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+/* Переносы «без сирот» (заказчик 02.10.2026: «проверь по сайту, чтобы одно слово не переносилось
+   на нижнюю строку там, где это некрасиво — пример: окно „Предложить цену“»). text-wrap:pretty
+   просит браузер не оставлять в последней строке одно короткое слово: он перераспределяет слова
+   между строками, если это возможно. Правило стоит на теле и наследуется всем текстом (заголовки,
+   абзацы, подписи кнопок и полей), поэтому чинит не только окна, но и карточки, и панели.
+   Поддержка — Chrome 117+/Edge, Firefox 135+, Safari 26; в остальных браузерах значение
+   игнорируется, вёрстка остаётся прежней. */
+body,h1,h2,h3,h4,p,li,dd,dt,label,button,a,span{text-wrap:pretty}
 /* Главная — светлая, как внутренние страницы: винной заливки (#40161B, раньше ещё и
    градиент) больше нет. Шапка, верхняя полоса и подвал держат собственный тёмный фон. */
 .home-page{background:var(--bg)}
@@ -51,6 +59,22 @@ h1{font-size:clamp(28px,3.4vw,46px)}
 h2{font-size:clamp(22px,2.3vw,32px)}
 h3{font-size:clamp(18px,1.5vw,22px)}
 p{margin:0 0 1em}
+/* ── Знак белорусского рубля ──────────────────────────────────────────────────────────────────
+   Заказчик 02.10.2026: «в стоимости вместо „руб.“ поставь знак белорусского рубля — как буква Б
+   с чёрточкой, найди в интернете». Знак утверждён постановлением Правления Нацбанка от 27.01.2026
+   № 25: кириллическая заглавная «Б» с параллельной верхней линии чертой по центру
+   (https://www.nbrb.by/press/press/21880). В Юникоде кодовой точки у знака ещё нет — в
+   UnicodeData.txt 17.0 (вышла 01.08.2025) диапазон 20B0–20CF пуст, есть только заявка L2/2026/26089,
+   а в шрифтах Windows (Segoe UI, Arial, Tahoma, Bahnschrift) нет даже U+20C5, которую выдают
+   за «знак рубля» поисковые подсказки. Поэтому знак рисуем сами: настоящая «Б» сайтовым шрифтом
+   плюс черта псевдоэлементом — она масштабируется вместе с кеглем и не зависит от шрифта.
+   Ширина черты 0.44em при выступе 0.03em: замер canvas показал, что «Б» занимает 9,15 px из
+   16 (Segoe UI 400), 10,27 px (700) и 10,2 px (Bahnschrift), то есть от 0,57 до 0,64 em при
+   почти нулевых боковых пробелах — эти значения встают ровно по букве и там, и там. */
+.byn{position:relative;display:inline-block}
+.byn::before{content:"";position:absolute;left:.03em;width:.44em;height:.095em;top:.47em;
+  background:currentColor;border-radius:.02em}
+@media (forced-colors:active){.byn::before{background:CanvasText}}
 .wrap{width:100%;max-width:var(--wrap);margin:0 auto;padding:0 20px}
 /* Нижний отступ страницы — половина того же шага, что и между блоками: подвал отбит своей
    половиной, в сумме те же 74 px. Раньше у каждой страницы стоял свой инлайн-отступ (40, 60,
@@ -1413,8 +1437,9 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
    Раньше на телефоне блок прокручивался вбок: таблица 620 px при двух машинах и 840 px при трёх
    (замер 390 px: от первой колонки видно 246 px, от второй — 26 px). Теперь на телефоне
    показывается второй блок разметки — .cmp-cards: колонки-карточки, характеристики идут строками
-   «подпись — значение». Сетка repeat(auto-fit,minmax(150px,1fr)) даёт ровно две колонки на любой
-   ширине 320–430 px, горизонтальной прокрутки нет (проверено замером). */
+   «подпись — значение». Ширину задаёт сама карточка: flex:0 0 calc((100% - 12px)/2) — половина
+   ленты минус половина зазора. Замер 390 px: лента 350 px, карточка 169 px, две видны целиком;
+   третья и дальше уезжают вправо и листаются пальцем. */
 .cmp-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .cmp-photo{display:block;width:100%;border-radius:10px;aspect-ratio:4/3;object-fit:cover}
 .cmp-head{display:flex;flex-direction:column;gap:8px}
@@ -1443,9 +1468,19 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
 .cmp-cards-only{display:none}
 .cmp-clear{margin:14px 0 0}
 @media(max-width:820px){
-  .cmp-cards-only{display:grid;grid-template-columns:repeat(auto-fit,minmax(124px,1fr))}
+  .cmp-cards-only{display:flex;flex-wrap:nowrap;gap:12px;overflow-x:auto;overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding-bottom:2px;
+    scrollbar-width:none}
+  .cmp-cards-only::-webkit-scrollbar{height:0}
+  .cmp-cards-only > .cmp-card{flex:0 0 calc((100% - 12px) / 2);scroll-snap-align:start}
   .cmp-scroll{display:none}
   .cmp-card{padding:9px 10px 11px}
+  /* В узкой карточке название машины и строки характеристик переносить некуда: держим их в одну
+     строку, а длинное название подрезаем многоточием. Подписи характеристик («Двигатель»,
+     «Внедорожник») тоже не переносим: при 9,4 px они укладываются в 116–167 px карточки, а
+     перенос давал вторую строку и разъезжались высоты строк у двух машин рядом
+     (заказчик 02.10.2026: «Автомобили не должны переноситься на следующую строку»). */
+  .cmp-card .cmp-name,.cmp-list dt,.cmp-list dd{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cmp-list dt{font-size:9.4px}
   .cmp-list dd{font-size:12.2px}
 }
@@ -1483,9 +1518,16 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
      занимает всю ширину, а ряд остаётся ровным за счёт одной строки у всех карточек. */
   .car-head{gap:6px}
   .car-head .car-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.8px;min-height:0}
-  .car-price-row{gap:6px;row-gap:4px}
+  /* Цена и переключатель сравнения — всегда одна строка (заказчик 02.10.2026, четвёртый список:
+     «на мобильном … в карточках кнопку сравнить размести напротив цены»). До этого строка
+     переносилась (flex-wrap:wrap в базисе): на карточке 134–172 px цена занимала всю ширину, а
+     «Сравнить» уезжала на вторую строку под число. Теперь переноса нет, переключатель стоит
+     напротив цены и выровнен по её середине. Цену сжимать нельзя (многоточие съело бы цифры),
+     поэтому подпись двигателя на телефоне ушла из блока цены: те же данные есть строкой ниже. */
+  .car-price-row{gap:6px;row-gap:0;flex-wrap:nowrap;align-items:center}
+  .car-price-row .cmp-cell{align-self:center}
   .car-price{font-size:16.5px}
-  .car-price small{font-size:11px}
+  .car-price small{display:none}
   .car-params{font-size:11.6px;gap:2px}
   /* Подпись «Пробег» на телефоне — 11,6 px; цвет --text-2 задан в базовом правиле .car-params i,
      здесь только отбивка. */
@@ -1514,6 +1556,10 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
      и не заходят под кнопку избранного. */
   .car-badges{top:7px;left:7px;right:34px;gap:4px}
   .car-badges .tag{padding:3px 7px;font-size:10.5px;border-radius:6px;white-space:nowrap;flex:0 0 auto}
+  /* «VIN проверен» на телефоне не помещается рядом с «Новый» — слово «проверен» скрыто, плашка
+     читается как «VIN» со щитом (заказчик 02.10.2026). Прячем только текст: иконка и «VIN»
+     остаются, а на широком экране ничего не меняется. */
+  .car-badges .vin-word{display:none}
   .car-fav{top:7px;right:7px;width:30px;height:30px}
   .car-fav svg{width:14px;height:14px}
   /* Плашка «N фото» в правом нижнем углу на 134–278 px наезжала на точки карусели —
@@ -1876,12 +1922,24 @@ html.lb-on{overflow:hidden}
 /* Обложка статьи: тот же файл, что и в карточке Автожурнала (public/uploads/news/<slug>.jpg),
    но крупнее и в пропорции 16/9 — так кадр обрезан меньше, чем квадрат карточки. */
 .art-cover{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r-card);background:var(--paper-3);margin:0 0 22px}
-.art-aside-h{margin:0 0 14px;align-self:start}
+/* «Читайте также» вровень с заголовком статьи. Заказчик 02.10.2026: «на странице статьи автожурнала
+   „Читайте также“ поставь симметрично с заголовком статьи, и так же на других статьях». Замер на
+   /news/podgotovka-avto-k-zime (1440, 1100, 1000, 760, 390 px — разница одна и та же): текст
+   «Читайте также» стоит на 119 px, а название статьи — на 156, то есть на 37–38 px выше. Опускаем
+   подпись на 38 px.
+   Опускает именно `transform`, и это важно: у `.art-aside` включён subgrid, её первая строка — та же
+   строка сетки, что у `.art-head`, поэтому margin или padding увеличили бы строку заголовка и обложка
+   статьи вместе с фото первой плитки уехали бы вниз на те же 38 px (сейчас они стоят ровно: замер
+   показал разницу 1 px). `transform` в раскладку не входит вовсе, поэтому строки остаются прежними,
+   а подпись опускается ровно на свою высоту. */
+.art-aside-h{margin:0 0 14px;align-self:start;transform:translateY(38px)}
 @media(max-width:1000px){
   .art-main{grid-template-columns:1fr;row-gap:0}
   .art-head,.art-body,.art-aside{grid-column:1;grid-row:auto;max-width:none}
   .art-aside{display:block;margin-top:28px}
-  .art-aside-h{align-self:auto}
+  /* В одну колонку сдвиг не нужен: там «Читайте также» стоит обычным заголовком над плитками,
+     и 38 px только оторвали бы его от собственного блока. */
+  .art-aside-h{align-self:auto;transform:none}
 }
 
 /* ── Формы-заявки ───────────────────────────────────────────────────────────────────── */
@@ -2038,6 +2096,9 @@ html.lb-on{overflow:hidden}
 .calc-out{background:var(--paper-soft);border-radius:var(--r-card);padding:22px;
   display:flex;flex-direction:column;gap:14px}
 .calc-out .big{font-family:var(--f-num);font-size:34px;font-weight:700}
+/* Числа сумм лежат в собственных <i> (скрипт пишет только их, подписи со знаком рубля остаются
+   на месте — см. initCalc в public/assets/js/site.js). Курсив и наклон <i> здесь не нужны. */
+.calc-out .big i,.calc-out .spec-list i{font-style:normal}
 .calc-out .big span{font-size:15px;font-family:var(--f-text);color:var(--text-2);font-weight:400}
 /* Список итогов прижат к низу карточки: в общем ряду карточки растянуты на одну высоту, и без
    этого под списком оставалась бы пустая полоса, а низ карточки не совпадал с соседними. */
@@ -2285,6 +2346,16 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
   .serv-main{display:contents}
   .serv-main .serv-prose{margin:0}
   .serv-layout > .side-nav,.serv-form{align-self:start}
+  /* Перечень услуг на телефоне — одна строка: пять ссылок («Комиссия», «Обмен», «Выкуп»,
+     «Кредит», «Лизинг») в столбик занимали 5×42 px и отодвигали текст услуги вниз, а подписи
+     ломались на две строки. Заказчик 02.10.2026: «В мобильной версии внутри страницы услуги
+     подблоки (комиссия, обмен, выкуп и т.д.) помещаются не в одну строку». Теперь это
+     горизонтальная лента: ссылки не сжимаются и не переносятся, лишние уезжают вправо и
+     листаются пальцем (полоса прокрутки скрыта, как у ленты сравнения). */
+  .serv-layout > .side-nav{flex-direction:row;flex-wrap:nowrap;gap:8px;overflow-x:auto;
+    overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:8px;scrollbar-width:none}
+  .serv-layout > .side-nav::-webkit-scrollbar{height:0}
+  .serv-layout > .side-nav a{flex:0 0 auto;white-space:nowrap;padding:9px 14px;font-size:13.8px}
   /* В одну колонку окно заявки ничего не уравнивает — возвращаем ему обычный вид .panel
      с полями в столбик, чтобы подписи и подсказки не обрезались на узком экране. */
   .serv-form{padding:22px}
@@ -2397,7 +2468,15 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
 .modal form>.btn-block{margin-top:14px}
 .auth-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .auth-pane .check{margin-top:10px}
-.auth-alt{margin:11px 0 0;text-align:center;font-size:13.5px;color:var(--text-2)}
+.auth-alt{margin:11px 0 0;text-align:center;font-size:13.5px;color:var(--text-2);text-wrap:balance}
+/* Подпись брони — в одну строку. Заказчик 02.10.2026: «в форме брони автомобиля сделай так, чтобы
+   надпись „Бронь держим 3 дня и снимаем по первому требованию — без предоплаты“ была в одну
+   строку». Замер на живом сайте показал, что исходные 60 знаков не влезают ни при каком читаемом
+   кегле: строка занимает 465 px при 13,5 px, а в окне всего 320 px (экран 390 px) и 252 px
+   (экран 320 px) — потребовался бы кегль около 8 px. Поэтому заказчик выбрал сокращённый текст
+   «Бронь держим 3 дня — без предоплаты.» (35 знаков), он помещается целиком на всех экранах
+   штатным кеглем .auth-alt, и здесь остаётся только запрет переноса. */
+.auth-alt-line{white-space:nowrap}
 .auth-alt a{color:var(--accent);font-weight:600}
 /* Окно связи с продавцом на странице автомобиля (lib/view.mjs: carContactModalHtml). Вид — как у
    брони и заказа звонка: те же .modal-back с полупрозрачным фоном и размытием, .modal, .modal-head,

@@ -28,6 +28,14 @@ async function get(url, opts) {
   return { status: res.status, text, headers: res.headers };
 }
 
+/* Знак белорусского рубля (заказчик 2026-02-02: «замени руб. на знак как буква Б с черточкой»):
+   в разметке это «число<span class="byn">Б</span>». Текст без тегов даёт «50 000 Б», живой HTML —
+   «50 000<span class="byn">Б</span>». Держим оба вида отдельными хелперами, чтобы проверки не
+   рассыпались от смены разметки. */
+const SIGN = 'Б';
+const BYN_SPAN = '<span class="byn">Б</span>';
+const priceHtml = (formatted) => `${formatted}${BYN_SPAN}`;
+
 const SECTIONS = {
   db: async () => {
     const { num, all, run } = await import('../lib/db.mjs');
@@ -226,7 +234,12 @@ const SECTIONS = {
        открывает окно той же вёрстки, что бронь и заказ звонка, заявка уходит на /lead с kind=sale,
        из полей — только короткий набор про машину и контакты, а полная форма со всеми полями
        осталась отдельной страницей /sell (ссылка под кнопкой отправки). */
-    const saleModal = (homeHtml.match(/<div class="modal-back" data-sale-modal[\s\S]*?<\/form>/) || [''])[0];
+    /* Окно продажи живёт вместе со своим справочником марок: sellCatalogMarkup('sale-') стоит
+       после </form>, но внутри .modal, поэтому срез берём до конца документа и обрезаем по
+       закрывающему </div> самого окна, а не по </form>. */
+    const saleModalFull = (homeHtml.match(/<div class="modal-back" data-sale-modal[\s\S]*/) || [''])[0];
+    const saleModalClose = saleModalFull.search(/\n {2}<\/div>\n<\/div>/);
+    const saleModal = saleModalClose < 0 ? saleModalFull : saleModalFull.slice(0, saleModalClose);
     check('pages', 'на главной есть окно «Поставить авто на продажу» — короткая форма в стиле сайта',
       /<button class="btn[^"]*" type="button" data-sale-open>/.test(heroNoSvg)
         && /class="modal modal-auth sale-modal"/.test(saleModal) && /data-sale-form/.test(saleModal)
@@ -234,7 +247,13 @@ const SECTIONS = {
         && !/name="car_id"/.test(saleModal)
         && ['brand', 'model', 'year', 'mileage', 'price', 'name', 'phone'].every((n) => new RegExp('name="' + n + '"').test(saleModal))
         && (saleModal.match(/<input/g) || []).length === 10
-        && /href="\/sell"/.test(saleModal)
+        /* Заказчик 2026-10-02: из окна убрали приписки «Заполните коротко —» и вопрос про полную
+           карточку, а марка и модель стали списками, как в блоке «Подать объявление»: у окна свой
+           справочник [data-sell-catalog] с даталистами, своего поля на странице ему хватает. */
+        && !/Заполните коротко/.test(saleModal) && !/Нужно загрузить фотографии/.test(saleModal)
+        && saleModal.includes('data-sell-catalog="1"')
+        && saleModal.includes('id="sale-brandlist"') && saleModal.includes('id="sale-modellist"')
+        && /data-combo="brand"[\s\S]*?data-combo="model"/.test(saleModal)
         && /name="brand" required[^>]*data-sale-first/.test(saleModal)
         && !/enctype|type="file"/.test(saleModal),
       saleModal.replace(/\s+/g, ' ').slice(0, 220) || 'окно продажи не найдено');
@@ -245,7 +264,7 @@ const SECTIONS = {
         && (heroHtml.match(/class="hot-media"/g) || []).length === 5
         && (heroHtml.match(/class="hot-body" href="\/car\//g) || []).length === 5
         && (heroHtml.match(/class="hot-hit" href="\/car\//g) || []).length === 5
-        && (heroHtml.match(/class="hot-price num">[^<]*руб\.</g) || []).length === 5,
+        && (heroHtml.match(/class="hot-price num">[^<]*<span class="byn">Б<\/span>/g) || []).length === 5,
       heroHtml.replace(/\s+/g, ' ').slice(0, 200));
     /* Плашка «Горящая продажа» переехала с подписи над блоком на сам кадр — правый нижний угол
        (заказчик: «Горящая продажа - перенеси на фото авто справа внизу»). Подписи .hot-head в
@@ -289,18 +308,18 @@ const SECTIONS = {
     /* Скидка видна на каждой карточке и берётся из базы: плашка на кадре (−N руб.), зачёркнутая
        цена «до скидки» в теле карточки (= price + discount) и сумма в диапазоне 2 000–4 000 руб.,
        как просил заказчик («должна быть видна скидка, например от 2000 до 4000 руб.»). */
-    const discNums = [...heroHtml.matchAll(/class="hot-disc num">−([\d\s]+) руб\.</g)]
+    const discNums = [...heroHtml.matchAll(/class="hot-disc num">−([\d\s]+)<span class="byn">Б<\/span>/g)]
       .map((m) => Number(m[1].replace(/\s/g, '')));
-    const oldNums = [...heroHtml.matchAll(/class="hot-old">([\d\s]+) руб\.</g)]
+    const oldNums = [...heroHtml.matchAll(/class="hot-old">([\d\s]+)<span class="byn">Б<\/span>/g)]
       .map((m) => Number(m[1].replace(/\s/g, '')));
-    check('pages', 'скидка видна на каждой карточке: сумма из cars.discount, 2 000–4 000 руб.',
+    check('pages', 'скидка видна на каждой карточке: сумма из cars.discount, 2 000–4 000 Б',
       discNums.length === 5 && oldNums.length === 5 && hotRule.length === 5
         && discNums.every((d, i) => d === hotRule[i].discount && d >= 2000 && d <= 4000)
         && oldNums.every((o, i) => o === hotRule[i].price + hotRule[i].discount),
       `плашки ${discNums.join(', ')} / зачёркнутые ${oldNums.join(', ')} / в базе ${hotRule.map((r) => r.discount).join(', ')}`);
     /* Скидка — только у машин спецпредложения. Заказчик 2026-09-30: «с большей частью объявлений
        которые не задействованы в спецпрограммах удалить скидку»: из 54 опубликованных объявлений
-       плашку «Скидка −N руб.» и зачёркнутое «было» видят ровно пять карточек «Горящей продажи», у
+       плашку «Скидка −N Б» и зачёркнутое «было» видят ровно пять карточек «Горящей продажи», у
        остальных скидки нет. Демонстрационную сумму база ставит только этим пяти (lib/db.mjs:
        backfillDiscounts), отбор — общий с блоком (lib/special-offer.mjs), поэтому проверяем по базе. */
     const withDisc = dbAll(`SELECT c.slug, c.discount FROM cars c WHERE c.status='published' AND c.price > 0
@@ -787,7 +806,7 @@ const SECTIONS = {
       leaderCars.map((c) => `${c.brand} ${c.model} ${c.year}`).join(' · ') || `в блоке ${leaderSlugs.join(', ')}`);
     check('pages', 'в «Лидерах продаж» нет карточек «Цена по запросу»',
       leaderCars.length === 4 && leaderCars.every((c) => Number(c.price) > 0),
-      leaderCars.map((c) => `${c.brand} ${c.model}: ${Number(c.price) > 0 ? c.price + ' руб.' : 'цена по запросу'}`).join(' · '));
+      leaderCars.map((c) => `${c.brand} ${c.model}: ${Number(c.price) > 0 ? c.price : 'цена по запросу'}`).join(' · '));
     const bestOfModel = (brand, model) => poolCars.filter((c) => c.brand === brand && c.model === model)
       .sort((a, b) => (b.views - a.views) || (b.id - a.id))[0] || {};
     check('pages', 'внутри каждой модели в «Лидерах продаж» стоит самая просматриваемая машина',
@@ -830,8 +849,8 @@ const SECTIONS = {
     check('pages', 'страница авто из спецпредложения: плашка «Горящая продажа»',
       flagOf(hotPage.text, 'hot').includes('Горящая продажа'), flagOf(hotPage.text, 'hot') || 'плашки нет');
     check('pages', 'страница авто из спецпредложения: скидка и «было» из базы',
-      flagOf(hotPage.text, 'save') === `Скидка −${money(hotRule[0].discount)} руб.`
-        && boxOf(hotPage.text).includes(`было ${money(hotRule[0].price + hotRule[0].discount)} руб.`),
+      flagOf(hotPage.text, 'save') === `Скидка −${money(hotRule[0].discount)}${SIGN}`
+        && boxOf(hotPage.text).includes(`было ${money(hotRule[0].price + hotRule[0].discount)}`),
       `${flagOf(hotPage.text, 'save')} / в базе ${hotRule[0].discount}, было ${hotRule[0].price + hotRule[0].discount}`);
     check('pages', 'страница авто из спецпредложения: нет чужой плашки «Новое объявление»',
       !flagOf(hotPage.text, 'new'), flagOf(hotPage.text, 'new') || 'чужой плашки нет');
@@ -879,7 +898,7 @@ const SECTIONS = {
       const tmpPage = await get('/car/test-hot-new-flag');
       check('pages', 'та же машина на своей странице: «Новое объявление» + «Горящая продажа» + скидка',
         flagOf(tmpPage.text, 'new').includes('Новое объявление') && flagOf(tmpPage.text, 'hot').includes('Горящая продажа')
-          && flagOf(tmpPage.text, 'save') === 'Скидка −500 руб.' && boxOf(tmpPage.text).includes('было 1 500 руб.'),
+          && flagOf(tmpPage.text, 'save') === 'Скидка −500Б' && boxOf(tmpPage.text).includes('было 1 500'),
         `${flagOf(tmpPage.text, 'new')} | ${flagOf(tmpPage.text, 'hot')} | ${flagOf(tmpPage.text, 'save')}`);
     } finally {
       if (tmpId) { run('DELETE FROM car_photos WHERE car_id=?', tmpId); run('DELETE FROM cars WHERE id=?', tmpId); }
@@ -998,8 +1017,15 @@ const SECTIONS = {
         && sell.includes('name="generation"'),
       `комбо ${(sell.match(/data-combo="/g) || []).length}, списки ${(sell.match(/id="[a-z]+list"/g) || []).length}`);
     check('pages', '/sell: справочник марок, моделей и поколений уезжает в страницу',
-      /data-sell-catalog="1">\{/.test(sell) && (sell.match(/<datalist/g) || []).length === 3,
+      /data-sell-catalog="1">\{/.test(sell) && (sell.match(/<datalist/g) || []).length === 5,
       `datalist ${(sell.match(/<datalist/g) || []).length}`);
+    /* Заказчик 2026-10-02: короткое окно «Поставить авто на продажу» стоит на всех страницах, в том
+       числе на /sell, и у него свой такой же справочник с даталистами. Считаем и его: у формы
+       продажи три системных списка, у окна — два. */
+    check('pages', '/sell: у формы продажи и у окна продажи свои списки марок и моделей',
+      ['brandlist', 'modellist', 'genlist', 'sale-brandlist', 'sale-modellist'].every((id) => sell.includes(`id="${id}"`))
+        && (sell.match(/data-sell-catalog="1"/g) || []).length === 2,
+      `${(sell.match(/data-sell-catalog="1"/g) || []).length} справочника`);
     /* Счётчик на кнопке «Показать автомобили N»: число считает сервер по тем же условиям, что у
        страницы (GET /api/cars/count), а панель поиска знает адрес счётчика и режим страницы —
        без этого «Новые» и «Электро» считали бы всю базу (заказчик 2026-09-27). */
@@ -1541,7 +1567,8 @@ const SECTIONS = {
     const mpage = await get('/car/' + (manual ? manual.slug : 'x'));
     check('moderation', 'карточка нового авто открывается', mpage.status === 200 && mpage.text.includes('Adminmanual'), 'status ' + mpage.status);
     check('moderation', 'на карточке видно «Новое объявление» и скидку',
-      mpage.text.includes('>Новое объявление<') && mpage.text.includes('Скидка −2 500 руб.') && mpage.text.includes('было 35 833 руб.'));
+      mpage.text.includes('>Новое объявление<') && mpage.text.includes(`Скидка −2 500<span class="byn">Б</span>`)
+        && mpage.text.includes(`было 35 833<span class="byn">Б</span>`));
     /* Правка плашек прямо в строке таблицы (action=flags): снять «Новый» и поменять скидку. */
     const fl = await fetch(BASE + '/admin/car', { method: 'POST', redirect: 'manual', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: acookie }, body: new URLSearchParams({ action: 'flags', id: String(manual ? manual.id : 0), discount: '900' }) });
     const after = one('SELECT is_new, discount FROM cars WHERE id=?', manual ? manual.id : 0);
@@ -2286,8 +2313,10 @@ const SECTIONS = {
          в нём же, в правом верхнем углу (2026-10-01), и в срез попадают — раньше срез кончался на
          их строке. */
       const carBox = (carHtml.match(/<div class="price-box">([\s\S]*?)<\/div>\s*<div class="panel"/) || [, ''])[1];
-      const carPay = (carHtml.match(/<div class="month">Кредит от ([\d\s]+) руб\. в месяц/) || [, ''])[1];
-      const carPriceTxt = (carHtml.match(/<div class="price num">([^<]+)</) || [, ''])[1];
+      /* Платёж и цена печатаются со знаком рубля: «953<span class="byn">Б</span>» — сумму берём
+         из подписи, а сам знак проверяем отдельно (заказчик 2026-10-02). */
+      const carPay = (carHtml.match(/<div class="month">Кредит от ([\d\s\u00A0]+)<span class="byn">Б<\/span> в месяц[\s\S]*?<\/div>/) || [, ''])[1];
+      const carPriceTxt = (carHtml.match(/<div class="price num">([\d\s\u00A0]*)<span class="byn">Б<\/span>/) || [, ''])[1];
       const carPrice = Number(carPriceTxt.replace(/[^\d]/g, ''));
       const exactPay = (price) => {
         const credit = Math.round(price * 0.8), m = 0.16 / 12, n = 84;
@@ -2301,14 +2330,17 @@ const SECTIONS = {
       /* Плавное «ползунок двигается — платёж считается»: срок по умолчанию максимальный (84
          месяца, как в карточке автомобиля), поэтому двигаем его в 60 и сверяем пересчёт. */
       await page.goto(BASE + '/kalkulyator', { waitUntil: 'domcontentloaded' });
-      const pay1 = await page.$eval('[data-payment]', (el) => el.textContent);
+      /* Числа калькулятора теперь без знака: знак «Б» стоит в разметке рядом (<span class="byn">Б</span>),
+         поэтому читаем только число из <b data-payment>. */
+      const payNum = () => page.$eval('[data-payment]', (el) => el.textContent.replace(/\u00A0/g, ' ').trim());
+      const pay1 = await payNum();
       await page.evaluate(() => {
         const f = document.querySelector('[data-calc]');
         f.months.value = 60;
         f.months.dispatchEvent(new Event('input', { bubbles: true }));
       });
-      const pay2 = await page.$eval('[data-payment]', (el) => el.textContent);
-      check('ui', 'калькулятор пересчитывает платёж', pay1 !== pay2 && /руб/.test(pay2), pay1 + ' → ' + pay2);
+      const pay2 = await payNum();
+      check('ui', 'калькулятор пересчитывает платёж', pay1 !== pay2 && /^[\d\s]+$/.test(pay2) && pay2 === '1 167', pay1 + ' → ' + pay2);
 
       /* Порядок чтения блока расчёта, просьба заказчика 2026-09-27: «Перемести (Стоимость
          автомобиля, руб. / Первоначальный взнос, руб. / Срок, месяцев) в верх, а (платёж в месяц,
@@ -2329,11 +2361,20 @@ const SECTIONS = {
           const b = el.getBoundingClientRect();
           return { x: Math.round(b.x), y: Math.round(b.y), right: Math.round(b.right), bottom: Math.round(b.bottom) };
         };
+        const clean = (sel) => {
+          const el = document.querySelector(sel);
+          return el ? el.textContent.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim() : null;
+        };
+        const rowNum = (n) => {
+          const row = document.querySelector(`.spec-list > div:nth-child(${n})`);
+          return row ? row.textContent.replace(/^\D+/, '').replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim() : null;
+        };
         return {
-          form: r('[data-calc]'), out: r('.calc-out'), lead: r('.calc-lead'),
-          fieldCols: document.querySelector('.calc-fields')
+          form: r('[data-calc]'), out: r('.calc-out'), lead: r('.calc-lead'),          fieldCols: document.querySelector('.calc-fields')
             ? getComputedStyle(document.querySelector('.calc-fields')).gridTemplateColumns.split(' ').length : 0,
-          pay: document.querySelector('[data-payment]').textContent.trim().replace(/\s+/g, ' '),
+          pay: clean('.big.num'),
+          credit: rowNum(1),
+          signs: document.querySelectorAll('.calc-out .byn').length,
           rate: !!document.querySelector('[data-calc] [name=rate]'),
         };
       });
@@ -2353,8 +2394,7 @@ const SECTIONS = {
         Math.abs(calc3.out.bottom - calc3.lead.bottom) <= 1,
         `низ итогов ${calc3.out.bottom} / низ заявки ${calc3.lead.bottom}`);
       check('ui', 'в калькуляторе нет поля «Ставка», платёж по 16 % годовых (аннуитет)',
-        !calc3.rate && /^953 руб\. \/ месяц$/.test(calc3.pay), calc3.pay);
-
+        !calc3.rate && calc3.pay === '953 Б / месяц' && calc3.credit === '48 000 Б' && calc3.signs === 4, JSON.stringify(calc3));
       /* Ползунки расчёта (просьба заказчика 2026-09-27: «Стоимость автомобиля, руб. 60000 /
          Первоначальный взнос, руб. — сделай ползунком как в месяцах», затем 2026-09-29: «в блок
          кредитный калькулятор добавь ползунок участие клиента от 5% до 80%»). Проверяем: все три
@@ -2389,7 +2429,7 @@ const SECTIONS = {
       check('ui', 'калькулятор: у ползунков границы, шаг и подпись значения под ними',
         price0.min === '1000' && price0.step === '500' && Number(price0.max) >= 60000
         && (Number(price0.max) - 1000) % 500 === 0 && price0.out === '60 000'
-        && share0.min === '5' && share0.max === '80' && share0.step === '1' && share0.out === '20 % · 12 000 руб.'
+        && share0.min === '5' && share0.max === '80' && share0.step === '1' && share0.out === '20 % · 12 000\u00A0Б'
         && months0.min === '6' && months0.max === '84' && months0.step === '6' && months0.out === '84',
         `стоимость ${price0.min}…${price0.max}/${price0.step} «${price0.out}» · участие ${share0.min}…${share0.max}/${share0.step} «${share0.out}» · срок ${months0.min}…${months0.max}/${months0.step} «${months0.out}»`);
       check('ui', 'калькулятор: заливка ползунков считается скриптом (--p)',
@@ -2398,46 +2438,52 @@ const SECTIONS = {
       const shareRange = await page.evaluate(() => {
         const f = document.querySelector('[data-calc]');
         const fire = (el) => el.dispatchEvent(new Event('input', { bubbles: true }));
-        f.share.value = 80; fire(f.share);
-        const high = {
-          share: f.share.value, out: document.querySelector('[data-share]').textContent.trim(),
-          credit: document.querySelector('[data-credit]').textContent.trim(),
+        /* Число лежит в своём <i> (калькулятор пишет только числа), знак «Б» — соседний
+           <span class="byn">Б</span> в той же строке. */
+        const num = (sel) => document.querySelector(sel).textContent.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+        const sum = (n) => {
+          const row = document.querySelector(`.spec-list > div:nth-child(${n})`);
+          return row ? row.textContent.replace(/^\D+/, '').replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim() : null;
         };
+        f.share.value = 80; fire(f.share);
+        const high = { share: f.share.value, out: num('[data-share]'), credit: num('[data-credit]'), sum: sum(1) };
         f.share.value = 3; fire(f.share);
-        const low = { share: f.share.value, out: document.querySelector('[data-share]').textContent.trim() };
+        const low = { share: f.share.value, out: num('[data-share]') };
         f.price.value = 10000; f.share.value = 5; fire(f.price); fire(f.share);
         const lowPrice = {
-          priceOut: document.querySelector('[data-price]').textContent.trim(),
-          out: document.querySelector('[data-share]').textContent.trim(),
-          credit: document.querySelector('[data-credit]').textContent.trim(),
-          pay: document.querySelector('[data-payment]').textContent.trim(),
+          priceOut: num('[data-price]'),
+          out: num('[data-share]'),
+          credit: num('[data-credit]'),
+          pay: num('[data-payment]'),
+          full: num('.big.num'),
         };
         return { high, low, lowPrice };
       });
       check('ui', 'калькулятор: участие клиента 80 % — взнос 48 000, кредит 12 000',
-        shareRange.high.share === '80' && shareRange.high.out === '80 % · 48 000 руб.'
-          && shareRange.high.credit === '12 000 руб.',
-        `80 %: подпись «${shareRange.high.out}», кредит «${shareRange.high.credit}»`);
+        shareRange.high.share === '80' && shareRange.high.out === '80 % · 48 000 Б'
+          && shareRange.high.credit === '12 000' && shareRange.high.sum === '12 000 Б',
+        `80 %: подпись «${shareRange.high.out}», кредит «${shareRange.high.credit}», строка итога «${shareRange.high.sum}»`);
       check('ui', 'калькулятор: участие клиента ограничено снизу 5 %',
-        shareRange.low.share === '5' && shareRange.low.out === '5 % · 3 000 руб.',
+        shareRange.low.share === '5' && shareRange.low.out === '5 % · 3 000 Б',
         `введено 3 → ${shareRange.low.share} % («${shareRange.low.out}») · цена 10 000, участие 5 %: кредит «${shareRange.lowPrice.credit}», платёж «${shareRange.lowPrice.pay}»`);
       check('ui', 'калькулятор: взнос в рублях считается от цены, стоимость 10 000 при 5 %',
-        shareRange.lowPrice.priceOut === '10 000' && shareRange.lowPrice.out === '5 % · 500 руб.'
-          && shareRange.lowPrice.credit === '9 500 руб.' && /^189 руб\. \/ месяц$/.test(shareRange.lowPrice.pay),
+        shareRange.lowPrice.priceOut === '10 000' && shareRange.lowPrice.out === '5 % · 500 Б'
+          && shareRange.lowPrice.credit === '9 500' && shareRange.lowPrice.pay === '189'
+          && shareRange.lowPrice.full === '189 Б / месяц',
         JSON.stringify(shareRange.lowPrice));
       const recalc = await page.evaluate(() => {
         const f = document.querySelector('[data-calc]');
+        const num = (sel) => document.querySelector(sel).textContent.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
         f.price.value = 60000; f.price.dispatchEvent(new Event('input', { bubbles: true }));
         f.share.value = 20; f.share.dispatchEvent(new Event('input', { bubbles: true }));
         return {
-          pay: document.querySelector('[data-payment]').textContent.trim(),
-          credit: document.querySelector('[data-credit]').textContent.trim(),
-          shareOut: document.querySelector('[data-share]').textContent.trim(),
+          pay: num('[data-payment]'),
+          credit: num('[data-credit]'),
+          shareOut: num('[data-share]'),
         };
       });
       check('ui', 'калькулятор: ползунки пересчитывают платёж',
-        /^953 руб\. \/ месяц$/.test(recalc.pay) && recalc.credit === '48 000 руб.'
-          && recalc.shareOut === '20 % · 12 000 руб.',
+        recalc.pay === '953' && recalc.credit === '48 000' && recalc.shareOut === '20 % · 12 000 Б',
         `цена 60 000, участие 20 %: платёж «${recalc.pay}», кредит «${recalc.credit}», подпись «${recalc.shareOut}»`);
       /* Значение ползунка нельзя напечатать, поэтому точная сумма выставляется стрелками: шаг 500
          у стоимости, 1 у участия и 6 у срока. Проверяем, что клавиатура двигает ползунок и всё
@@ -2452,10 +2498,10 @@ const SECTIONS = {
       const keyMove = await page.evaluate(() => ({
         price: document.querySelector('[data-calc] [name=price]').value,
         out: document.querySelector('[data-price]').textContent.trim(),
-        pay: document.querySelector('[data-payment]').textContent.trim(),
+        pay: document.querySelector('.big.num').textContent.trim().replace(/\s+/g, ' '),
       }));
       check('ui', 'калькулятор: ползунок двигается с клавиатуры шагом 500 и пересчитывает расчёт',
-        keyMove.price === '60500' && keyMove.out === '60 500' && keyMove.pay === '961 руб. / месяц',
+        keyMove.price === '60500' && keyMove.out === '60 500' && keyMove.pay === '961 Б / месяц',
         `60 000 → ${keyMove.price}, подпись «${keyMove.out}», платёж «${keyMove.pay}»`);
       /* На 861–1179 px подписи «Стоимость автомобиля, руб.» и «Участие клиента, %» не
          влезают в 152 px и переносятся на две строки — по верху их ползунки уезжали на 20 px ниже
@@ -3070,10 +3116,10 @@ const SECTIONS = {
           && heroWide.hotLeft > heroWide.h1Left
           && heroWide.hotHeads === 0 && heroWide.hotTagOnPhoto === 5
           && heroWide.hotTags.every((t) => t === 'Горящая продажа')
-          && heroWide.hotDiscs.every((t) => /^−\d[\d\s]* руб\.$/.test(t))
+          && heroWide.hotDiscs.every((t) => /^−\d[\d\s]*\s?Б$/.test(t))
           && heroWide.hotSlides.every((n) => n >= 2)
           && heroWide.cardLinks.every((h) => /^\/car\//.test(h))
-          && heroWide.cardPrices.every((p) => /руб\./.test(p))
+          && heroWide.cardPrices.every((p) => /\d\s?Б/.test(p))
           && heroWide.over <= 1,
         JSON.stringify(heroWide));
       /* Centered Slider (заказчик: «блок с горящим предложением на титульный наверху сделай как
@@ -3297,7 +3343,7 @@ const SECTIONS = {
          заполнения информации об авто в нашем стиле»). Разметка — lib/view.mjs: saleModalHtml,
          поведение — initLeadModals (общий initLeadModal) в public/assets/js/site.js.
          Проверяем устройство окна и заявку целиком: короткая форма про машину, склейка
-         «Авто на продажу…: Geely Monjaro, 2022 г., пробег 45 000 км, цена 50 000 руб.» в поле text
+         «Авто на продажу…: Geely Monjaro, 2022 г., пробег 45 000 км, цена 50 000 Б» в поле text
          (в базе у заявки только name/phone/text), отправка без перезагрузки, закрытие крестиком. */
       await page.evaluate(() => {
         const f = document.querySelector('[data-sale-form]');
@@ -3332,7 +3378,17 @@ const SECTIONS = {
           pair: row ? row.querySelectorAll('.field').length : 0,
           twoCols: fields.length >= 2 && fields[0] < fields[1],
           agreeRequired: form.querySelector('[name=agree]').required,
-          sellLink: !!form.querySelector('a[href="/sell"]'),
+          /* Марка и модель — списки, как в блоке подачи объявления на /sell (заказчик 2026-10-02):
+             у самой формы это выпадающие списки с общим справочником, поэтому проверяем и поля, и
+             сами списки с марками (живая связка list → datalist снимается скриптом — см. ниже). */
+          brandList: (() => {
+            const b = form.querySelector('[name=brand]'), m = form.querySelector('[name=model]');
+            const bd = document.querySelector('datalist#sale-brandlist');
+            const md = document.querySelector('datalist#sale-modellist');
+            return !!(b && m && bd && md && bd.querySelectorAll('option').length > 100
+              && md.querySelectorAll('option').length > 10);
+          })(),
+          comboFields: back.querySelectorAll('[data-combo]').length,
           focused: document.activeElement === form.querySelector('[name=brand]'),
           bodyOpen: document.body.classList.contains('modal-open'),
           pageOver: document.documentElement.scrollWidth - innerWidth,
@@ -3344,7 +3400,7 @@ const SECTIONS = {
           && saleBox.title === 'Поставить авто на продажу' && saleBox.kind === 'sale' && saleBox.action === '/lead'
           && saleBox.names.join(',') === 'kind,text,brand,model,year,mileage,price,name,phone,agree'
           && saleBox.tel === 'tel' && saleBox.pair === 2 && saleBox.twoCols
-          && saleBox.agreeRequired && saleBox.sellLink && saleBox.pageOver <= 1,
+          && saleBox.agreeRequired && saleBox.brandList && saleBox.comboFields === 2 && saleBox.pageOver <= 1,
         JSON.stringify(saleBox));
       check('ui', 'в открытом окне продажи фокус в поле «Марка», тело помечено modal-open',
         saleBox.focused && saleBox.bodyOpen, JSON.stringify(saleBox));
@@ -3361,7 +3417,7 @@ const SECTIONS = {
       await new Promise((r) => setTimeout(r, 200));
       const saleText = await page.$eval('[data-sale-form] [name=text]', (el) => el.value);
       check('ui', 'в заявке из окна продажи собирается строка про авто — марка, год, пробег, цена',
-        saleText === 'Авто на продажу с главной страницы: Geely Monjaro, 2022 г., пробег 45 000 км, цена 50 000 руб.',
+        saleText === 'Авто на продажу с главной страницы: Geely Monjaro, 2022 г., пробег 45 000 км, цена 50 000\u00A0Б',
         saleText);
       /* Пустая форма не должна уходить на сервер: у полей стоит required, отправку держит
          checkValidity — окно после клика остаётся открытым. Клик по кнопке проверяем изнутри
@@ -3509,7 +3565,7 @@ const SECTIONS = {
           && sl0.tag.anim === 'hotGlow' && parseFloat(sl0.tag.dur) > 0,
         JSON.stringify(sl0 && { tag: sl0.tag, tagText: sl0.tagText, media: sl0.media }));
       check('ui', 'скидка видна на кадре: белая плашка с красной суммой в левом верхнем углу',
-        !!sl0 && !!sl0.disc && /^−\d[\d\s]* руб\.$/.test(sl0.disc.text)
+        !!sl0 && !!sl0.disc && /^−\d[\d\s]*\s?Б$/.test(sl0.disc.text)
           && sl0.disc.bg === 'rgb(255, 255, 255)' && sl0.disc.color === 'rgb(227, 0, 15)'
           && sl0.disc.l >= sl0.media.l && sl0.disc.t >= sl0.media.t
           && sl0.disc.l - sl0.media.l <= 8 && sl0.disc.t - sl0.media.t <= 8,
@@ -4711,6 +4767,39 @@ const SECTIONS = {
           && Math.abs(servWide.form.top - servWide.rail.top) <= 2,
         JSON.stringify(servWide));
 
+      /* Пункты услуг на телефоне (просьба заказчика 2026-10-02: «на мобильном внутри страницы
+         услуги подблоки комиссия, обмен, выкуп и т.д. — в одну строку»). Раньше лента пунктов
+         переносила подписи и пункт занимал две строки. Теперь у пункта одна строка (nowrap),
+         лента вбок прокручивается, страница — нет. Проверяем на 320 и 390 px. */
+      for (const w of [320, 390]) {
+        await page.setViewport({ width: w, height: 900, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+        await page.goto(BASE + '/services/credit', { waitUntil: 'load' });
+        await new Promise((r) => setTimeout(r, 300));
+        const rail = await page.evaluate(() => {
+          const nav = document.querySelector('.side-nav');
+          const links = [...nav.querySelectorAll('a')];
+          const oneLine = (el) => {
+            const cs = getComputedStyle(el);
+            if (cs.whiteSpace !== 'nowrap') return false;
+            /* Больше одного прямоугольника строки = текст перенёсся (Range даёт по прямоугольнику
+               на каждую строку и на каждый пробел, поэтому считаем уникальные верхние края). */
+            const rg = document.createRange();
+            rg.selectNodeContents(el);
+            const tops = [...rg.getClientRects()].map((r) => Math.round(r.top));
+            return new Set(tops).size <= 1 && el.scrollWidth <= el.clientWidth + 1;
+          };
+          return {
+            items: links.map((a) => a.textContent.trim()),
+            lines: links.map(oneLine),
+            railScroll: Math.round(nav.scrollWidth - nav.clientWidth),
+            pageOver: Math.round(document.documentElement.scrollWidth - innerWidth),
+          };
+        });
+        check('ui', `${w}: пункты услуги — каждый в одну строку, лента прокручивается вбок`,
+          rail.items.length >= 5 && rail.lines.every(Boolean) && rail.railScroll > 0 && rail.pageOver <= 1,
+          JSON.stringify(rail));
+      }
+
       /* Промежуточные ширины от десктопа к мобильному (жалоба заказчика 2026-09-29: «когда
          сдвигаю рамку хрома обозревателя, вижу что появляются старые иконки подписи и
          вкладок»). Раньше в 1081–1279 px шапка возвращалась к прежнему виду — значки разделов
@@ -4768,10 +4857,10 @@ const SECTIONS = {
          Просьба заказчика 2026-10-02 (с телефона): «На странице - Сравнения авто в мобильной
          версии, сделай, что бы били показаны минимум два автомобиля без прокрутки содержимого
          блока в право». До правки таблица была 840 px при трёх машинах: на 390 px экране от
-         первой колонки видно 246 px, от второй — 26 px. Теперь на телефоне таблица скрыта,
-         а вместо неё .cmp-cards — сетка колонок-карточек. Проверяем на 320 и 390 px: колонок
-         ровно две, каждая карточка целиком в экране, горизонтальной прокрутки нет ни у страницы,
-         ни у блока сравнения, а значения характеристик не обрезаны многоточием. */
+         первой колонки видно 246 px, от второй — 26 px. Теперь на телефоне таблица скрыта, а
+         вместо неё — лента .cmp-cards-only: колонки карточек не переносятся, две видны целиком,
+         третья уезжает влево по горизонтальной прокрутке самой ленты. Прокрутки страницы при этом
+         нет. Проверяем на 320 и 390 px. */
       const cmpCookie = { name: 'an_cmp', value: '1,2,3', url: BASE };
       for (const w of [320, 390]) {
         await page.setViewport({ width: w, height: 900, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
@@ -4779,33 +4868,100 @@ const SECTIONS = {
         await page.goto(BASE + '/compare/', { waitUntil: 'load' });
         await new Promise((r) => setTimeout(r, 400));
         const cm = await page.evaluate(() => {
-          const cards = document.querySelector('.cmp-cards-only');
-          const grid = cards ? getComputedStyle(cards) : null;
-          const items = [...(cards ? cards.querySelectorAll('.cmp-card') : [])];
-          const right = Math.max(0, ...items.map((c) => c.getBoundingClientRect().right));
+          const strip = document.querySelector('.cmp-cards-only');
+          const cs = strip ? getComputedStyle(strip) : null;
+          const cards = [...document.querySelectorAll('.cmp-card')];
+          const box = strip ? strip.getBoundingClientRect() : null;
+          const lines = (el) => Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight || '16'));
+          const names = [...document.querySelectorAll('.cmp-card .cmp-name')];
           const vals = [...document.querySelectorAll('.cmp-list dd')];
-          const scroller = document.querySelector('.cmp-scroll');
+          const dts = [...document.querySelectorAll('.cmp-list dt')];
           return {
-            cols: grid ? grid.gridTemplateColumns.split(' ').filter(Boolean).length : 0,
-            cards: items.length,
-            cardsShown: grid ? grid.display !== 'none' : false,
-            tableShown: scroller ? getComputedStyle(scroller).display !== 'none' : false,
-            right: Math.round(right), innerW: innerWidth,
-            scrollW: document.documentElement.scrollWidth,
-            blockOver: scroller ? scroller.scrollWidth - scroller.clientWidth : 0,
-            clipped: vals.filter((dd) => dd.scrollWidth > dd.clientWidth + 1).length,
+            cards: cards.length,
+            display: cs ? cs.display : 'нет ленты', wrap: cs ? cs.flexWrap : '',
+            flex: cs ? (cs.flexGrow + '/' + cs.flexShrink + '/' + cs.flexBasis) : '',
+            cardW: cards.map((c) => Math.round(c.getBoundingClientRect().width)),
+            inView: cards.filter((c) => c.getBoundingClientRect().right <= box.right + 1).length,
+            stripScroll: strip ? Math.round(strip.scrollWidth - strip.clientWidth) : 0,
+            pageOver: Math.round(document.documentElement.scrollWidth - innerWidth),
+            namesSingle: names.length >= 3 && names.every((n) => lines(n) === 1),
+            dtSingle: dts.every((d) => lines(d) === 1),
             specs: vals.length,
+            tableShown: getComputedStyle(document.querySelector('.cmp-scroll')).display !== 'none',
             empty: !!document.querySelector('.empty'),
           };
         });
-        check('ui', `${w}: сравнение — две колонки-карточки в экране без прокрутки блока вправо`,
-          cm.cardsShown && !cm.tableShown && cm.cols === 2 && cm.cards === 3 && !cm.empty
-            && cm.right <= cm.innerW + 1 && cm.scrollW <= cm.innerW && cm.blockOver === 0,
+        check('ui', `${w}: сравнение — минимум две карточки целиком в экране, лента прокручивается вбок`,
+          cm.cards === 3 && cm.display === 'flex' && cm.wrap === 'nowrap' && cm.inView >= 2
+            && cm.cardW.every((c) => c > 100) && cm.stripScroll > 0
+            && cm.pageOver <= 1 && !cm.tableShown && !cm.empty,
           JSON.stringify(cm));
-        check('ui', `${w}: сравнение — характеристики не обрезаны (${cm.specs} значений)`,
-          cm.specs >= 33 && cm.clipped === 0, `обрезано ${cm.clipped} из ${cm.specs}`);
+        check('ui', `${w}: сравнение — названия и подписи в одну строку, характеристики не разъезжаются`,
+          cm.namesSingle && cm.dtSingle && cm.specs >= 33,
+          `значений ${cm.specs}, названия в строку: ${cm.namesSingle}, подписи в строку: ${cm.dtSingle}`);
       }
-      /* «Убрать» в карточке: машина уходит из сравнения, остальные остаются. */
+      /* Цена и «Сравнить» в одной строке карточки (заказчик 02.10.2026, четвёртый список:
+         «на мобильном … в карточках кнопку сравнить размести напротив цены»). До этого строка
+         переносилась и подпись уезжала под число; в CSS @media(max-width:600px) у .car-price-row
+         теперь flex-wrap:nowrap, а подпись двигателя из блока цены убрана (те же данные строкой
+         ниже) — иначе цифры цены обрезались многоточием. Проверяем на 320 и 390 px. */
+      for (const w of [320, 390]) {
+        await page.setViewport({ width: w, height: 900, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+        await page.goto(BASE + '/cars', { waitUntil: 'load' });
+        await new Promise((r) => setTimeout(r, 300));
+        const priceRow = await page.evaluate(() => {
+          const rows = [...document.querySelectorAll('.car-price-row')];
+          const bad = rows.filter((row) => {
+            const price = row.querySelector('.car-price');
+            const cmp = row.querySelector('.cmp-cell');
+            if (!price || !cmp) return true;
+            const pr = price.getBoundingClientRect(), cr = cmp.getBoundingClientRect();
+            const dy = Math.abs((pr.top + pr.bottom) / 2 - (cr.top + cr.bottom) / 2);
+            return dy > 4 || cr.left < pr.right - 1 || price.scrollWidth > price.clientWidth + 1;
+          }).length;
+          return {
+            rows: rows.length, bad,
+            over: Math.round(document.documentElement.scrollWidth - innerWidth),
+            carW: Math.round(document.querySelector('.car').getBoundingClientRect().width),
+          };
+        });
+        check('ui', `${w}: в карточке «Сравнить» стоит напротив цены, цифры цены не обрезаны`,
+          priceRow.rows >= 10 && priceRow.bad === 0 && priceRow.over <= 1,
+          JSON.stringify(priceRow));
+      }
+
+      /* Строка про бронь в окне «Забронировать» — одна строка без переноса (заказчик 02.10.2026,
+         второй список: «в окне брони … Бронь держим 3 дня — без предоплаты — сделай одной строкой»).
+         Проверяем на самом узком экране: подпись не переносится и не вылезает за окно. */
+      await page.setViewport({ width: 320, height: 800, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+      await page.goto(BASE + '/cars', { waitUntil: 'load' });
+      await new Promise((r) => setTimeout(r, 200));
+      const bookNote = await page.evaluate(() => {
+        const back = document.querySelector('[data-book-modal]');
+        if (!back) return { none: true };
+        back.hidden = false;
+        const note = [...back.querySelectorAll('p, .small, .muted')]
+          .find((el) => /Бронь держим/.test(el.textContent));
+        if (!note) return { noNote: back.textContent.replace(/\s+/g, ' ').slice(0, 160) };
+        const rg = document.createRange();
+        rg.selectNodeContents(note);
+        const tops = new Set([...rg.getClientRects()].map((r) => Math.round(r.top)));
+        return {
+          text: note.textContent.trim(),
+          lines: tops.size,
+          over: Math.round(note.scrollWidth - note.clientWidth),
+          modalOver: Math.round(back.querySelector('.modal').getBoundingClientRect().right - innerWidth),
+        };
+      });
+      check('ui', '320: строка про бронь в окне «Забронировать» укладывается в одну строку',
+        !bookNote.none && !bookNote.noNote && bookNote.lines === 1 && bookNote.over <= 0 && bookNote.modalOver <= 0,
+        JSON.stringify(bookNote));
+
+      /* «Убрать» в карточке: машина уходит из сравнения, остальные остаются. Возвращаемся на
+         страницу сравнения: проверки строки цены и брони ходили на /cars. */
+      await page.setCookie(cmpCookie);
+      await page.goto(BASE + '/compare/', { waitUntil: 'load' });
+      await new Promise((r) => setTimeout(r, 300));
       await page.evaluate(() => document.querySelectorAll('.cmp-card [data-compare-remove]')[1].click());
       await new Promise((r) => setTimeout(r, 700));
       const cmpAfter = await page.evaluate(() => ({
@@ -4841,7 +4997,7 @@ const t0 = Date.now();
 for (const [name, fn] of Object.entries(SECTIONS)) {
   if (ONLY && ONLY !== name) continue;
   try { await fn(); }
-  catch (e) { check(name, 'раздел выполнен без ошибок', false, e.message); }
+  catch (e) { check(name, `${name}: раздел выполнен без ошибок`, false, e.message); }
 }
 
 const bySection = {};

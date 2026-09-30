@@ -480,7 +480,14 @@
        аннуитетом»). Меняется в lib/finance.mjs, страница отдаёт её в data-rate, здесь — только
        запасное значение, если атрибут потеряется. */
     var RATE = Number(form.dataset.rate) || 16;
-    function money(v) { return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' руб.'; }
+    /* Знак белорусского рубля ставится в разметке — <span class="byn">Б</span> сразу после числа
+       (черта рисуется из CSS: своего символа в Юникоде у него нет). Скрипт пишет только числа,
+       поэтому разметка знака не затирается. В <output data-share> разметку вставить нельзя (это
+       значение поля), поэтому там знак идёт обычным текстом, через неразрывный пробел. */
+    var BYN = '\u00A0Б';
+    /* Числа пишутся без знака: знак стоит в разметке сразу после числа. Исключение — значение
+       поля <output data-share>, там знак идёт текстом. */
+    function money(v) { return digits(v); }
     function digits(v) { return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
     /* Заливка трека до бегунка: доля в переменной --p, её читает CSS. У всех ползунков
        (стоимость, участие клиента, срок) она считается одинаково, поэтому выглядят они одинаково. */
@@ -506,10 +513,10 @@
       var pay = m > 0 ? credit * m / (1 - Math.pow(1 + m, -months)) : credit / months;
       if (monthsOut) monthsOut.value = months;
       if (priceOut) priceOut.value = digits(price);
-      if (shareOut) shareOut.value = share + ' % · ' + digits(down) + ' руб.';
+      if (shareOut) shareOut.value = share + ' % · ' + digits(down) + BYN;
       paint(form.price); paint(form.share); paint(form.months);
       var set = function (sel, txt) { var el = $(sel); if (el) el.textContent = txt; };
-      set('[data-payment]', money(pay) + ' / месяц');
+      set('[data-payment]', money(pay));
       set('[data-credit]', money(credit));
       set('[data-over]', money(pay * months - credit));
       set('[data-total]', money(pay * months));
@@ -1161,6 +1168,10 @@
     watchViewport(function () { if (opened) opened.place(); });
   }
 
+  /* Все раскрывающиеся списки формы продажи: нужны, чтобы погасить уже открытый список, когда
+     поверх раскрывается окно заявки (см. shutComboLists ниже). */
+  var sellCombos = [];
+
   /* ── марка, модель и поколение формы продажи ───────────
      Заказчик 2026-09-28: «сделай стили раскрытия списки как на блоке поиск авто, а также проверь
      выбор марки авто, плохо выбирается, работает криво, не подтягивается модель и выбор
@@ -1185,14 +1196,27 @@
     var CHECK = '<svg class="sel-ck" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
     var opened = null;
     var seq = 0;
-    var api = {};
+    /* Поля форм разведены по контейнерам: на /sell в разметке лежит и сама форма продажи, и
+       короткое окно «Поставить авто на продажу» — у обоих свои марка, модель и поколение.
+       Общий api[kind] брал последнее найденное поле (поле окна), и в форме продажи подсказки
+       читали пустую марку: список моделей отвечал «Сначала выберите марку». Ключ карты — тот
+       контейнер, в котором стоит поле. */
+    var scopeMap = [];
+    function scopeOf(field) {
+      var scope = field.closest('form, .modal') || document.body;
+      for (var i = 0; i < scopeMap.length; i++) if (scopeMap[i].scope === scope) return scopeMap[i];
+      var entry = { scope: scope, api: {} };
+      scopeMap.push(entry);
+      return entry;
+    }
+    function pickIn(scope, kind) { return (scope && scope.api[kind]) || null; }
+    function valOf(scope, kind) { var f = pickIn(scope, kind); return f ? f.input.value.trim() : ''; }
 
     /* Ключ без регистра и диакритики: «Citroen» находит модели марки «Citroën». */
     function key(v) {
       return String(v == null ? '' : v).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .trim().toLowerCase().replace(/\s+/g, ' ');
     }
-    function val(kind) { return api[kind] ? api[kind].input.value.trim() : ''; }
     function node(brand) {
       if (!brand || !cat.tree) return null;
       if (cat.tree[brand]) return cat.tree[brand];
@@ -1253,7 +1277,7 @@
     /* Подсказки поля: у марки — весь словарь, у модели — модели выбранной марки, у поколения —
        поколения выбранной пары. Пустой список — не ошибка: значение вводят руками.
        Элемент списка — строка (из базы дилера) или {t: название, y: годы, p: фото} (каталог av.by). */
-    function items(kind) {
+    function items(scope, kind) {
       if (kind === 'brand') {
         var list = (cat.brands || []).slice();
         if (avby.map) {
@@ -1263,8 +1287,8 @@
         }
         return sorted(list);
       }
-      var tree = node(val('brand'));
-      var am = avbyModels(val('brand'));
+      var tree = node(valOf(scope, 'brand'));
+      var am = avbyModels(valOf(scope, 'brand'));
       if (kind === 'model') {
         var models = tree ? Object.keys(tree).slice() : [];
         if (am) {
@@ -1274,8 +1298,8 @@
         }
         return sorted(models);
       }
-      var gens = (pick(tree, val('model')) || []).slice();
-      var extra = am ? pick(am, val('model')) : null;
+      var gens = (pick(tree, valOf(scope, 'model')) || []).slice();
+      var extra = am ? pick(am, valOf(scope, 'model')) : null;
       if (extra) {
         var known = {};
         gens.forEach(function (g) { known[key(typeof g === 'string' ? g : g.t)] = 1; });
@@ -1286,22 +1310,30 @@
       return gens;
     }
     /* Марка сменилась — чистим только то, что перестало подходить: чужую модель и её поколение. */
-    function cascade(kind) {
+    function cascade(scope, kind) {
       function has(kind2, value) {
-        return !!value && items(kind2).some(function (n) {
+        return !!value && items(scope, kind2).some(function (n) {
           return (typeof n === 'string' ? n : n.t) === value;
         });
       }
       if (kind === 'brand') {
-        if (!has('model', val('model'))) {
-          if (api.model) api.model.input.value = '';
-          if (api.generation) api.generation.input.value = '';
-        } else if (!has('generation', val('generation')) && api.generation) {
-          api.generation.input.value = '';
+        if (!has('model', valOf(scope, 'model'))) {
+          if (pickIn(scope, 'model')) pickIn(scope, 'model').input.value = '';
+          if (pickIn(scope, 'generation')) pickIn(scope, 'generation').input.value = '';
+        } else if (!has('generation', valOf(scope, 'generation')) && pickIn(scope, 'generation')) {
+          pickIn(scope, 'generation').input.value = '';
         }
-      } else if (!has('generation', val('generation')) && api.generation) {
-        api.generation.input.value = '';
+      } else if (!has('generation', valOf(scope, 'generation')) && pickIn(scope, 'generation')) {
+        pickIn(scope, 'generation').input.value = '';
       }
+    }
+    /* Файл марки с моделями приезжает после выбора марки; к этому моменту очистка уже прошла, а
+       выбранная модель в базе дилера есть не всегда — прогоняем каскад ещё раз по приходу
+       каталога, чтобы чужое значение не осталось висеть. */
+    function cascadeLater(scope, kind) {
+      [0, 400, 1200, 2500].forEach(function (ms) {
+        setTimeout(function () { cascade(scope, kind); }, ms);
+      });
     }
 
     $$('[data-combo]').forEach(function (field) {
@@ -1309,6 +1341,8 @@
       if (kind !== 'brand' && kind !== 'model' && kind !== 'generation') return;
       var input = field.querySelector('[data-combo-input]') || field.querySelector('input');
       if (!input) return;
+      /* Своя марка, модель и поколение у каждой формы: подсказки читают поля того же контейнера. */
+      var scope = scopeOf(field);
       /* Системные подсказки больше не нужны: список рисуем сами. */
       input.removeAttribute('list');
 
@@ -1339,10 +1373,10 @@
 
       function hint() {
         if (kind === 'brand') return 'Ничего не найдено — марку можно ввести вручную';
-        if (!val('brand')) return 'Сначала выберите марку или введите свою';
-        if (avbyLoading(val('brand'))) return 'Загружаю каталог av.by…';
+        if (!valOf(scope, 'brand')) return 'Сначала выберите марку или введите свою';
+        if (avbyLoading(valOf(scope, 'brand'))) return 'Загружаю каталог av.by…';
         if (kind === 'model') return 'Моделей этой марки в каталоге нет — введите вручную';
-        if (!val('model')) return 'Сначала выберите модель';
+        if (!valOf(scope, 'model')) return 'Сначала выберите модель';
         return 'Поколений этой модели в каталоге нет — введите вручную';
       }
 
@@ -1353,7 +1387,7 @@
         pop.innerHTML = '';
         var q = String(query == null ? '' : query).trim().toLowerCase();
         var cur = input.value.trim();
-        var list = items(kind);
+        var list = items(scope, kind);
         var shown = 0;
         for (var i = 0; i < list.length && shown < 200; i++) {
           var item = list[i];
@@ -1481,7 +1515,7 @@
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
         quiet = false;
-        cascade(kind);
+        cascadeLater(scope, kind);
         input.focus();
         shut();
       }
@@ -1500,7 +1534,11 @@
         list[i].scrollIntoView({ block: 'nearest' });
       }
 
-      api[kind] = self;
+      scope.api[kind] = self;
+      /* Открыть список может и само окно: поле фокусируется при открытии, а список раскрывается
+         на focus. Держим поля в общем списке — им гасит подсказки shutComboLists, когда поверх
+         раскрывается окно заявки (иначе поверх окна висит список из 166 марок). */
+      sellCombos.push(self);
 
       input.addEventListener('focus', openPop);
       input.addEventListener('click', function () { if (pop.hidden) openPop(); });
@@ -1652,6 +1690,16 @@
      (закрытие, фокус, поведение при ошибке сети). Поля с именем comment у окон нет, поэтому
      отдельной склейки комментария в текст заявки здесь тоже нет: всё, что нужно менеджеру,
      собирается в скрытое поле text ещё в разметке. */
+  /* Списки подсказок (initCombos) раскрываются на focus — это удобно, когда человек сам заходит
+     в поле, но поле «Марка» окно фокусирует само при открытии (data-sale-first), и тогда список
+     из 166 марок раскрыт поверх только что открытого окна: половину окна занимает чужой список,
+     а само окно получает внутреннюю прокрутку (заказчик, 2026-10-02: «внеси изменения» — окно
+     должно открываться чистым). Поэтому при открытии окна заявки гасим уже раскрытые списки:
+     фокус в поле остаётся, а список человек откроет сам — кликом по полю или набором букв. */
+  function shutComboLists() {
+    sellCombos.forEach(function (c) { if (c.shut) c.shut(); });
+  }
+
   function initLeadModal(backAttr, openAttr, closeAttr, formAttr, message, beforeOpen, beforeSend) {
     var back = $('[' + backAttr + ']');
     if (!back) return;
@@ -1672,6 +1720,7 @@
         var f = form.querySelector('[data-sale-first]') || form.querySelector('input[name=name]')
           || form.querySelector('input:not([type=hidden]):not([type=checkbox])');
         if (f) f.focus();
+        shutComboLists();
       }, 60);
     }
 
@@ -1728,12 +1777,13 @@
         return el ? String(el.value || '').trim() : '';
       };
       var num = function (v) { return v.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ' '); };
+      /* Цена уходит менеджеру знаком рубля, а не словом «руб.» — как и в остальных ценах сайта. */
       var car = (val('brand') + ' ' + val('model')).trim();
       var parts = [];
       if (car) parts.push(car);
       if (val('year')) parts.push(val('year') + ' г.');
       if (val('mileage')) parts.push('пробег ' + num(val('mileage')) + ' км');
-      if (val('price')) parts.push('цена ' + num(val('price')) + ' руб.');
+      if (val('price')) parts.push('цена ' + num(val('price')) + '\u00A0Б');
       box.value = 'Авто на продажу с главной страницы' + (parts.length ? ': ' + parts.join(', ') : '');
     }
     initLeadModal('data-sale-modal', 'data-sale-open', 'data-sale-close', 'data-sale-form',
