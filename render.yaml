@@ -4,8 +4,10 @@
 #   1. клонирует репозиторий akkountmy/autonovaBY (ветка main);
 #   2. поднимет Node.js 24 — внешних зависимостей у сайта нет, сборка не нужна;
 #   3. запустит `node server.mjs`, слушающий 0.0.0.0 и порт из переменной PORT;
-#   4. спросит ADMIN_PASSWORD (значение в репозитории не хранится) и выдаст адрес
-#      вида https://autonova.onrender.com с готовым HTTPS.
+#   4. спросит четыре значения (в репозитории они не хранятся): ADMIN_PASSWORD — пароль
+#      администратора admin@autonova.by, DEMO_SELLER_EMAIL и DEMO_SELLER_PASSWORD — логин и
+#      пароль демонстрационного клиента (роль user; пустые поля — клиент не заводится);
+#   5. выдаст адрес вида https://autonova.onrender.com с готовым HTTPS.
 #
 # Канонический адрес сайта (canonical, og:url, sitemap.xml) подставляется сам из
 # RENDER_EXTERNAL_URL — PUBLIC_BASE задавать не нужно.

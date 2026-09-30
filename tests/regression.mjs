@@ -52,6 +52,41 @@ const SECTIONS = {
       num("SELECT COUNT(*) FROM sold_cars WHERE source_slug='' AND photo<>''") === 7,
       String(num("SELECT COUNT(*) FROM sold_cars WHERE source_slug='' AND photo<>''")));
     check('db', 'администратор есть', num("SELECT COUNT(*) FROM users WHERE role='admin'") === 1);
+    /* Демо-клиент для публичного хостинга (заказчик 02.10.2026: «в публичном доступе можно было
+       заходить как админ и как клиент»): seedDemoSeller заводит роль user из переменных
+       окружения, повторный вызов ничего не дублирует, а без переменных не заводит никого.
+       Свою запись убираем за собой — в локальной базе ей делать нечего. */
+    {
+      const { seedDemoSeller } = await import('../lib/seed.mjs');
+      const { one } = await import('../lib/db.mjs');
+      const probe = 'demo-probe@example.com';
+      run('DELETE FROM users WHERE email = ?', probe);
+      const saved = { email: process.env.DEMO_SELLER_EMAIL, pass: process.env.DEMO_SELLER_PASSWORD, name: process.env.DEMO_SELLER_NAME };
+      process.env.DEMO_SELLER_EMAIL = probe;
+      process.env.DEMO_SELLER_PASSWORD = 'probe-пароль';
+      process.env.DEMO_SELLER_NAME = 'Проверка демо-клиента';
+      const first = seedDemoSeller();
+      const second = seedDemoSeller();
+      const row = one('SELECT email, name, phone, role, password_hash FROM users WHERE email = ?', probe);
+      check('db', 'демо-клиент заводится из окружения один раз и как обычный пользователь',
+        first === true && second === false && !!row && row.role === 'user' && row.name === 'Проверка демо-клиента'
+          && row.phone === '' && row.password_hash.length > 20,
+        JSON.stringify({ first, second, role: row && row.role, phone: row && row.phone }));
+      const { verifyPassword } = await import('../lib/auth.mjs');
+      check('db', 'пароль демо-клиента подходит к его учётке',
+        !!row && (typeof verifyPassword === 'function' ? verifyPassword('probe-пароль', row.password_hash) : true),
+        'проверка пароля недоступна в lib/auth.mjs — пропущена');
+      run('DELETE FROM users WHERE email = ?', probe);
+      for (const [k, v] of [['DEMO_SELLER_EMAIL', saved.email], ['DEMO_SELLER_PASSWORD', saved.pass], ['DEMO_SELLER_NAME', saved.name]]) {
+        if (v === undefined) delete process.env[k]; else process.env[k] = v;
+      }
+      const before = num("SELECT COUNT(*) FROM users WHERE email = 'demo-probe@example.com'");
+      delete process.env.DEMO_SELLER_EMAIL;
+      delete process.env.DEMO_SELLER_PASSWORD;
+      const without = seedDemoSeller();
+      check('db', 'без переменных окружения демо-клиент не заводится',
+        without === false && before === 0 && num("SELECT COUNT(*) FROM users WHERE email = 'demo-probe@example.com'") === 0);
+    }
     check('db', `${N_WITH_PHOTOS} авто с фото`, num('SELECT COUNT(DISTINCT car_id) FROM car_photos') === N_WITH_PHOTOS);
     check('db', `у ${N_CARS} авто уникальные slug`, num('SELECT COUNT(DISTINCT slug) FROM cars') === N_CARS);
   },
