@@ -4026,6 +4026,44 @@ const SECTIONS = {
           && soldTablet.sideLeft === soldTablet.tblLeft && soldTablet.over <= 1,
         JSON.stringify(soldTablet));
 
+      /* Карточка проданного авто на телефоне: подпись «ЦЕНА» остаётся на месте (у левого края),
+         а сумма со знаком рубля уезжает к правому краю строки. Заказчик 02.10.2026: «в блоке
+         проданные автомобили, Слово - цена, оставь на месте, а стоимость в бел руб перенеси
+         к правому краю». Строка цены снова флекс с space-between — ровно как строки «Год»,
+         «Пробег» и «Продано», у которых подпись слева, а значение справа; знак «Б» едет вместе
+         с числом, потому что цена обёрнута в span.sold-price (lib/pages.mjs, soldRow). */
+      await page.setViewport({ width: 390, height: 844 });
+      await page.goto(BASE + '/cars-sold', { waitUntil: 'domcontentloaded' });
+      const soldPrice = await page.evaluate(() => {
+        const cell = document.querySelector('table.tbl-cards td[data-label="Цена"]');
+        if (!cell) return null;
+        const price = cell.querySelector('.sold-price');
+        const sign = cell.querySelector('.byn');
+        if (!price || !sign) return null;
+        const r = (el) => { const b = el.getBoundingClientRect(); return { l: Math.round(b.left), r: Math.round(b.right), t: Math.round(b.top) }; };
+        const rows = ['Год', 'Пробег', 'Продано', 'Цена']
+          .map((label) => document.querySelector(`table.tbl-cards td[data-label="${label}"]`))
+          .filter(Boolean).map((td) => Math.round(td.getBoundingClientRect().right));
+        return {
+          justify: getComputedStyle(cell).justifyContent,
+          label: getComputedStyle(cell, '::before').content,
+          cell: r(cell), price: r(price), sign: r(sign),
+          rowRights: rows,
+          priceText: price.textContent.replace(/\s+/g, ' ').trim(),
+        };
+      });
+      check('ui', 'в карточке проданного «ЦЕНА» слева, а сумма в правом краю строки',
+        !!soldPrice && soldPrice.justify === 'space-between'
+          && Math.abs(soldPrice.price.r - soldPrice.cell.r) <= 1
+          && soldPrice.price.l - soldPrice.cell.l >= 45
+          && Math.abs(soldPrice.sign.r - soldPrice.price.r) <= 1
+          && soldPrice.sign.l >= soldPrice.price.l
+          && soldPrice.rowRights.every((right) => Math.abs(right - soldPrice.cell.r) <= 1),
+        soldPrice ? `«${soldPrice.priceText}»: строка ${soldPrice.cell.l}…${soldPrice.cell.r}, цена `
+          + `${soldPrice.price.l}…${soldPrice.price.r}, знак «Б» кончается на ${soldPrice.sign.r}, `
+          + `выравнивание ${soldPrice.justify}, правые края строк ${soldPrice.rowRights.join('/')}`
+          : 'карточка проданного авто на 390 px не найдена');
+
       /* Страница «Контакты»: «Реквизиты» убраны, форма «Написать нам» стоит в правой колонке
          .contacts-layout — сразу справа от плитки «Станция технического обслуживания», верх и низ
          колонок совпадают (плитки 2×2 растянуты на высоту формы), лист заполнен до правого края.

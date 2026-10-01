@@ -2227,14 +2227,18 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
   table.tbl-cards td[data-label="Автомобиль"]{display:block;margin-bottom:10px;white-space:normal}
   table.tbl-cards td[data-label="Автомобиль"]::before{content:none}
   table.tbl-cards td.num.tbl-ctr{text-align:left}
-  /* Заказчик 02.10.2026: «цена в карточках проданных авто, смести влево, симметрично — год,
-     пробег, продано». Было: «ЦЕНА» подписью в строке и значение, прижатое к правому краю, — ряд
-     цены выбивался из остальных (замер 390 px: значение 305→355, подпись от 35). Стало: подпись
-     и значение стоят одной строкой и обе у левого края, как подписи «Год», «Пробег» и «Продано»
-     выше, а не разъезжаются по краям карточки. Цена обёрнута в span.sold-price (lib/pages.mjs,
+  /* Заказчик 02.10.2026 (первая просьба): «цена в карточках проданных авто, смести влево, симметрично —
+     год, пробег, продано». Было: «ЦЕНА» подписью в строке и значение, прижатое к правому краю, — ряд
+     цены выбивался из остальных (замер 390 px: значение 305→355, подпись от 35). Тогда подпись
+     и значение поставили одной строкой у левого края. Цена обёрнута в span.sold-price (lib/pages.mjs,
      soldRow) нарочно: без обёртки флекс-ячейка разрывала «41 900» и span.byn на два элемента
-     (число 187→227, знак 346→355). */
-  table.tbl-cards td[data-label="Цена"]{display:flex;align-items:baseline;justify-content:flex-start;gap:8px;text-align:left;white-space:nowrap}
+     (число 187→227, знак 346→355).
+     Заказчик 02.10.2026 (вторая просьба, отменяет первую): «в блоке проданные автомобили, Слово —
+     цена, оставь на месте, а стоимость в бел руб перенеси к правому краю». Подпись «ЦЕНА» остаётся
+     у левого края (она первый элемент строки), а цена уезжает к правому краю — ровно так же, как
+     значения «Год», «Пробег» и «Продано» в строках выше (у них justify-content:space-between).
+     Знак рубля едет вместе с числом: он внутри span.sold-price. */
+  table.tbl-cards td[data-label="Цена"]{display:flex;align-items:baseline;justify-content:space-between;gap:8px;text-align:left;white-space:nowrap}
   table.tbl-cards td[data-label="Цена"] .sold-price{display:inline-block}
   table.tbl-cards td[data-label="Цена"] .byn{display:inline-block}
   table.tbl-cards tr.tbl-group{background:var(--paper-soft);border:0;border-radius:10px;padding:9px 14px;margin:18px 0 12px}
