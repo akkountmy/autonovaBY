@@ -4791,11 +4791,19 @@ const SECTIONS = {
         const dd = panel.querySelector('.nav-dd');
         const menu = dd.querySelector('.nav-dd-menu');
         const box = menu.getBoundingClientRect();
+        const cs = getComputedStyle(menu);
         const links = [...menu.querySelectorAll('a')].map((a) => ({ t: a.textContent.trim(), href: a.getAttribute('href') }));
         return {
           cls: panel.className, dd: dd.className, display: getComputedStyle(menu).display,
           w: Math.round(box.width), h: Math.round(box.height), n: links.length, links: links.slice(0, 3),
           url: location.pathname,
+          /* Рамка списка услуг в бутерброде (заказчик 02.10.2026: «В бутерброде в мобильной версии,
+             раскрывается список услуг, сделай этот список без рамки вокруг»). */
+          frame: {
+            border: [cs.borderTopWidth, cs.borderRightWidth, cs.borderBottomWidth, cs.borderLeftWidth].join(' '),
+            bg: cs.backgroundColor, image: cs.backgroundImage, radius: cs.borderTopLeftRadius,
+            pad: cs.padding, shadow: cs.boxShadow,
+          },
         };
       });
       check('ui', '390: «Услуги» в бутерброде раскрывает список и не закрывает панель',
@@ -4803,6 +4811,11 @@ const SECTIONS = {
           && servOpen.h >= 40 && servOpen.n >= 4 && servOpen.url === '/'
           && servOpen.links.every((l) => /^\/services/.test(l.href)),
         JSON.stringify(servOpen));
+      check('ui', '390: список услуг в бутерброде — без рамки, подложки и скругления',
+        servOpen.frame.border === '0px 0px 0px 0px' && /rgba\(0, 0, 0, 0\)|transparent/.test(servOpen.frame.bg)
+          && servOpen.frame.image === 'none' && servOpen.frame.radius === '0px' && servOpen.frame.pad === '0px'
+          && servOpen.frame.shadow === 'none',
+        JSON.stringify(servOpen.frame));
       /* Второй тап по «Услуги» (список уже раскрыт) — это честный переход на страницу услуг. */
       await page.mouse.click(servTap.x, servTap.y);
       await page.waitForFunction(() => location.pathname === '/services', { timeout: 8000 });
