@@ -4506,6 +4506,18 @@ const SECTIONS = {
       });
       await page.select('[data-param-form] [name="brand"]', '');
       check('ui', '/cars: снятие фильтра возвращает общий счётчик', await waitCnt(totalAll), 'стало ' + (await readCnt()));
+      /* Главная: панель «Поиск по параметрам» там та же, и число на кнопке тоже обязано меняться по
+         выбранной марке (заказчик 02.10.2026: «в блоке на титульной странице - поиск по параметрам
+         при выборе марки не меняется количество машин в кнопке показать автомобили»). На боевом
+         сайте число считает сервер тем же фильтром; в статичной копии — catalog-demo.js по индексу
+         data/cars.json (см. check-pages.mjs и живой обход копии _ref/probe-count-brand.mjs). */
+      await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+      const homeStart = await readCnt();
+      const totalAudi = (await (await fetch(BASE + '/api/cars/count?brand=Audi')).json()).total;
+      await page.select('[data-param-form] [name="brand"]', 'Audi');
+      check('ui', 'главная: на кнопке стоит число всего каталога и меняется по выбранной марке',
+        homeStart === String(totalAll) && homeStart !== String(totalAudi) && (await waitCnt(totalAudi)),
+        `было ${homeStart}, стало ${await readCnt()}, ждали ${totalAudi} (всего в базе ${totalAll})`);
       await page.goto(BASE + '/cars?brand=BMW', { waitUntil: 'domcontentloaded' });
       const bmwPage = { btn: await readCnt(), head: await page.$eval('.list-head h2 b.num', (el) => el.textContent.replace(/[\s\u00a0]/g, '')) };
       check('ui', '/cars: на кнопке ровно столько, сколько нашлось', bmwPage.btn === bmwPage.head && bmwPage.btn === String(totalBmw), JSON.stringify(bmwPage));
@@ -4917,7 +4929,7 @@ const SECTIONS = {
          бутерброде при нажатии вкладки - Услуги, не раскрывается список услуг и не происходит переход
          на страницы»). Причина была в порядке обработчиков: обработчик [data-nav-dd] висит на самой
          ссылке и срабатывает раньше обработчика панели, тот видел уже раскрытый пункт и закрывал
-         меню — список не показывался. Теперь первый тап помечен (e.__navDdOpened), и панель остаётся. */
+         меню — список не показывался. Теперь тап помечен (e.__navDdHandled), и панель остаётся. */
       await page.click('[data-burger]');
       await new Promise((r) => setTimeout(r, 450));
       const servTap = await page.evaluate(() => {
@@ -4956,15 +4968,51 @@ const SECTIONS = {
           && servOpen.frame.image === 'none' && servOpen.frame.radius === '0px' && servOpen.frame.pad === '0px'
           && servOpen.frame.shadow === 'none',
         JSON.stringify(servOpen.frame));
-      /* Второй тап по «Услуги» (список уже раскрыт) — это честный переход на страницу услуг. */
+      /* Повторный тап по «Услуги» (список уже раскрыт) сворачивает список и остаётся в панели —
+         заказчик 02.10.2026: «в бургере при нажатии - услуги, раскрывается список, но потом, что бы
+         список закрыть, я нажимаю опять на кнопку услуги и хочу, что бы список сворачивался, а не
+         переходил на страницу всех услуг». Раньше переход гасился только у закрытого списка, и
+         второй тап был честным переходом на /services; теперь «Услуги» в бутерброде —
+         переключатель, а на страницу услуг ведёт первый пункт раскрытого списка («Все услуги»). */
       await page.mouse.click(servTap.x, servTap.y);
+      await new Promise((r) => setTimeout(r, 500));
+      const servClosed = await page.evaluate(() => {
+        const panel = document.querySelector('[data-mobile-nav]');
+        const dd = panel.querySelector('.nav-dd');
+        const menu = dd.querySelector('.nav-dd-menu');
+        const btn = dd.querySelector('.nav-dd-btn');
+        return {
+          url: location.pathname, cls: panel.className, dd: dd.className,
+          display: getComputedStyle(menu).display, h: Math.round(menu.getBoundingClientRect().height),
+          aria: btn.getAttribute('aria-expanded'),
+        };
+      });
+      check('ui', '390: второй тап по «Услуги» сворачивает список и не уводит со страницы',
+        servClosed.url === '/' && /open/.test(servClosed.cls) && !/open/.test(servClosed.dd)
+          && servClosed.display === 'none' && servClosed.aria === 'false', JSON.stringify(servClosed));
+
+      /* Третий тап раскрывает список снова — панель по-прежнему на месте, и уже по пункту «Все
+         услуги» открывается страница услуг. */
+      await page.mouse.click(servTap.x, servTap.y);
+      await new Promise((r) => setTimeout(r, 500));
+      const allLink = await page.evaluate(() => {
+        const a = document.querySelector('[data-mobile-nav] .nav-dd-menu a');
+        const r = a.getBoundingClientRect();
+        return {
+          t: a.textContent.trim(), href: a.getAttribute('href'),
+          x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2),
+        };
+      });
+      await page.mouse.click(allLink.x, allLink.y);
       await page.waitForFunction(() => location.pathname === '/services', { timeout: 8000 });
       const servPage = await page.evaluate(() => ({
         path: location.pathname, h1: (document.querySelector('h1') || { textContent: '' }).textContent.trim().slice(0, 40),
         sub: [...document.querySelectorAll('a[href^="/services/"]')].length,
       }));
-      check('ui', '390: второй тап по «Услуги» ведёт на страницу услуг',
-        servPage.path === '/services' && /Услуги/.test(servPage.h1) && servPage.sub >= 3, JSON.stringify(servPage));
+      check('ui', '390: пункт «Все услуги» из списка открывает страницу услуг',
+        allLink.t === 'Все услуги' && allLink.href === '/services'
+          && servPage.path === '/services' && /Услуги/.test(servPage.h1) && servPage.sub >= 3,
+        JSON.stringify({ allLink, servPage }));
       await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
 
       const foot390 = await page.evaluate(() => {
