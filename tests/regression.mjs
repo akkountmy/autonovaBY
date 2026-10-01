@@ -4,6 +4,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+/* Структура CSS: ловит порванный комментарий. В v213 лишний закрывающий комментарий в блоке про знак
+   рубля выбрасывал из файла правило @font-face, и знак на сайте рисовался системной «Б» без черты
+   (заказчик 03.10.2026: «В значке Б - белоусского рубля не хватает черточки посередине буквы»). */
+import { cssProblems } from '../_ref/check-css.mjs';
+/* Разбор самого файла шрифта знака: браузерные проверки видят только «знак нарисован шрифтом
+   BYN Sign», а подмену файла на прежний (petrov.by, черта под верхней перекладиной) не заметят. */
+import { loadSignFont } from '../_ref/check-byn-file.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -1215,6 +1222,33 @@ const SECTIONS = {
     const css = fs.readFileSync(path.join(ROOT, 'public/assets/css/site.css'), 'utf8');
     check('assets', 'CSS содержит брендовый акцент', css.includes('#E3000F'));
     check('assets', 'CSS скругляет карточки', css.includes('--r-card'));
+    /* Структура CSS. 03.10.2026 заказчик написал «В значке Б - белоусского рубля не хватает черточки
+       посередине буквы»: причина была не в шрифте, а в лишнем закрывающем комментарии внутри блока
+       про знак — браузер читал остаток комментария как селектор и вместе с ним выбрасывал следующее
+       правило, то есть @font-face. Прежняя проверка этого не видела (она вырезала комментарии
+       регуляркой, которая ломаный файл «починяла»), поэтому разбор комментариев вынесен в
+       _ref/check-css.mjs и проверяется здесь. */
+    const cssIssues = cssProblems(css);
+    check('assets', 'CSS: комментарии целы, правил из-за них не теряется', cssIssues.length === 0, cssIssues.join(' | '));
+    check('assets', 'CSS: правило @font-face знака рубля доехало до браузера (относительный адрес)',
+      css.includes("@font-face{font-family:'BYN Sign';src:url(../fonts/byn-sign.ttf) format('truetype');"));
+    check('assets', 'CSS: подпись у больших чисел не перебивает шрифт знака (:not(.byn))',
+      css.includes('.calc-out .big span:not(.byn){font-size:15px;font-family:var(--f-text);'));
+    /* Сам файл шрифта: в нём лежит знак официального начертания (постановление Правления Нацбанка от
+       27.01.2026 № 25 «Б с чертой по центру буквы»), а не прежний кустарный вариант с petrov.by, где
+       черта стояла на 27,9 % высоты. Разбор файла — _ref/check-byn-file.mjs; там же мерится, что
+       черта выступает влево от стебля (у официального знака на 207 единиц из 1185) и что середина
+       знака на 70,5 % высоты буквы. */
+    {
+      const f = loadSignFont();
+      check('assets', 'шрифт знака: файл официального начертания Нацбанка, черта посередине буквы',
+        f.bytes === 1324 && f.upem === 2048 && f.signGlyph > 0 && f.numGlyphs === 2
+          && f.bbox.xMin === 0 && f.bbox.yMin === 0 && f.bbox.yMax === 1466
+          && f.dash.centre > 63 && f.dash.centre < 78 && f.protrusion > 100,
+        `${f.bytes} Б, em ${f.upem}, глиф «Б»→${f.signGlyph}, буква ${f.bbox.xMax}×${f.bbox.yMax} единиц, `
+          + `черта ${f.dash.from.toFixed(1)}–${f.dash.to.toFixed(1)} % (середина ${f.dash.centre.toFixed(1)} %), `
+          + `вынос влево ${f.protrusion} единиц, отпечаток ${f.sha256.slice(0, 16)}…`);
+    }
     /* Колонка «Дата продажи» на странице проданных — по центру (заказчик 2026-10-01: «заголовок —
        Дата продажи, а под ним даты, так вот фактические даты продажи сдвинуты влево, а надо по
        середине»). Правило центрирует и заголовок, и значения: сдвиг одних значений дал бы даты
@@ -1905,11 +1939,41 @@ const SECTIONS = {
             return { rows, cols: getComputedStyle(list).gridTemplateColumns.split(' ').length };
           });
           const links = [...box.querySelectorAll('a')].map((a) => a.getAttribute('href') || '');
+          /* Шрифт знака: правило @font-face обязано доехать до браузера, а .byn — применить его
+             первым в списке семейств. В v213 из-за порванного комментария правило @font-face из CSS
+             выпадало, и знак рисовался системной «Б» вообще без черты (заказчик 03.10.2026: «В значке
+             Б - белоусского рубля не хватает черточки посередине буквы»); вторая причина того же
+             симптома — правило подписи «/ месяц» (.calc-out .big span) перебивало .byn по
+             специфичности у знаков в плашке платежа. Поэтому смотрим каждый знак карточки, а не
+             только знаки в строках сумм. */
+          const signList = [...box.querySelectorAll('.byn')].map((s) => {
+            const cs = getComputedStyle(s);
+            return {
+              font: cs.fontFamily.split(',')[0].trim(),
+              size: cs.fontSize,
+              loaded: document.fonts ? document.fonts.check(cs.fontSize + ' "BYN Sign"', 'Б') : null,
+              visible: rect(s).width > 1 && rect(s).height > 1,
+              deco: cs.textDecorationLine,
+            };
+          });
+          /* Линии внутри карточки: подчёркивание заказчик видел как линию под числом (на телефоне это
+             была нижняя граница каждой строки сумм, на широком экране — верхняя граница списка сумм).
+             Рамку самой карточки (.calc-out, 1px вокруг) не считаем: это граница блока, а не линия под
+             числом. Разделитель между плашками платежа и дохода (border-left у второго .calc-pay-item)
+             тоже не в счёт — он вертикальный и стоит между плашками. */
+          const ruled = [...box.querySelectorAll('*')].filter((el) => {
+            const cs = getComputedStyle(el);
+            const b = rect(el);
+            if (b.width < 1 || b.height < 1) return false;
+            return parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0
+              || cs.textDecorationLine !== 'none';
+          }).map((el) => (el.className || el.tagName) + ':' + getComputedStyle(el).borderTopWidth
+            + '/' + getComputedStyle(el).borderBottomWidth);
           const pay = box.querySelector('.calc-pay');
           const warn = box.querySelector('.calc-pdn');
           const sums = box.querySelector('.spec-list');
           return {
-            lists, links,
+            lists, links, signList, ruled,
             warn: warn ? warn.textContent.replace(/\s+/g, ' ').trim() : '',
             warnHtml: warn ? warn.className : '',
             warnAfterPay: !!(warn && pay && pay.nextElementSibling === warn),
@@ -1924,11 +1988,29 @@ const SECTIONS = {
           ? true
           : new Set(list.rows.map((r) => r.w)).size === 1 && spreadH(list) <= 1;
         const values = (list) => list.rows.map((r) => `«${r.value}» ${r.h}px`).join(', ');
+        const signBad = calc ? calc.signList.filter((s) => s.font !== '"BYN Sign"' || s.loaded !== true) : [];
+        const signInfo = calc ? calc.signList.map((s) => `${s.font} ${s.size}`
+          + (s.loaded === null ? '' : s.loaded ? '' : ' (не загружен)')).join(' · ') : '';
         check('ui', `${w}: итоги кредитного калькулятора — знак рубля в строке числа, колонки ровные`,
           !!main && calc.lists.length === 1 && main.rows.length === 3
             && clean(main) && even(main) && calc.links.length === 0,
           calc ? `суммы (${main.cols} колонки): ${values(main)}; списков ${calc.lists.length}; `
             + `ссылок ${calc.links.length}`
+            : 'блок итогов .calc-out не найден');
+        /* Знак рубля нарисован своим шрифтом (буква «Б» с чертой посередине), а не системным шрифтом
+           без черты — именно это заказчик и увидел 03.10.2026. Проверяем все знаки карточки, включая
+           знаки в плашке платежа и нужного дохода: их перебивало правило подписи «/ месяц». */
+        check('ui', `${w}: знак рубля в карточке итогов — свой шрифт (буква «Б» с чертой)`,
+          !!calc && calc.signList.length > 0 && signBad.length === 0,
+          calc ? `знаков ${calc.signList.length}: ${signInfo}`
+            : 'блок итогов .calc-out не найден');
+        /* Линий и подчёркиваний внутри карточки нет ни на одной ширине: заказчик дважды просил убрать
+           подчёркивание у сумм кредита и знака рубля (03.10.2026), а подчёркивание как ссылка — это
+           подсветка тапа в Chrome, её страница отключить не может; ссылок в карточке нет вовсе
+           (проверено выше: calc.links.length === 0). */
+        check('ui', `${w}: в карточке итогов нет линий и подчёркиваний`,
+          !!calc && calc.ruled.length === 0,
+          calc ? (calc.ruled.length ? `с линиями: ${calc.ruled.join(', ')}` : 'линий нет')
             : 'блок итогов .calc-out не найден');
         check('ui', `${w}: строки про нагрузку в норме нет, плашка платежа стоит над суммами`,
           !!calc && !calc.warn && !calc.warnHtml && calc.order,
