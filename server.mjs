@@ -110,6 +110,16 @@ function redirect(res, to, extra = {}) {
   res.end();
 }
 function parseCookies2(req) { return parseCookies(req); }
+/* Куда вести после входа или регистрации. Явная цель (next=/sell, next=/account,
+   next=/admin) уважается; «/» и сами страницы входа целью не считаются — иначе вход
+   заканчивался бы на главной. В остальных случаях кабинет по роли: админ → /admin,
+   клиент → /account. Адрес берём только внутренний: «//host» — это чужой сайт. */
+function loginTarget(next, role) {
+  const want = String(next || '').trim();
+  const skip = ['/', '/login', '/register', '/logout'];
+  const inner = want.startsWith('/') && !want.startsWith('//') && !skip.includes(want);
+  return inner ? want : (role === 'admin' ? '/admin' : '/account');
+}
 function idList(cookies, key) {
   try {
     const raw = cookies[key];
@@ -327,10 +337,12 @@ async function handle(req, res) {
       const f = parseUrlEncoded(buf);
       const r = login({ email: f.email, password: f.password });
       if (r.error) return html(res, P.loginPage(state, { error: r.error, next: f.next || '/', modal: true }), 400);
-      /* Без явного next администратора ведём сразу в админку, остальных — в кабинет: на публичном
-         хостинге логин один, и админу не приходится потом искать /admin руками (заказчик 02.10.2026:
-         «в публичном доступе можно было заходить как админ и как клиент»). */
-      return redirect(res, f.next && f.next.startsWith('/') ? f.next : (r.user.role === 'admin' ? '/admin' : '/account'), setCookieHeader([
+      /* Заказчик 2026-10-19: «в окне входа при вводе Ника и пароля сделай так, чтобы переход был
+         сразу в кабинет либо пользователя, либо администратора соответственно». Раньше форма
+         всегда слала next=/ — и вход заканчивался на главной. Теперь next считается целью только
+         если это осмысленный адрес внутри сайта: «/», /login, /register и /logout целью не
+         являются, для них ведём по роли — админа в /admin, клиента в /account. */
+      return redirect(res, loginTarget(f.next, r.user.role), setCookieHeader([
         `${SESSION_COOKIE}=${createSession(r.user.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}`,
       ]));
     }
@@ -338,7 +350,7 @@ async function handle(req, res) {
       const f = parseUrlEncoded(buf);
       const r = register({ email: f.email, password: f.password, name: f.name, phone: f.phone, city: f.city });
       if (r.error) return html(res, P.registerPage(state, { error: r.error, next: f.next || '/', modal: true }), 400);
-      return redirect(res, f.next && f.next.startsWith('/') ? f.next : '/account', setCookieHeader([
+      return redirect(res, loginTarget(f.next, r.user.role), setCookieHeader([
         `${SESSION_COOKIE}=${createSession(r.user.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}`,
       ]));
     }
@@ -398,21 +410,35 @@ async function handle(req, res) {
     }
     if (pathname.startsWith('/admin/')) {
       if (!state.user || state.user.role !== 'admin') return redirect(res, '/login?next=/admin&m=1');
-      const f = parseUrlEncoded(buf);
+      /* Форма ручного добавления теперь та же, что на /sell (заказчик 2026-10-19), а она шлёт
+         фотографии — поэтому принимаем multipart. Обычные поля тоже принимаем: так шлют тесты
+         и старые закладки. */
+      let f; let files = [];
+      if (ct.includes('multipart/form-data')) { const mp = parseMultipart(buf, ct); f = mp.fields; files = mp.files; }
+      else f = parseUrlEncoded(buf);
       if (pathname === '/admin/car') {
         const id = Number(f.id);
         if (f.action === 'create') {
           const err = validateCar(f);
           if (err) return redirect(res, '/admin?tab=cars&error=' + encodeURIComponent(err));
           const slug = uniqueSlug(slugify(`${f.brand} ${f.model} ${f.year}`));
+          /* Фотографии сохраняем до записи в базу: если файл не примется, карточки без фото
+             не появится (так же сделано на /sell). */
+          const photos = saveUploads(files, slug);
           const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-          const cr = run(`INSERT INTO cars (slug, brand, model, generation, year, mileage, price, discount, currency, transmission, volume, fuel, body, drive, color, power, vin, description, equipment, status, is_new, featured, vin_checked, city, source_url, owner_id, views, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,0,?,?)`,
+          const trim = carTrim(f);
+          const equipment = composeEquipment({
+            trimName: trim.name, interiorColor: trim.interiorColor,
+            interiorMaterial: trim.interiorMaterial, options: trim.options,
+          });
+          const cr = run(`INSERT INTO cars (slug, brand, model, generation, year, mileage, price, discount, currency, transmission, volume, fuel, body, drive, color, power, vin, description, equipment, trim, interior_color, interior_material, options, status, is_new, featured, vin_checked, city, source_url, owner_id, views, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,0,?,?)`,
             slug, String(f.brand).slice(0, 60), String(f.model).slice(0, 60), String(f.generation || '').slice(0, 80),
             Number(f.year) || 0, Number(f.mileage) || 0, Number(f.price) || 0, Math.max(0, Number(f.discount) || 0), 'BYN',
             f.transmission || 'at', Number(f.volume) || 0, f.fuel || 'petrol', f.body || 'sedan',
             f.drive || 'fwd', String(f.color || '').slice(0, 40), Number(f.power) || 0,
-            String(f.vin || '').slice(0, 20).toUpperCase(), String(f.description || '').slice(0, 4000), '',
+            String(f.vin || '').slice(0, 20).toUpperCase(), String(f.description || '').slice(0, 4000),
+            equipment, trim.name, trim.interiorColor, trim.interiorMaterial, trim.options.join(', '),
             f.status === 'pending' ? 'pending' : 'published',
             /* Плашку «Новый» владелец ставит сам, галочкой в форме: раньше флаг выводился из года и
                пробега (2024+ и до 12 000 км) и потому не совпадал с тем, что человек считает новым
@@ -420,7 +446,9 @@ async function handle(req, res) {
             f.is_new === '1' ? 1 : 0,
             f.featured === '1' ? 1 : 0, f.vin_checked === '1' ? 1 : 0,
             String(f.city || 'Гомель').slice(0, 60), '', now, now);
-          return redirect(res, '/admin?tab=cars&ok=' + encodeURIComponent(`Автомобиль добавлен: /car/${slug}`) + '&new=' + Number(cr.lastInsertRowid));
+          const carId = Number(cr.lastInsertRowid);
+          photos.forEach((p, i) => run('INSERT INTO car_photos (car_id, path, sort) VALUES (?,?,?)', carId, p, i));
+          return redirect(res, '/admin?tab=cars&ok=' + encodeURIComponent(`Автомобиль добавлен: /car/${slug}`) + '&new=' + carId);
         }
         if (f.action === 'delete') {
           /* Удаление карточки = продажа (заказчик 2026-09-30: «реально сделай, чтобы когда карточка

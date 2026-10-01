@@ -1234,6 +1234,24 @@ const SECTIONS = {
       css.includes("@font-face{font-family:'BYN Sign';src:url(../fonts/byn-sign.ttf) format('truetype');"));
     check('assets', 'CSS: подпись у больших чисел не перебивает шрифт знака (:not(.byn))',
       css.includes('.calc-out .big span:not(.byn){font-size:15px;font-family:var(--f-text);'));
+    /* «Подчёркивание как ссылка» в мобильной версии — это встроенная функция Chrome для Android
+       «Касание для поиска»: по тапу на выделяемый неинтерактивный текст браузер подчёркивает слово
+       и открывает поиск Google (заказчик 04.10.2026: «под словами Б, Итого к возврату, 80 084 Б —
+       есть подчеркивание и при нажатии осуществляется переход на гугл»). Документация Chrome
+       (https://developer.chrome.com/blog/tap-to-search) называет три средства, и все три стоят:
+       невыделяемость — это правило, tabindex="-1" — в разметке (lib/pages.mjs), обработчик click
+       с preventDefault() — в initCalc (public/assets/js/site.js). Вторая серия правок того же дня
+       («нажатие и переход на гугл перестал, но подчеркивание в виде длинных ......... — осталось»)
+       добавила ещё три запрета: ползунок выделения сделан прозрачным (::selection), обводка фокуса
+       снята (карточка фокусируема ради tabindex, и её рамка фокуса читалась как пунктир по краю),
+       а само содержимое карточки больше не ловит касания (pointer-events:none — внутри .calc-out
+       нет ничего интерактивного, поэтому терять нечего). */
+    check('assets', 'CSS: цифры итогов невыделяемы и без подчёркивания (против «касания для поиска»)',
+      /\.calc-out,\.calc-out \*\{[^}]*text-decoration:none!important[^}]*user-select:none!important[^}]*pointer-events:none[^}]*\}/.test(css)
+        && css.includes('.calc-out a,.calc-out a:hover,.calc-out a:visited{color:inherit!important;pointer-events:none!important}')
+        && css.includes('.calc-out:focus,.calc-out:focus-visible,.calc-out *:focus{outline:none!important}'));
+    check('assets', 'разметка итогов: карточка фокусируема (tabindex="-1" против «касания для поиска»)',
+      fs.readFileSync(path.join(ROOT, 'lib/pages.mjs'), 'utf8').includes('<div class="calc-out" tabindex="-1">'));
     /* Сам файл шрифта: в нём лежит знак официального начертания (постановление Правления Нацбанка от
        27.01.2026 № 25 «Б с чертой по центру буквы»), а не прежний кустарный вариант с petrov.by, где
        черта стояла на 27,9 % высоты. Разбор файла — _ref/check-byn-file.mjs; там же мерится, что
@@ -1543,6 +1561,10 @@ const SECTIONS = {
       body: new URLSearchParams({ name: 'Тест', email, password: 'secret123', city: 'Гомель' }),
     });
     check('auth', 'регистрация → редирект', reg.status === 302, 'status ' + reg.status);
+    /* Регистрация тоже ведёт в кабинет, а не на главную (заказчик 2026-10-19: вход должен
+       приводить в кабинет; для нового клиента кабинет — /account). */
+    check('auth', 'регистрация ведёт в кабинет', reg.headers.get('location') === '/account',
+      JSON.stringify(reg.headers.get('location')));
     const cookie = (reg.headers.getSetCookie ? reg.headers.getSetCookie() : []).map((c) => c.split(';')[0]).join('; ');
     check('auth', 'регистрация выдаёт сессию', cookie.includes('an_session='));
     const acc = await get('/account', { headers: { Cookie: cookie } });
@@ -1574,6 +1596,38 @@ const SECTIONS = {
     });
     check('auth', 'явный next администратора уважается', admNext.headers.get('location') === '/account',
       JSON.stringify(admNext.headers.get('location')));
+    /* Заказчик 2026-10-19: «в окне входа при вводе Ника и пароля сделай так, чтобы переход был
+       сразу в кабинет либо пользователя, либо администратора соответственно». Скрытое поле в
+       окне входа шлёт next=/ (или next=<страница>), поэтому «/» целью больше не считается:
+       админа ведём в /admin, клиента — в /account. Явный внутренний адрес уважается. */
+    const rootNext = await fetch(BASE + '/login', {
+      method: 'POST', redirect: 'manual',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ email: 'admin@autonova.by', password: process.env.ADMIN_PASSWORD || 'autonova2026', next: '/' }),
+    });
+    check('auth', 'с next=/ администратора ведёт в админку, а не на главную', rootNext.headers.get('location') === '/admin',
+      JSON.stringify(rootNext.headers.get('location')));
+    const cliRoot = await fetch(BASE + '/login', {
+      method: 'POST', redirect: 'manual',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ email, password: 'secret123', next: '/' }),
+    });
+    check('auth', 'с next=/ клиента ведёт в кабинет', cliRoot.headers.get('location') === '/account',
+      JSON.stringify(cliRoot.headers.get('location')));
+    const cliSell = await fetch(BASE + '/login', {
+      method: 'POST', redirect: 'manual',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ email, password: 'secret123', next: '/sell' }),
+    });
+    check('auth', 'явный next=/sell у клиента по-прежнему уважается', cliSell.headers.get('location') === '/sell',
+      JSON.stringify(cliSell.headers.get('location')));
+    const outNext = await fetch(BASE + '/login', {
+      method: 'POST', redirect: 'manual',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ email, password: 'secret123', next: '//чужой-сайт.by' }),
+    });
+    check('auth', 'чужой адрес в next не принимается (ведём в кабинет)', outNext.headers.get('location') === '/account',
+      JSON.stringify(outNext.headers.get('location')));
     const adm = await get('/admin', { headers: { Cookie: acookie } });
     check('auth', 'админка доступна администратору', adm.status === 200 && adm.text.includes('Администрирование'));
   },
@@ -1645,6 +1699,25 @@ const SECTIONS = {
     const panel = await get('/admin?tab=cars', { headers: { Cookie: acookie } });
     check('moderation', 'админка открывается', panel.status === 200 && panel.text.includes('Добавить автомобиль в базу вручную'), 'status ' + panel.status);
     check('moderation', 'объявление продавца видно в админке', panel.text.includes('Moderation'));
+    /* Заказчик 2026-10-19: «Блок — Добавить автомобиль в базу вручную — сделай как блок при подаче
+       объявления на /sell». Поэтому у формы те же блоки, что на странице подачи, те же подсказки
+       марок и та же зона загрузки фотографий; своё у неё только «Публикация» с полями владельца. */
+    check('moderation', 'форма ручного добавления — те же блоки, что на /sell',
+      ['Автомобиль', 'Характеристики', 'Комплектация', 'Контакты', 'Публикация']
+        .every((t) => panel.text.includes(`sell-block-head">${t}`)),
+      'блоков ' + (panel.text.match(/sell-block-head">/g) || []).length);
+    check('moderation', 'у формы ручного добавления подсказки марок, комплектация и загрузка фото',
+      panel.text.includes('action="/admin/car" enctype="multipart/form-data"')
+        && panel.text.includes('data-sell-catalog="1"') && panel.text.includes('list="brandlist"')
+        && panel.text.includes('data-upload-zone') && panel.text.includes('data-trim-select'));
+    /* Заказчик 2026-10-19: «в кабинете администратора справа есть окно для скидки, сделай, чтобы
+       - скидка, Б - не писалась, а была в поле ввода скидки как подсказка». Подписи рядом с полем
+       больше нет, подсказка — внутри поля, и при нулевой скидке поле пустое (иначе подсказки не
+       видно: печатался бы 0). */
+    check('moderation', 'у поля скидки в строке таблицы подсказка внутри, а не подписью рядом',
+      panel.text.includes('placeholder="скидка, Б"') && panel.text.includes('aria-label="Скидка, Б"')
+        && !panel.text.includes('>скидка, <span class="byn">Б</span></span>'),
+      'поле: ' + (/<input[^>]*name="discount"[^>]*>/.exec(panel.text) || ['нет поля'])[0]);
 
     const adm = new URLSearchParams({ action: 'create', brand: 'Test', model: 'Adminmanual', year: '2020', mileage: '41000', price: '33333', city: 'Гомель', body: 'suv', fuel: 'diesel', transmission: 'at', drive: 'awd', volume: '2.0', power: '150', vin_checked: '1', is_new: '1', discount: '2500' });
     const created = await fetch(BASE + '/admin/car', { method: 'POST', redirect: 'manual', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: acookie }, body: adm });
@@ -1668,6 +1741,30 @@ const SECTIONS = {
     check('moderation', 'правка плашек в строке: «Новый» снят, скидка изменена',
       fl.status === 302 && after && after.is_new === 0 && after.discount === 900,
       `${fl.status} / is_new=${after && after.is_new}, discount=${after && after.discount}`);
+
+    /* Ручное добавление с фотографией: форма админки теперь та же, что подача объявления, — она
+       шлёт multipart, и сервер обязан сохранить файл и привязать его к карточке (как на /sell).
+       За собой убираем прямо в базе, чтобы не портить счётчики следующим разделам. */
+    const mfd = new FormData();
+    mfd.set('action', 'create'); mfd.set('brand', 'Test'); mfd.set('model', 'Adminphoto');
+    mfd.set('year', '2022'); mfd.set('mileage', '9000'); mfd.set('price', '44444'); mfd.set('city', 'Гомель');
+    mfd.set('trim', 'comfort'); mfd.set('interior_color', 'светлый'); mfd.set('interior_material', 'комбинированные материалы');
+    mfd.append('options', 'ABS');
+    mfd.set('photos', new Blob([fs.readFileSync(path.join(ROOT, 'public', sample))], { type: 'image/jpeg' }), 'admin-manual.jpg');
+    const mcreated = await fetch(BASE + '/admin/car', { method: 'POST', redirect: 'manual', headers: { Cookie: acookie }, body: mfd });
+    const mphoto = one("SELECT * FROM cars WHERE model='Adminphoto' ORDER BY id DESC");
+    check('moderation', 'ручное добавление принимает multipart с фотографией', mcreated.status === 302 && !!mphoto,
+      'status ' + mcreated.status);
+    check('moderation', 'фото из формы админки привязано к карточке',
+      !!mphoto && !!one('SELECT id FROM car_photos WHERE car_id=?', mphoto.id),
+      mphoto ? `фото: ${all('SELECT path FROM car_photos WHERE car_id=?', mphoto.id).map((p) => p.path).join(', ') || 'нет'}` : 'авто нет');
+    check('moderation', 'комплектация из формы админки сохранена как на /sell',
+      !!mphoto && String(mphoto.equipment).includes('Комплектация «Комфорт»') && mphoto.options === 'ABS',
+      mphoto && mphoto.equipment);
+    if (mphoto) {
+      run('DELETE FROM car_photos WHERE car_id=?', mphoto.id);
+      run('DELETE FROM cars WHERE id=?', mphoto.id);
+    }
 
     if (c) {
       const pubbed = await fetch(BASE + '/admin/car', { method: 'POST', redirect: 'manual', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: acookie }, body: new URLSearchParams({ action: 'publish', id: String(c.id) }) });
@@ -1974,6 +2071,17 @@ const SECTIONS = {
           const sums = box.querySelector('.spec-list');
           return {
             lists, links, signList, ruled,
+            /* «Касание для поиска» в Chrome для Android (Touch to Search): по тапу на выделяемый
+               неинтерактивный текст браузер подчёркивает слово и предлагает поиск Google — именно это
+               заказчик описал 03.10.2026 и повторно 04.10.2026 («под словами Б, Итого к возврату,
+               80 084 Б — есть подчеркивание и при нажатии осуществляется переход на гугл»). Страница
+               гасит её тремя средствами из документации Chrome
+               (https://developer.chrome.com/blog/tap-to-search): tabindex="-1" на карточке,
+               user-select:none в CSS и обработчик click с preventDefault() в initCalc. */
+            tts: {
+              tabindex: box.getAttribute('tabindex'),
+              select: getComputedStyle(box).userSelect || getComputedStyle(box).webkitUserSelect,
+            },
             warn: warn ? warn.textContent.replace(/\s+/g, ' ').trim() : '',
             warnHtml: warn ? warn.className : '',
             warnAfterPay: !!(warn && pay && pay.nextElementSibling === warn),
@@ -2011,6 +2119,36 @@ const SECTIONS = {
         check('ui', `${w}: в карточке итогов нет линий и подчёркиваний`,
           !!calc && calc.ruled.length === 0,
           calc ? (calc.ruled.length ? `с линиями: ${calc.ruled.join(', ')}` : 'линий нет')
+            : 'блок итогов .calc-out не найден');
+        /* «Касание для поиска» в Chrome для Android: страница гасит его тремя средствами из
+           документации Chrome — tabindex="-1", user-select:none и обработчик click, отменяющий
+           действие по умолчанию. Плюс вторая серия запретов: содержимое карточки не ловит касания
+           (pointer-events:none), а у фокуса снята обводка. Всё это проверяем по-настоящему:
+           посылаем карточке клик, ставим её в фокус и смотрим вычисленные стили. */
+        const ttsGuard = await page.evaluate(() => {
+          const box = document.querySelector('.calc-out');
+          if (!box) return null;
+          const ev = new MouseEvent('click', { bubbles: true, cancelable: true });
+          box.dispatchEvent(ev);
+          box.focus();
+          const cs = getComputedStyle(box);
+          const num = document.querySelector('[data-total]');
+          return {
+            prevented: ev.defaultPrevented,
+            pointerEvents: cs.pointerEvents,
+            numberPointer: num ? getComputedStyle(num).pointerEvents : '',
+            focusOutline: cs.outlineStyle,
+            focused: document.activeElement === box,
+          };
+        });
+        check('ui', `${w}: тап по карточке итогов не уходит в поиск Google (касание для поиска отключено)`,
+          !!calc && calc.tts.tabindex === '-1' && calc.tts.select === 'none' && !!ttsGuard
+            && ttsGuard.prevented && ttsGuard.pointerEvents === 'none'
+            && ttsGuard.numberPointer === 'none' && ttsGuard.focusOutline === 'none',
+          calc ? `tabindex="${calc.tts.tabindex}", user-select:${calc.tts.select}, `
+            + `клик отменён: ${ttsGuard ? ttsGuard.prevented : 'нет страницы'}, `
+            + `pointer-events: ${ttsGuard ? ttsGuard.pointerEvents + '/' + ttsGuard.numberPointer : '—'}, `
+            + `обводка фокуса: ${ttsGuard ? ttsGuard.focusOutline : '—'}`
             : 'блок итогов .calc-out не найден');
         check('ui', `${w}: строки про нагрузку в норме нет, плашка платежа стоит над суммами`,
           !!calc && !calc.warn && !calc.warnHtml && calc.order,
