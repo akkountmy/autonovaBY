@@ -46,7 +46,7 @@
        фото в покое стрелки скрыты совсем (opacity 0) и появляются при наведении на снимок.
        Формулировки здесь намеренно обтекаемые: этот комментарий уезжает в HTML каждой страницы, и
        проверки «на карточке нет такой-то строки» искали бы её в собственном комментарии. -->
-<link rel="stylesheet" href="../assets/css/site.css?v=208">
+<link rel="stylesheet" href="../assets/css/site.css?v=209">
 <link rel="stylesheet" href="../assets/css/photo-focus.css?v=3">
 
 </head>
@@ -124,7 +124,12 @@
         <label class="field calc-slider field-wide"><span>Доход в месяц (после налогов), <span class="byn">Б</span></span><input type="range" name="income" min="400" max="8000" step="50" value="2500"><output data-income>2 500</output></label>
         <label class="field calc-slider field-wide"><span>Платежи по другим кредитам, <span class="byn">Б</span>/мес</span><input type="range" name="other" min="0" max="3000" step="50" value="0"><output data-other>0</output></label>
       </form>
-      <div class="calc-out"><div class="big num"><b data-payment>—</b>&nbsp;<span class="byn">Б</span> <span class="num">/ месяц</span></div>
+      <div class="calc-out">
+        
+        <div class="calc-pay">
+          <div class="calc-pay-item"><span>Платёж по кредиту</span><b class="big num"><i data-payment>—</i>&nbsp;<span class="byn">Б</span> <span>/ месяц</span></b></div>
+          <div class="calc-pay-item"><span>Доход для одобрения (чистыми)</span><b class="big num"><i data-pdn-need>—</i>&nbsp;<span class="byn">Б</span></b></div>
+        </div>
         
         <div class="spec-list">
           <div><span>Сумма кредита</span><b class="num"><i data-credit>—</i>&nbsp;<span class="byn">Б</span></b></div>
@@ -139,7 +144,6 @@
           <div class="spec-list">
             <div><span>Платежи по другим кредитам</span><b class="num"><i data-pdn-other>—</i>&nbsp;<span class="byn">Б</span></b></div>
             <div><span>Всего платежей в месяц</span><b class="num"><i data-pdn-total>—</i>&nbsp;<span class="byn">Б</span></b></div>
-            <div><span>Доход для одобрения (чистыми)</span><b class="num"><i data-pdn-need>—</i>&nbsp;<span class="byn">Б</span></b></div>
             <div><span>Доход до вычета налогов (13 % и 1 %)</span><b class="num"><i data-pdn-tax>—</i>&nbsp;<span class="byn">Б</span></b></div>
           </div>
           <p class="calc-note">Показатель долговой нагрузки (ПДН) — это все ежемесячные платежи по кредитам, включая этот, делённые на среднемесячный доход: <b>ПДН = платежи ÷ доход × 100 %</b>. Национальный банк допускает не более 40 %. В расчёт входят платёж по новому кредиту, платежи по другим кредитам, рассрочке и просроченная задолженность. Доход учитывается за вычетом обязательных удержаний — подоходного налога 13 % и взносов в ФСЗН 1 %, поэтому рядом показан и доход до вычета налогов. Срок кредита на автомобиль — до 84 месяцев. Основание: постановление Правления Национального банка от 31.03.2020 № 100. <a href="https://www.nbrb.by/today/faq/o-metodike-rascheta-pokazatelej-dolgovoj-nagruzki" target="_blank" rel="noopener noreferrer">Методика расчёта ПДН на сайте Нацбанка</a>.</p>
@@ -351,7 +355,7 @@
   </div>
 </div>
 <button class="back-top" data-top type="button" aria-label="Наверх"><svg class="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg></button>
-<script src="../assets/js/site.js?v=40" defer></script>
+<script src="../assets/js/site.js?v=41" defer></script>
 <script src="../assets/js/demo-pages.js" defer></script>
 </body>
 </html>
