@@ -1800,6 +1800,61 @@ const SECTIONS = {
             : 'карточка с плашкой «Выбор дилера» не найдена');
       }
 
+      /* Блок итогов кредитного калькулятора. Заказчик 02.10.2026: «на странице кредитный калькулятор
+         там где расчёт суммы платежа в месяц несимметричные данные и есть подчёркивание например
+         суммы кредита и того квадрату значок белорусского рубля и при нажатии переходит куда-то».
+         Причина была в разметке: знак рубля (.byn — буква «Б» с чертой, рисуется псевдоэлементом)
+         стоял ПОСЛЕ числа, а число в итогах блочное (.calc-out .spec-list b{display:block}), поэтому
+         знак выпадал из строки числа и вставал отдельной строкой под ним: замер до правки на 730 px —
+         строка итогов 70 px высотой, под числом одинокая «Б» с чертой (читалась как подчёркнутый
+         квадрат), три колонки разной высоты. Теперь знак внутри <b>, рядом с числом: подпись сверху,
+         «48 000 Б» одной строкой, все три колонки одной высоты (50 px). Клик по числам никуда не
+         ведёт: в блоке итогов нет ни одной ссылки (замер кликом по числу, знаку рубля и платежу
+         адрес не менялся), а подчёркивания текста у чисел нет. */
+      for (const w of [1440, 390]) {
+        await page.setViewport({ width: w, height: 950, isMobile: w <= 560, hasTouch: w <= 560, deviceScaleFactor: 1 });
+        await page.goto(BASE + '/kalkulyator', { waitUntil: 'domcontentloaded' });
+        await page.waitForFunction(() => {
+          const el = document.querySelector('[data-credit]');
+          return el && /[0-9]/.test(el.textContent);
+        }, { timeout: 8000 }).catch(() => {});
+        const calc = await page.evaluate(() => {
+          const box = document.querySelector('.calc-out');
+          if (!box) return null;
+          const rect = (el) => el.getBoundingClientRect();
+          const list = box.querySelector('.spec-list');
+          const rows = [...list.children].map((d) => {
+            const num = d.querySelector('b');
+            const digit = d.querySelector('i');
+            const sign = d.querySelector('.byn');
+            if (!num || !digit || !sign) return null;
+            return {
+              inside: sign.parentElement === num,
+              sameLine: Math.abs(rect(sign).top - rect(digit).top) <= 6,
+              nowrap: getComputedStyle(num).whiteSpace === 'nowrap',
+              deco: getComputedStyle(num).textDecorationLine,
+              h: Math.round(rect(d).height), y: Math.round(rect(d).top), w: Math.round(rect(d).width),
+              value: num.textContent.replace(/\s+/g, ' ').trim(),
+            };
+          });
+          return {
+            rows: rows.filter(Boolean),
+            cols: getComputedStyle(list).gridTemplateColumns.split(' ').length,
+            links: [...box.querySelectorAll('a')].length,
+          };
+        });
+        const rows = calc ? calc.rows : [];
+        const spreadH = rows.length ? Math.max(...rows.map((r) => r.h)) - Math.min(...rows.map((r) => r.h)) : 999;
+        const oneLine = rows.length === 3 && rows.every((r) => r.inside && r.sameLine && r.nowrap && r.deco === 'none');
+        const even = w <= 640 ? true : spreadH <= 1 && new Set(rows.map((r) => r.w)).size === 1;
+        check('ui', `${w}: итоги кредитного калькулятора — знак рубля в строке числа, колонки ровные`,
+          oneLine && even && calc.links === 0,
+          calc ? `строки: ${rows.map((r) => `«${r.value}» ${r.h}px`).join(', ')}; знак в числе у `
+            + `${rows.filter((r) => r.inside).length}/3, на линии числа у ${rows.filter((r) => r.sameLine).length}/3, `
+            + `подчёркиваний ${rows.filter((r) => r.deco !== 'none').length}, разброс высот ${spreadH} px, ссылок ${calc.links}`
+            : 'блок итогов .calc-out не найден');
+      }
+
       /* Обложка статьи в Автожурнале — тоже ссылка на статью: клик по самой картинке (координатами,
          а не по накладке .car-photo-hit) ведёт на страницу статьи (заказчик 2026-09-30: «В разделе
          Автожурнал — добавь возможность перехода на статью при нажатии на картинку»). */
