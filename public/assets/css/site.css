@@ -1361,12 +1361,28 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
 .carousel-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:5px;z-index:2}
 .carousel-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;transition:.18s}
 .carousel-dots i.on{background:#fff;width:18px;border-radius:3px}
-.car-badges{position:absolute;top:12px;left:12px;display:flex;gap:6px;flex-wrap:wrap;z-index:3}
+/* Лента плашек над кадром. Правый край ограничен, чтобы плашки не уходили под кнопку избранного:
+   заказчик 02.10.2026 — «в десктопной версии - плашка выбор дилера не заходила за кнопку лайк».
+   Кнопка .car-fav — круг 36 px на 12 px от правого края (то есть занимает 48 px) плюс 8 px зазора,
+   отсюда right:56px. Раньше правого ограничения не было вовсе: абсолютный блок с одним left сжимался
+   по содержимому, и на узкой карточке (287 px при четырёх колонках на 1440) ряд плашек доходил до
+   362 px, а лайк начинался с 350 — плашка «Выбор дилера» залезала под круг на 12 px (360 px²
+   перекрытия, замер _ref/probe-badges.mjs). Теперь лишняя плашка переносится на вторую строку
+   внутри кадра, а не прячется под лайком. На телефоне правый край свой (right:34px при круге 30 px),
+   там же свои отступы и порядок плашек — см. мобильный блок ниже. */
+.car-badges{position:absolute;top:12px;left:12px;right:56px;display:flex;gap:6px;flex-wrap:wrap;z-index:3}
 .tag{padding:6px 11px;border-radius:var(--r-btn);font-size:12px;font-weight:700;background:rgba(20,23,28,.78);color:#fff;backdrop-filter:blur(6px)}
 .tag.red{background:var(--accent)}
 .tag.amber{background:var(--accent-2);color:#3A2A00}
 .tag.green{background:var(--ok)}
 .tag.light{background:rgba(255,255,255,.92);color:var(--ink)}
+/* Плашка «Выбор дилера» — фирменный красный на всех ширинах. Заказчик 02.10.2026: «Плашка выбор
+   дилера на карточках в мобильной и десктопной версии - сделай красным в цвет сайта». До этой правки
+   красной она была только на телефоне (правило в мобильном блоке ниже), а на широком экране
+   оставалась общей тёмной плашкой .tag — это расхождение заказчик и увидел. Селектор из двух классов
+   (.tag.tag-dealer) выбран нарочно: он сильнее и общего .tag, и мобильного «не light»
+   (.car-badges .tag:not(.light)), поэтому цвет задан один раз и одинаково на всех ширинах. */
+.tag.tag-dealer{background:var(--accent);color:#fff}
 /* Статус автомобиля на его странице — плашки под заголовком слева, над сгибом (заказчик: «сделай,
    когда переходишь на страницу, было видно скидки и что это горящая продажа или новое
    объявление»). По форме и кеглю это те же «таблетки», что бейджи каталога (.tag), но живут они в
@@ -1572,15 +1588,17 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
      «Выбор дилера» идёт последней, а между ней и «VIN проверен» стоит невидимый разрыв
      .badge-break. Здесь порядком flex переносим «Выбор дилера» сразу за «VIN»: пара встаёт одной
      строкой, а разрыв (order 9, basis 100%) переносит остальное — служебные плашки вроде
-     «Без пробега» уезжают на третью строку и пару не разрывают. Цвет — фирменный красный
-     (--accent) с белыми буквами, как у плашки «Новый». Селектор «Выбор дилера» записан как
+     «Без пробега» уезжают на третью строку и пару не разрывают. Селектор «Выбор дилера» записан как
      .tag.tag-dealer нарочно: у общего правила «не light» (.car-badges .tag:not(.light)) вес 3
      класса, и простой .car-badges .tag-dealer (2 класса) ему проигрывал — плашка оставалась с
-     order 0 и уезжала на первую строку над «VIN». */
+     order 0 и уезжала на первую строку над «VIN». Цвет здесь больше не дублируется: фирменный
+     красный (--accent) с белыми буквами задан одним общим правилом .tag.tag-dealer в блоке плашек
+     выше — заказчик 02.10.2026 попросил красный «в мобильной и десктопной версии», а до этого
+     правило было только тут и на широком экране плашка оставалась тёмной. */
   .car-badges .badge-break{order:9;flex:0 0 100%;height:0;margin:0}
   .car-badges .tag:not(.light){order:0}
   .car-badges .tag.light{order:1;padding:3px 4px}
-  .car-badges .tag.tag-dealer{order:2;padding:3px 4px;letter-spacing:-.015em;background:var(--accent);color:#fff}
+  .car-badges .tag.tag-dealer{order:2;padding:3px 4px;letter-spacing:-.015em}
   /* «VIN проверен» на телефоне не помещается рядом с «Новый» — слово «проверен» скрыто, плашка
      читается как «VIN» со щитом (заказчик 02.10.2026). Прячем только текст: иконка и «VIN»
      остаются, а на широком экране ничего не меняется. */
@@ -2209,15 +2227,16 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
   table.tbl-cards td[data-label="Автомобиль"]{display:block;margin-bottom:10px;white-space:normal}
   table.tbl-cards td[data-label="Автомобиль"]::before{content:none}
   table.tbl-cards td.num.tbl-ctr{text-align:left}
-  /* Заказчик 02.10.2026: «в моб. версии — проданные автомобили — цена в карточках улетела вправо,
-     подвинь к знаку белорусского рубля». В раскладке карточкой ячейка стала flex-контейнером с
-     justify-content:space-between, и знак «Б» — отдельный узел (.byn, в разметке его ставит
-     bynHtml): он уезжал к правому краю ячейки, а число оставалось у левого, зазор выходил 119 px
-     (замер 390 px: «41 900» кончалось на 227, «Б» начиналась на 346). Возвращаем ячейке обычный
-     текстовый поток — тогда «Б» стоит вплотную за числом с тем же отступом .14em, что и на всём
-     сайте, а значение по-прежнему прижато к правому краю, как у остальных строк. */
-  table.tbl-cards td[data-label="Цена"]{display:block;text-align:right}
-  table.tbl-cards td[data-label="Цена"] .byn{display:inline}
+  /* Заказчик 02.10.2026: «цена в карточках проданных авто, смести влево, симметрично — год,
+     пробег, продано». Было: «ЦЕНА» подписью в строке и значение, прижатое к правому краю, — ряд
+     цены выбивался из остальных (замер 390 px: значение 305→355, подпись от 35). Стало: подпись
+     и значение стоят одной строкой и обе у левого края, как подписи «Год», «Пробег» и «Продано»
+     выше, а не разъезжаются по краям карточки. Цена обёрнута в span.sold-price (lib/pages.mjs,
+     soldRow) нарочно: без обёртки флекс-ячейка разрывала «41 900» и span.byn на два элемента
+     (число 187→227, знак 346→355). */
+  table.tbl-cards td[data-label="Цена"]{display:flex;align-items:baseline;justify-content:flex-start;gap:8px;text-align:left;white-space:nowrap}
+  table.tbl-cards td[data-label="Цена"] .sold-price{display:inline-block}
+  table.tbl-cards td[data-label="Цена"] .byn{display:inline-block}
   table.tbl-cards tr.tbl-group{background:var(--paper-soft);border:0;border-radius:10px;padding:9px 14px;margin:18px 0 12px}
   table.tbl-cards tr.tbl-group td{display:block;padding:0;white-space:normal}
 }

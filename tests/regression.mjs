@@ -1758,6 +1758,48 @@ const SECTIONS = {
           trackBefore !== trackAfter && page.url().endsWith('/cars'), `${trackBefore} → ${trackAfter}, ${page.url()}`);
       }
 
+      /* Плашка «Выбор дилера» на карточках авто. Заказчик 02.10.2026: «Плашка выбор дилера на
+         карточках в мобильной и десктопной версии - сделай красным в цвет сайта и в десктопной
+         версии - плашка выбор дилера не заходила за кнопку лайк». Плашка лежит в ленте .car-badges
+         над кадром; на широком экране у ленты не было правого ограничения (абсолютный блок с одним
+         left сжимался по содержимому), поэтому на узкой карточке 287 px (четыре колонки на 1440)
+         лента доходила до кнопки избранного .car-fav: замер до правки — плашка 255…362 при лайке
+         350…386, перекрытие 12 px (360 px²). Теперь у ленты right:56px (12 px поле + 36 px круг +
+         8 px зазор), и лишние плашки переносятся на вторую строку внутри кадра. Заодно плашка
+         получила общий красный: раньше --accent был прописан только в мобильном блоке, и на
+         широком экране «Выбор дилера» оставалась общей тёмной .tag. Проверяем на широкой и
+         телефонной ширине: фон плашки — фирменный #E3000F с белыми буквами, ни одна плашка ленты
+         не пересекается с кругом лайка, а на широком экране между плашкой и кругом есть зазор
+         (правый край ленты ограничен). */
+      for (const w of [1400, 390]) {
+        await page.setViewport({ width: w, height: 950, isMobile: w <= 560, hasTouch: w <= 560, deviceScaleFactor: 1 });
+        await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+        const badge = await page.evaluate(() => {
+          const box = (el) => { const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; };
+          const area = (a, b) => Math.max(0, Math.min(a.r, b.r) - Math.max(a.l, b.l))
+            * Math.max(0, Math.min(a.b, b.b) - Math.max(a.t, b.t));
+          const card = [...document.querySelectorAll('.car-media')].find((m) => m.querySelector('.tag-dealer'));
+          if (!card) return null;
+          const dealer = card.querySelector('.tag-dealer');
+          const fav = card.querySelector('.car-fav');
+          const cs = getComputedStyle(dealer);
+          const favBox = fav ? box(fav) : null;
+          const tags = [...card.querySelectorAll('.tag')];
+          return {
+            bg: cs.backgroundColor, fg: cs.color, words: dealer.textContent.trim(),
+            gap: favBox ? Math.round(favBox.l - box(dealer).r) : null,
+            hits: favBox ? tags.filter((t) => area(box(t), favBox) > 0).map((t) => t.textContent.trim()) : ['кнопки лайка нет'],
+            phone: innerWidth <= 560,
+          };
+        });
+        check('ui', `${w}: плашка «Выбор дилера» — красная в цвет сайта и не заходит за кнопку лайк`,
+          !!badge && badge.bg === 'rgb(227, 0, 15)' && badge.fg === 'rgb(255, 255, 255)'
+            && badge.hits.length === 0 && (badge.phone ? badge.gap >= 0 : badge.gap >= 8),
+          badge ? `фон ${badge.bg}, буквы ${badge.fg}, зазор до круга лайка ${badge.gap} px, `
+            + `перекрытия плашек с лайком: ${badge.hits.length ? badge.hits.join(', ') : 'нет'}`
+            : 'карточка с плашкой «Выбор дилера» не найдена');
+      }
+
       /* Обложка статьи в Автожурнале — тоже ссылка на статью: клик по самой картинке (координатами,
          а не по накладке .car-photo-hit) ведёт на страницу статьи (заказчик 2026-09-30: «В разделе
          Автожурнал — добавь возможность перехода на статью при нажатии на картинку»). */
@@ -3465,7 +3507,20 @@ const SECTIONS = {
       await page.evaluate(() => document.querySelector('[data-sale-open]').click());
       await new Promise((r) => setTimeout(r, 250));
       await page.evaluate(() => document.querySelector('[data-sale-form] button[type=submit]').click());
-      await new Promise((r) => setTimeout(r, 700));
+      /* Ждём именно закрытия окна, а не фиксированные 700 мс: под полной нагрузкой (весь набор
+         подряд, а не один раздел ui) ответ /lead может прийти позже, и проверка «окно закрылось,
+         всплыло подтверждение» падала на живой вёрстке (раздел ui отдельно — 216/216).
+         Текст тоста для ожидания не годится: он остаётся в разметке от прошлых показов. */
+      const waitSaleClosed = async () => {
+        const deadline = Date.now() + 3000;
+        for (;;) {
+          const hidden = await page.evaluate(() => document.querySelector('[data-sale-modal]').hidden);
+          if (hidden) return true;
+          if (Date.now() > deadline) return false;
+          await new Promise((r) => setTimeout(r, 50));
+        }
+      };
+      await waitSaleClosed();
       const saleSent = await page.evaluate(() => ({
         hidden: document.querySelector('[data-sale-modal]').hidden,
         bodyOpen: document.body.classList.contains('modal-open'),
