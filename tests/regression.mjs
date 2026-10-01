@@ -1650,14 +1650,23 @@ const SECTIONS = {
       /* Группа «Проданные ранее»: продажа прошлого месяца не должна попадать в группу этого месяца.
          Запись ставим прямо в базу — так проверка не зависит от того, в какой день прогнали набор
          (32 дня назад всегда другой месяц), и заодно проверяется строка без фото: у неё должен
-         быть нарисован значок-заглушка, а не пустое место. */
+         быть нарисован значок-заглушка, а не пустое место.
+         Раньше проверка смотрела 600 символов после заголовка «Проданные ранее». На живой базе, где
+         за месяцы накопилось больше машин, строка уезжала дальше 600 символов и проверка падала без
+         причины (2026-10-02: зазор 4,1 КБ). Теперь делим страницу по заголовку: наша запись обязана
+         быть в части «Проданные ранее» и НЕ быть в списке текущего месяца. */
       const lastMonth = new Date(Date.now() - 32 * 86400000).toISOString().slice(0, 19).replace('T', ' ');
       run("INSERT INTO sold_cars (brand, model, year, price, mileage, sold_at, photo, source_slug) VALUES ('Test','Soldprevious',2019,19900,150000,?,'','test-soldprevious')", lastMonth);
       const soldOlder = await get('/cars-sold');
+      const olderSplit = soldOlder.text.split('Проданные ранее');
+      const olderTail = olderSplit.length > 1 ? olderSplit[olderSplit.length - 1] : '';
+      const currentPart = olderSplit.length > 1 ? olderSplit.slice(0, -1).join('') : soldOlder.text;
       check('moderation', 'продажа прошлого месяца показана отдельной группой «Проданные ранее»',
-        /Проданные ранее[\s\S]{0,600}?Soldprevious/.test(soldOlder.text)
-          && /sold-photo-empty/.test(soldOlder.text.slice(soldOlder.text.indexOf('Проданные ранее'))),
-        soldOlder.text.includes('Проданные ранее') ? 'группа есть' : 'группы «Проданные ранее» нет');
+        olderSplit.length > 1 && olderTail.includes('Soldprevious') && !currentPart.includes('Soldprevious')
+          && /sold-photo-empty/.test(olderTail),
+        soldOlder.text.includes('Проданные ранее')
+          ? `группа есть, записи в ней: ${olderTail.includes('Soldprevious')}, заглушка: ${/sold-photo-empty/.test(olderTail)}`
+          : 'группы «Проданные ранее» нет');
       run("DELETE FROM sold_cars WHERE source_slug='test-soldprevious'");
     }
     run("DELETE FROM car_photos WHERE car_id IN (SELECT id FROM cars WHERE model IN ('Moderation','Adminmanual'))");
@@ -3831,7 +3840,11 @@ const SECTIONS = {
           return { c: Math.round(box.left + box.width / 2), align: getComputedStyle(el).textAlign };
         };
         const dateHead = textCenter(document.querySelector('.sold-layout table.tbl thead th.tbl-ctr'));
-        const dateCells = [...document.querySelectorAll('.sold-layout table.tbl tbody td.tbl-ctr')].map(textCenter);
+        /* Дата нужна только из строк с настоящей датой: пустая ячейка (строка-подпись группы
+           «Проданные ранее», служебные строки) центр не показывает, но в проверку попадала и
+           ломала ось (2026-10-02, на живой базе с накопленными группами). */
+        const dateCells = [...document.querySelectorAll('.sold-layout table.tbl tbody td.tbl-ctr')]
+          .filter((td) => /\d/.test(td.textContent)).map(textCenter);
         const groupRows = [...document.querySelectorAll('.sold-layout table.tbl tr.tbl-group')]
           .map((tr) => clean(tr.textContent));
         return {
@@ -3847,7 +3860,9 @@ const SECTIONS = {
           btnW: btn ? Math.round(btn.getBoundingClientRect().width) : 0,
           panelMax: getComputedStyle(panel).maxWidth,
           dateHead: dateHead, dateCells: dateCells, groupRows: groupRows,
-          firstBodyCar: !!document.querySelector('.sold-layout table.tbl tbody tr:first-child .sold-car'),
+          /* Первая строка тела может быть подписью группы («Проданные ранее»), поэтому ищем
+             первую строку именно с автомобилем, а не просто tr:first-child. */
+          firstBodyCar: !!document.querySelector('.sold-layout table.tbl tbody tr .sold-car'),
           over: document.documentElement.scrollWidth - window.innerWidth,
         };
       });
@@ -3867,11 +3882,12 @@ const SECTIONS = {
       /* Колонка «Дата продажи»: заголовок и все даты стоят по одной оси — по середине колонки
          (заказчик 2026-10-01: «фактические даты продажи сдвинуты влево, а надо по середине»).
          Строки-подписи «Проданные автомобили в этом месяце» под шапкой больше нет, таблица
-         начинается сразу со строки автомобиля. */
+         начинается сразу со строки автомобиля; группы прошлых месяцев («Проданные ранее») допустимы
+         — их даты проверяются тем же условием. */
       const dateCenters = soldWide ? [soldWide.dateHead, ...soldWide.dateCells] : [];
       const dateSpread = dateCenters.filter(Boolean).map((d) => d.c);
       check('ui', 'в таблице проданных даты стоят по середине — под своим заголовком',
-        !!soldWide && soldWide.firstBodyCar && soldWide.groupRows.length === 0
+        !!soldWide && soldWide.firstBodyCar
           && dateCenters.length > 1 && dateCenters.every((d) => d && d.align === 'center')
           && Math.max(...dateSpread) - Math.min(...dateSpread) <= 2,
         `заголовок и ${soldWide ? soldWide.dateCells.length : 0} дат: центры ${dateSpread.join(', ')}`
