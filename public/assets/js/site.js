@@ -565,10 +565,13 @@
       }
       var verdict = $('[data-pdn-verdict]');
       if (verdict) {
-        var needTxt = 'от <b>' + money(need) + ' <span class="byn">Б</span></b> чистыми';
+        /* В вердикте остаётся только оценка нагрузки: нужный доход «чистыми» теперь стоит парой
+           с платежом в плашке .calc-pay наверху карточки, и называть его же число ниже было бы
+           повтором (заказчик 02.10.2026: «Доход для одобрения (чистыми) … размести напротив
+           платежа по кредиту»). */
         if (!income) verdict.textContent = 'Укажите доход в месяц — от него считается нагрузка.';
-        else if (over) verdict.innerHTML = 'Нагрузка <b>' + pct(pdn) + '</b> — выше нормы ' + limit + ' %. Для одобрения нужен доход ' + needTxt + '.';
-        else verdict.innerHTML = 'Нагрузка <b>' + pct(pdn) + '</b> — в норме (до ' + limit + ' %). Кредит дают при доходе ' + needTxt + '.';
+        else if (over) verdict.innerHTML = 'Нагрузка <b>' + pct(pdn) + '</b> — выше нормы ' + limit + ' %.';
+        else verdict.innerHTML = 'Нагрузка <b>' + pct(pdn) + '</b> — в норме (до ' + limit + ' %).';
       }
     }
     form.addEventListener('input', calc);

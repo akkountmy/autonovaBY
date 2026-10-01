@@ -2148,13 +2148,34 @@ html.lb-on{overflow:hidden}
    больше (10), поэтому отзыв читается целиком, а предел только страхует от очень длинных. */
 .reviews-all .review p{-webkit-line-clamp:10}
 @media(max-width:1080px){.reviews{grid-auto-flow:row;grid-auto-columns:auto;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}}
-.calc-out{background:var(--paper-soft);border-radius:var(--r-card);padding:22px;
+/* Карточка итогов — такая же белая панель с рамкой, как карточки полей и заявки (.panel): страница
+   читается одним набором карточек, а не серым пятном в белом листе. */
+.calc-out{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);padding:22px;
   display:flex;flex-direction:column;gap:14px}
 .calc-out .big{font-family:var(--f-num);font-size:34px;font-weight:700}
 /* Числа сумм лежат в собственных <i> (скрипт пишет только их, подписи со знаком рубля остаются
    на месте — см. initCalc в public/assets/js/site.js). Курсив и наклон <i> здесь не нужны. */
 .calc-out .big i,.calc-out .spec-list i{font-style:normal}
 .calc-out .big span{font-size:15px;font-family:var(--f-text);color:var(--text-2);font-weight:400}
+/* ── Главные числа расчёта: платёж по кредиту и доход для одобрения — парой в одной плашке ──────
+   Заказчик 02.10.2026: «убери с блока расчет кредита. Доход для одобрения (чистыми) 2 756 Б,
+   размести напротив платежа по кредиту. Сам блок где считается платеж и нужный доход, сделай
+   в стиль сайта и что бы карасиво выглядело все на странице». Поэтому из блока ПДН строка с
+   нужным доходом убрана, и оба главных числа стоят рядом, подписанные мелкой прописной подписью
+   в стиле подписей полей расчёта (.calc-group): слева платёж в месяц, справа доход «чистыми»,
+   при котором нагрузка укладывается в норматив. Между ними вертикальная линия — как разделитель
+   колонок в таблицах сайта. */
+.calc-pay{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px;
+  background:var(--paper-soft);border:1px solid var(--line);border-radius:var(--r-field);
+  padding:14px 18px 15px}
+/* Ячейки растянуты на высоту плашки, а число прижато к низу (space-between): подписи разной длины
+   («Доход для одобрения (чистыми)» на 1024 px переносится в две строки), и без этого правое число
+   уезжало вверх и не стояло напротив левого. */
+.calc-pay-item{display:flex;flex-direction:column;justify-content:space-between;gap:6px;min-width:0}
+.calc-pay-item + .calc-pay-item{border-left:1px solid var(--line-2);padding-left:20px}
+.calc-pay-item > span{font-size:12.2px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--text-3);line-height:1.3}
+.calc-pay .big{font-size:29px;line-height:1.1;white-space:nowrap}
 /* Список итогов прижат к низу карточки: в общем ряду карточки растянуты на одну высоту, и без
    этого под списком оставалась бы пустая полоса, а низ карточки не совпадал с соседними.
    Автоматический отступ только у ПЕРВОГО списка (он прямой ребёнок .calc-out): под ним в той же
@@ -2384,11 +2405,19 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
    обязательных удержаний, поэтому рядом стоит доход до удержаний (подоходный 13 % + ФСЗН 1 %):
    без него «нагрузка» считалась бы по доходу «грязными» и была бы занижена.
    В карточке: вердикт сверху, полоса-шкала (заливка = доля от нормы 40 %, ставит initCalc в --pdn)
-   и два столбца чисел. Блок идёт последним в .calc-out, под списком сумм кредита. */
+   и три столбца чисел: платёж по другим кредитам, все платежи и доход до удержаний. Нужный доход
+   «чистыми» стоит не здесь, а парой с платежом в .calc-pay наверху карточки (заказчик 02.10.2026),
+   поэтому столбцов три. Блок идёт последним в .calc-out, под списком сумм кредита. */
 .calc-pdn{display:flex;flex-direction:column;gap:12px;
   border-top:1px solid var(--line);padding-top:14px}
-.calc-pdn .spec-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;
+.calc-pdn .spec-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px;
   border-top:0;padding-top:0}
+/* Подписи в трёх колонках переносятся по-разному («Доход до вычета налогов (13 % и 1 %)» — в две
+   строки, «Всего платежей в месяц» — в одну), и числа вставали на разной высоте: подпись сверху,
+   число вплотную под ней. Растянутая ячейка сетки и flex-столбец с space-between прижимают числа
+   к низу ячейки — все три стоят на одной линии, а подписи начинаются с одной. На телефоне строка
+   снова обычная (подпись слева, число справа) — см. @media(max-width:640px). */
+.calc-pdn .spec-list > div{display:flex;flex-direction:column;justify-content:space-between}
 .pdn-verdict{margin:0;font-size:13.4px;line-height:1.4;color:var(--text-2)}
 .pdn-verdict b{font-family:var(--f-num);color:var(--text);white-space:nowrap}
 .calc-pdn.is-ok .pdn-verdict{color:var(--ok)}
@@ -2420,7 +2449,14 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
 @media(max-width:640px){
   .calc-fields{grid-template-columns:minmax(0,1fr);gap:12px 0}
   .calc-fields > .field,.calc-fields > .field-wide{grid-column:auto}
+  /* Телефон: два главных числа плашки друг под другом (в строку подписи заняли бы по три строки,
+     а числа прижались бы к краям), разделитель между ними становится горизонтальным. */
+  .calc-pay{grid-template-columns:minmax(0,1fr);gap:0;padding:14px 16px}
+  .calc-pay-item + .calc-pay-item{border-left:0;border-top:1px solid var(--line-2);
+    padding-left:0;padding-top:12px;margin-top:12px}
+  .calc-pay .big{font-size:26px}
   .calc-out .spec-list{grid-template-columns:minmax(0,1fr);gap:0}
+  .calc-pdn .spec-list > div{flex-direction:row}
   .calc-out .spec-list div{padding:10px 0;border-bottom:1px solid var(--line);
     display:flex;justify-content:space-between;gap:14px;font-size:14.5px}
   .calc-out .spec-list div:last-child{border-bottom:0;padding-bottom:0}
