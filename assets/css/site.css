@@ -2333,7 +2333,11 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
 .calc-out .spec-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px;
   border-top:1px solid var(--line);padding-top:14px}
 .calc-out .spec-list div{display:block;padding:0;border-bottom:0;font-size:13.6px;color:var(--text-2)}
-.calc-out .spec-list b{display:block;margin-top:4px;font-family:var(--f-num);font-size:17px;font-weight:700;text-align:left}
+/* Заказчик 02.10.2026: «там где расчёт суммы платежа в месяц несимметричные данные и есть
+   подчёркивание например суммы кредита и того квадрату значок белорусского рубля». Знак рубля
+   переехал внутрь <b> (lib/pages.mjs) и теперь стоит в строке числа; здесь только запрет переноса —
+   «48 000 Б» не разрывается, поэтому все три колонки итогов одной высоты и одной строки. */
+.calc-out .spec-list b{display:block;margin-top:4px;font-family:var(--f-num);font-size:17px;font-weight:700;text-align:left;white-space:nowrap}
 /* Тесно: колонка заявки чуть уже — как в блоке «Проданные автомобили» (.sold-layout). */
 @media(max-width:1179px){
   .calc-layout{grid-template-columns:minmax(0,1fr) 420px}
