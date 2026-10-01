@@ -426,9 +426,13 @@ const SECTIONS = {
     /* Заказчик 2026-09-30: «Расчёт ежемесячного платежа по аннуитетной схеме, ставка 16 % годовых.
        — убери». Из подзаголовка страницы убрана именно эта фраза (и схема расчёта, и ставка),
        примечание про банк осталось: оно и держит подзаголовок. Проверяем и саму страницу, и что
-       фраза не вернулась в разметку (в `lib/pages.mjs` её нет ни в одной странице). */
+       фраза не вернулась в разметку (в `lib/pages.mjs` её нет ни в одной странице).
+       Заказчик 2026-09-30 (позже): «с блока расчет кредита убери — Считаем платёж, переплату и доход,
+       который нужен банку для одобрения кредита» — из подзаголовка калькулятора ушло и первое
+       предложение, поэтому проверяем и его отсутствие. */
     check('pages', 'в подзаголовке калькулятора нет аннуитетной схемы и ставки, примечание про банк на месте',
       !/аннуитет|Расчёт ежемесячного платежа|ставка 16/.test(calcText)
+        && !calcText.includes('Считаем платёж, переплату и доход')
         && calcText.includes('Точные условия банк подтверждает после рассмотрения заявки'),
       calcText.slice(calcText.indexOf('Кредитный калькулятор'), calcText.indexOf('Кредитный калькулятор') + 220).replace(/\s+/g, ' '));
     /* Все поля расчёта — ползунки (просьба заказчика 2026-09-27: «В кредитном калькуляторе —
@@ -451,44 +455,50 @@ const SECTIONS = {
       && /name="share" min="5" max="80" step="1"/.test(calcFormHtml)
       && /Участие клиента, %/.test(calcFormHtml),
       calcFormHtml.replace(/\s+/g, ' ').slice(0, 200));
-    /* Вторая строка полей — доход и действующие кредиты; у формы есть норматив ПДН и ставка
-       удержаний (data-pdn-limit / data-withholding), иначе скрипт считал бы нагрузку по своим
-       числам, а не по серверным из lib/finance.mjs. */
+    /* Вторая строка полей — доход и действующие кредиты; у формы есть норматив ПДН
+       (data-pdn-limit), иначе скрипт считал бы нагрузку по своим числам, а не по серверным из
+       lib/finance.mjs. Ставки удержаний (data-withholding) у формы больше нет: заказчик 02.10.2026
+       убрал из итогов доход до вычета налогов («Доход до вычета налогов (13 % и 1 %) … убери»),
+       считать и показывать его негде, поэтому и атрибут не нужен. */
     check('pages', 'калькулятор: доход в месяц и платежи по другим кредитам — ползунки со своими границами',
       /name="income"[^>]*min="400" max="8000" step="50"/.test(calcFormHtml)
       && /name="other"[^>]*min="0" max="3000" step="50"/.test(calcFormHtml)
       && /data-pdn-limit="40"/.test(calcFormHtml)
-      && /data-withholding="14"/.test(calcFormHtml)
+      && !/data-withholding/.test(calcFormHtml)
       && /Доход в месяц \(после налогов\)/.test(calcFormHtml)
       && /Платежи по другим кредитам/.test(calcFormHtml),
       calcFormHtml.replace(/\s+/g, ' ').slice(0, 240));
-    /* Итоги ПДН в разметке: четыре числа, вердикт, шкала и примечание с методикой Нацбанка
-       (постановление Правления Национального банка от 31.03.2020 № 100 — «ПДН не должен превышать
-       40 процентов»). До первого пересчёта на месте чисел стоит «—». */
-    /* Итоги расчёта: платёж и нужный доход стоят парой в плашке .calc-pay наверху карточки, под
-       ними суммы кредита, ниже — блок долговой нагрузки с вердиктом, шкалой и тремя числами.
-       Заказчик 02.10.2026: «убери с блока расчет кредита. Доход для одобрения (чистыми) 2 756 Б,
-       размести напротив платежа по кредиту». До первого пересчёта на месте чисел стоит «—». */
-    const payHtml = calcText.slice(calcText.indexOf('calc-pay'), calcText.indexOf('spec-list', calcText.indexOf('calc-pay')));
+    /* Итоги расчёта: платёж и нужный доход стоят парой в плашке .calc-pay наверху карточки, сразу
+       под ней — строка про нагрузку, ниже — суммы кредита. Заказчик 02.10.2026: «убери с блока
+       расчет кредита. Доход для одобрения (чистыми) 2 756 Б, размести напротив платежа по кредиту»
+       и следом «Перенеси строчку где считается нагрузка, под блок - Платёж по кредиту … Доход для
+       одобрения (чистыми)». До первого пересчёта на месте чисел стоит «—». */
+    const payHtml = calcText.slice(calcText.indexOf('calc-pay'), calcText.indexOf('calc-pdn'));
     check('pages', 'калькулятор: платёж и нужный доход стоят парой в одной плашке',
       /Платёж по кредиту/.test(payHtml) && /data-payment/.test(payHtml)
         && /Доход для одобрения \(чистыми\)/.test(payHtml) && /data-pdn-need/.test(payHtml),
       payHtml.replace(/\s+/g, ' ').slice(0, 200));
-    const calcOutHtml = calcText.slice(calcText.indexOf('calc-pdn'), calcText.indexOf('</div>', calcText.indexOf('calc-note')));
-    check('pages', 'калькулятор: в блоке нагрузки вердикт, шкала, три числа ПДН и примечание',
-      ['data-pdn-verdict', 'data-pdn-fill', 'data-pdn-other', 'data-pdn-total', 'data-pdn-tax']
-        .every((m) => calcOutHtml.includes(m))
-      && !calcOutHtml.includes('data-pdn-need')
-      && /Платежи по другим кредитам/.test(calcOutHtml)
-      && /Всего платежей в месяц/.test(calcOutHtml)
-      && /Доход до вычета налогов \(13 % и 1 %\)/.test(calcOutHtml)
-      && /норма — 40 %/.test(calcOutHtml),
-      calcOutHtml.replace(/\s+/g, ' ').slice(0, 200));
-    check('pages', 'калькулятор: методика ПДН подписана со ссылкой на Нацбанк',
-      /ПДН = платежи ÷ доход × 100 %/.test(calcText)
-      && /постановление Правления Национального банка от 31\.03\.2020 № 100/.test(calcText)
-      && /подоходного налога 13 % и взносов в ФСЗН 1 %/.test(calcText)
-      && /href="https:\/\/www\.nbrb\.by\/today\/faq\/o-metodike-rascheta-pokazatelej-dolgovoj-nagruzki"/.test(calcText));
+    /* Блок нагрузки: заказчик 02.10.2026 оставил от него одну строчку про нагрузку — «остальное,
+       это - 0 % норма — 40 % Платежи по другим кредитам 0 Б Всего платежей в месяц 953 Б Доход до
+       вычета налогов (13 % и 1 %) 2 771 Б Показатель долговой нагрузки (ПДН) — … Методика расчёта
+       ПДН на сайте Нацбанка, - убери». Поэтому в разметке остался только вердикт: ни шкалы от нуля
+       до норматива, ни трёх чисел, ни примечания со ссылкой на nbrb.by. */
+    const pdnHtml = calcText.slice(calcText.indexOf('calc-pdn'), calcText.indexOf('spec-list', calcText.indexOf('calc-pdn')));
+    check('pages', 'калькулятор: в блоке нагрузки остался только вердикт',
+      /data-pdn-verdict/.test(pdnHtml)
+        && !/data-pdn-need/.test(pdnHtml)
+        && (pdnHtml.match(/<p /g) || []).length === 1,
+      pdnHtml.replace(/\s+/g, ' ').slice(0, 200));
+    check('pages', 'калькулятор: шкала, три числа ПДН и примечание с методикой убраны',
+      !/pdn-bar|pdn-scale|calc-note|data-pdn-fill|data-pdn-other|data-pdn-total|data-pdn-tax/.test(calcText)
+        && !/Платежи по другим кредитам<\/span>/.test(pdnHtml)
+        && !/Всего платежей в месяц/.test(calcText)
+        && !/норма — 40 %/.test(calcText)
+        && !/Доход до вычета налогов/.test(calcText)
+        && !/nbrb\.by/.test(calcText)
+        && !/ПДН = платежи/.test(calcText)
+        && !/подоходного налога 13 %/.test(calcText),
+      pdnHtml.replace(/\s+/g, ' ').slice(0, 200));
 
     /* Марки: тёмной полосы под шапкой больше нет ни на одной странице (заказчик 2026-09-27:
        «убери после шапки на всех страницах на сером фоне»), а список марок встал светлой строкой
@@ -1851,14 +1861,13 @@ const SECTIONS = {
          знак выпадал из строки числа и вставал отдельной строкой под ним: замер до правки на 730 px —
          строка итогов 70 px высотой, под числом одинокая «Б» с чертой (читалась как подчёркнутый
          квадрат), три колонки разной высоты. Теперь знак внутри <b>, рядом с числом: подпись сверху,
-         «48 000 Б» одной строкой, все колонки одной высоты (50 px) — это в первой строке показателей
-         (три колонки). Строка ПДН проверяется там же, тем же правилом: знак в числе, без
-         подчёркивания, колонки ровные. Показателей ПДН с 02.10.2026 три (третья правка того же дня):
-         «Доход для одобрения (чистыми)» уехал в плашку .calc-pay к платежу по кредиту, поэтому
-         в блоке нагрузки остались «Платежи по другим кредитам», «Всего платежей в месяц» и
-         «Доход до вычета налогов (13 % и 1 %)» — три колонки, как и у сумм кредита.
-         Клик по числам никуда не ведёт: единственная ссылка в карточке итогов — «Методика расчёта
-         ПДН на сайте Нацбанка» в примечании (.calc-note), а среди чисел ссылок нет. */
+         «48 000 Б» одной строкой, все колонки одной высоты — это в строке показателей (три колонки:
+         сумма кредита, переплата, всего выплат). Блок нагрузки после правок того же дня списком
+         больше не является: от него осталась одна строка вердикта, и она стоит между плашкой
+         «платёж и нужный доход» и списком сумм — «Перенеси строчку где считается нагрузка, под блок».
+         Клик по числам никуда не ведёт: ссылок в карточке итогов нет вовсе — единственная была
+         в примечании с методикой ПДН (.calc-note), а его заказчик убрал («Методика расчёта ПДН
+         на сайте Нацбанка, - убери»), поэтому здесь же проверяется, что ссылок ноль. */
       for (const w of [1440, 390]) {
         await page.setViewport({ width: w, height: 950, isMobile: w <= 560, hasTouch: w <= 560, deviceScaleFactor: 1 });
         await page.goto(BASE + '/kalkulyator', { waitUntil: 'domcontentloaded' });
@@ -1887,11 +1896,21 @@ const SECTIONS = {
             }).filter(Boolean);
             return { rows, cols: getComputedStyle(list).gridTemplateColumns.split(' ').length };
           });
-          const links = [...box.querySelectorAll('a')].map((a) => ({ href: a.getAttribute('href') || '', note: !!a.closest('.calc-note') }));
-          return { lists, links };
+          const links = [...box.querySelectorAll('a')].map((a) => a.getAttribute('href') || '');
+          const pay = box.querySelector('.calc-pay');
+          const block = box.querySelector('.calc-pdn');
+          const verdict = box.querySelector('.calc-pdn .pdn-verdict');
+          const sums = box.querySelector('.spec-list');
+          return {
+            lists, links,
+            verdict: verdict ? verdict.textContent.replace(/\s+/g, ' ').trim() : '',
+            oneVerdict: !!block && block.children.length === 1,
+            order: !!(pay && verdict && sums
+              && rect(pay).bottom <= rect(verdict).top + 1
+              && rect(verdict).bottom <= rect(sums).top + 1),
+          };
         });
         const main = calc ? calc.lists[0] : null;
-        const pdn = calc ? calc.lists[1] : null;
         const clean = (list) => list.rows.length > 0
           && list.rows.every((r) => r.inside && r.sameLine && r.nowrap && r.deco === 'none');
         const spreadH = (list) => Math.max(...list.rows.map((r) => r.h)) - Math.min(...list.rows.map((r) => r.h));
@@ -1900,12 +1919,14 @@ const SECTIONS = {
           : new Set(list.rows.map((r) => r.w)).size === 1 && spreadH(list) <= 1;
         const values = (list) => list.rows.map((r) => `«${r.value}» ${r.h}px`).join(', ');
         check('ui', `${w}: итоги кредитного калькулятора — знак рубля в строке числа, колонки ровные`,
-          !!main && !!pdn && main.rows.length === 3 && pdn.rows.length === 3
-            && clean(main) && even(main) && clean(pdn) && even(pdn)
-            && calc.links.length === 1 && calc.links[0].note
-            && /nbrb\.by/.test(calc.links[0].href),
-          calc ? `суммы (${main.cols} колонки): ${values(main)}; ПДН (${pdn.cols} колонки): ${values(pdn)}; `
-            + `ссылок ${calc.links.length} (в примечании ${calc.links.filter((l) => l.note).length})`
+          !!main && calc.lists.length === 1 && main.rows.length === 3
+            && clean(main) && even(main) && calc.links.length === 0,
+          calc ? `суммы (${main.cols} колонки): ${values(main)}; списков ${calc.lists.length}; `
+            + `ссылок ${calc.links.length}`
+            : 'блок итогов .calc-out не найден');
+        check('ui', `${w}: строка про нагрузку стоит одна между плашкой платежа и суммами`,
+          !!calc && calc.oneVerdict && calc.order && /Нагрузка/.test(calc.verdict),
+          calc ? `вердикт «${calc.verdict}», один потомок ${calc.oneVerdict}, порядок ${calc.order}`
             : 'блок итогов .calc-out не найден');
       }
 
@@ -2552,13 +2573,15 @@ const SECTIONS = {
           needInPdn: document.querySelectorAll('.calc-pdn [data-pdn-need]').length,
           signs: document.querySelectorAll('.calc-out .byn').length,
           rate: !!document.querySelector('[data-calc] [name=rate]'),
+          /* Итоги расчёта текстом: по нему видно, что убранное не вернулось — ни «Всего платежей
+             в месяц», ни дохода до вычета налогов, ни примечания с методикой ПДН. */
+          outText: clean('.calc-out'),
           pdn: {
             verdict: clean('[data-pdn-verdict]'),
-            other: clean('[data-pdn-other]'), total: clean('[data-pdn-total]'),
-            need: clean('[data-pdn-need]'), tax: clean('[data-pdn-tax]'),
+            need: clean('[data-pdn-need]'),
             box: (document.querySelector('[data-pdn-box]') || {}).className,
-            fill: (document.querySelector('[data-pdn-fill]') || { style: {} }).style.getPropertyValue('--pdn'),
-            cols: getComputedStyle(document.querySelector('.calc-pdn .spec-list')).gridTemplateColumns.split(' ').length,
+            gone: ['.pdn-bar', '.pdn-scale', '.calc-note', '[data-pdn-fill]', '[data-pdn-other]',
+              '[data-pdn-total]', '[data-pdn-tax]'].filter((s) => document.querySelector(s)).length,
           },
         };
       });
@@ -2578,12 +2601,12 @@ const SECTIONS = {
       check('ui', 'блок расчёта: итоги не выходят ниже окна заявки, низы сходятся',
         Math.abs(calc3.out.bottom - calc3.lead.bottom) <= 1,
         `низ итогов ${calc3.out.bottom} / низ заявки ${calc3.lead.bottom}`);
-      /* Знаков рубля в итогах восемь: по одному у платежа и у нужного дохода в плашке .calc-pay,
-         по три в суммах кредита и в столбцах ПДН. Раньше девятый знак стоял в вердикте («…нужен
-         доход от 2 383 Б чистыми»), но нужный доход переехал к платежу, и вердикт называет только
-         нагрузку — знака в нём больше нет. */
+      /* Знаков рубля в итогах пять: по одному у платежа и у нужного дохода в плашке .calc-pay,
+         по три в суммах кредита. Раньше к ним добавлялись три знака в столбцах ПДН и девятый
+         в вердикте («…нужен доход от 2 383 Б чистыми»), но нужный доход переехал к платежу,
+         вердикт называет только нагрузку, а столбцы ПДН заказчик убрал. */
       check('ui', 'в калькуляторе нет поля «Ставка», платёж по 16 % годовых (аннуитет)',
-        !calc3.rate && calc3.pay === '953 Б / месяц' && calc3.credit === '48 000 Б' && calc3.signs === 8, JSON.stringify(calc3));
+        !calc3.rate && calc3.pay === '953 Б / месяц' && calc3.credit === '48 000 Б' && calc3.signs === 5, JSON.stringify(calc3));
       /* Заказчик 02.10.2026: «Доход для одобрения (чистыми) … размести напротив платежа по кредиту».
          Оба числа — в одной плашке .calc-pay: подписи слева от чисел, числа на одной линии, левое
          левее правого, между столбцами вертикальная линия-разделитель. В блоке ПДН нужного дохода
@@ -2599,30 +2622,31 @@ const SECTIONS = {
         JSON.stringify(calc3.payRow) + ` · нужный доход в блоке ПДН: ${calc3.needInPdn}`);
       /* Долговая нагрузка по умолчанию: доход 2 500 Б, своих кредитов нет. Платёж 953 → нагрузка
          953 / 2 500 = 38,1 % (норма — не более 40 %, постановление Правления Национального банка
-         от 31.03.2020 № 100), нужный доход 953 / 0,4 = 2 383 Б «чистыми», а до удержаний
-         (подоходный 13 % + ФСЗН 1 %) — 2 383 / 0,86 = 2 771 Б. Заказчик 02.10.2026: «добавь туда
-         какой доход должен быть у клиента чтобы получить этот кредит, методологию». */
+         от 31.03.2020 № 100), нужный доход 953 / 0,4 = 2 383 Б «чистыми». Четвёртой правкой того же
+         дня заказчик убрал из блока нагрузки всё, кроме вердикта: «остальное, это - 0 % норма — 40 %
+         Платежи по другим кредитам 0 Б Всего платежей в месяц 953 Б Доход до вычета налогов
+         (13 % и 1 %) 2 771 Б Показатель долговой нагрузки (ПДН) — … Методика расчёта ПДН на сайте
+         Нацбанка, - убери». Поэтому здесь же проверяется, что ни шкалы, ни трёх чисел, ни примечания
+         в разметке нет, а дохода до удержаний (2 771 Б) нет и в тексте итогов. */
       const pdnNum = (s) => Number(String(s).replace(/\u00A0/g, ' ').replace(/[^\d]/g, ''));
-      check('ui', 'калькулятор: по умолчанию нагрузка 38,1 % — «в норме», шкала зелёная и не полная',
+      check('ui', 'калькулятор: по умолчанию нагрузка 38,1 % — вердикт «в норме», блок зелёный',
         /^Нагрузка 38,1 % — в норме \(до 40 %\)\./.test(calc3.pdn.verdict)
-          && /is-ok/.test(calc3.pdn.box) && !/is-over/.test(calc3.pdn.box)
-          && calc3.pdn.fill === '95.3%' && calc3.pdn.cols === 3
-          && pdnNum(calc3.pdn.other) === 0 && pdnNum(calc3.pdn.total) === 953,
-        `вердикт «${calc3.pdn.verdict}», класс «${calc3.pdn.box}», заливка ${calc3.pdn.fill}, колонок ${calc3.pdn.cols}`);
-      check('ui', 'калькулятор: нужный доход 2 383 Б, до удержаний 2 771 Б',
-        pdnNum(calc3.pdn.need) === 2383 && pdnNum(calc3.pdn.tax) === 2771,
-        `нужен ${calc3.pdn.need}, до вычета ${calc3.pdn.tax}`);
-      /* Доход ниже и платежи по другим кредитам: вердикт переворачивается, шкала краснеет, а все
-         числа ПДН считаются от «платёж по кредиту + платежи по другим кредитам». */
+          && /is-ok/.test(calc3.pdn.box) && !/is-over/.test(calc3.pdn.box),
+        `вердикт «${calc3.pdn.verdict}», класс «${calc3.pdn.box}»`);
+      check('ui', 'калькулятор: нужный доход 2 383 Б стоит в плашке платежа, шкалы и трёх чисел ПДН нет',
+        pdnNum(calc3.pdn.need) === 2383 && calc3.pdn.gone === 0 && calc3.needInPdn === 0
+          && /Доход для одобрения \(чистыми\)\s*2 383 Б/.test(calc3.outText)
+          && !/Всего платежей в месяц|Доход до вычета налогов|2 771|норма — 40 %|Показатель долговой нагрузки/.test(calc3.outText),
+        `нужен «${calc3.pdn.need}», лишних узлов ${calc3.pdn.gone}, итоги: ${calc3.outText}`);
+      /* Доход ниже и платежи по другим кредитам: вердикт переворачивается и краснеет, а нужный
+         доход считается от «платёж по кредиту + платежи по другим кредитам». */
       const pdnRange = await page.evaluate(() => {
         const f = document.querySelector('[data-calc]');
         const fire = (el) => el.dispatchEvent(new Event('input', { bubbles: true }));
         const clean = (sel) => document.querySelector(sel).textContent.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
         const read = () => ({
-          verdict: clean('[data-pdn-verdict]'), other: clean('[data-pdn-other]'), total: clean('[data-pdn-total]'),
-          need: clean('[data-pdn-need]'), tax: clean('[data-pdn-tax]'),
+          verdict: clean('[data-pdn-verdict]'), need: clean('[data-pdn-need]'),
           box: document.querySelector('[data-pdn-box]').className,
-          fill: document.querySelector('[data-pdn-fill]').style.getPropertyValue('--pdn'),
           bg: getComputedStyle(document.querySelector('.pdn-verdict')).color,
         });
         f.income.value = 1500; fire(f.income);
@@ -2636,16 +2660,15 @@ const SECTIONS = {
         f.income.value = 2500; fire(f.income);
         return { low, withOther, okAgain };
       });
-      check('ui', 'калькулятор: при доходе 1 500 Б вердикт «выше нормы», шкала переполнена',
+      check('ui', 'калькулятор: при доходе 1 500 Б вердикт «выше нормы» и красный цвет',
         /^Нагрузка 63,6 % — выше нормы 40 %\./.test(pdnRange.low.verdict)
-          && /is-over/.test(pdnRange.low.box) && pdnRange.low.fill === '100.0%'
-          && pdnRange.low.bg === 'rgb(196, 56, 43)' && pdnNum(pdnRange.low.total) === 953,
-        `вердикт «${pdnRange.low.verdict}», класс «${pdnRange.low.box}», заливка ${pdnRange.low.fill}`);
-      check('ui', 'калькулятор: платежи по другим кредитам входят во все платежи и в нужный доход',
-        pdnNum(pdnRange.withOther.other) === 500 && pdnNum(pdnRange.withOther.total) === 1453
-          && pdnNum(pdnRange.withOther.need) === 3633 && pdnNum(pdnRange.withOther.tax) === 4225
+          && /is-over/.test(pdnRange.low.box) && !/is-ok/.test(pdnRange.low.box)
+          && pdnRange.low.bg === 'rgb(196, 56, 43)',
+        `вердикт «${pdnRange.low.verdict}», класс «${pdnRange.low.box}», цвет ${pdnRange.low.bg}`);
+      check('ui', 'калькулятор: платежи по другим кредитам входят в нужный доход',
+        pdnNum(pdnRange.withOther.need) === 3633
           && /^Нагрузка 58,1 % — выше нормы 40 %\./.test(pdnRange.withOther.verdict),
-        `другие ${pdnRange.withOther.other}, всего ${pdnRange.withOther.total}, нужен ${pdnRange.withOther.need}, до вычета ${pdnRange.withOther.tax}`);
+        `нужен ${pdnRange.withOther.need} (953 + 500 платежей ÷ 40 %)`);
       check('ui', 'калькулятор: с доходом 3 000 Б и платежом 500 Б нагрузка 48,4 % — снова выше нормы',
         /^Нагрузка 48,4 % — выше нормы 40 %\./.test(pdnRange.okAgain.verdict), pdnRange.okAgain.verdict);
       /* Ползунки расчёта (просьба заказчика 2026-09-27: «Стоимость автомобиля, руб. 60000 /
