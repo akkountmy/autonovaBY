@@ -509,7 +509,7 @@
        проценты на сайте. Ровные значения остаются целыми — 40 %, а не 40,0 %. */
     function pct(v) { return (Math.round(v * 10) / 10).toString().replace('.', ',') + ' %'; }
     /* Заливка трека до бегунка: доля в переменной --p, её читает CSS. У всех ползунков
-       (стоимость, участие клиента, срок, доход, платежи по другим кредитам) она считается
+       (стоимость, первоначальный платеж, срок, доход, платежи по другим кредитам) она считается
        одинаково, поэтому выглядят они одинаково. */
     function paint(el) {
       if (!el) return;
@@ -517,11 +517,13 @@
       var share = max > min ? (Number(el.value) - min) / (max - min) : 0;
       el.style.setProperty('--p', (share * 100).toFixed(2) + '%');
     }
-    /* Участие клиента — проценты (заказчик 2026-09-29: «в блок кредитный калькулятор добавь
-       ползунок участие клиента от 5% до 80%»). Раньше это был ползунок взноса в рублях, и его
-       границу приходилось двигать вместе со стоимостью, чтобы взнос не превысил цену: теперь
-       проценты от цены по определению не больше цены, поэтому подгонять границы не нужно.
-       Взнос в рублях показываем рядом с процентом — так видно реальную сумму.
+    /* Первоначальный платеж — проценты (заказчик 2026-09-29: «в блок кредитный калькулятор добавь
+       ползунок участие клиента от 5% до 80%»; 02.10.2026 подпись переименована его же правкой
+       «Участие клиента измени на Первоначальный платеж» — так это поле называют банки). Раньше это
+       был ползунок взноса в рублях, и его границу приходилось двигать вместе со стоимостью, чтобы
+       взнос не превысил цену: теперь проценты от цены по определению не больше цены, поэтому
+       подгонять границы не нужно. Взнос в рублях показываем рядом с процентом — так видно реальную
+       сумму. Имя поля осталось share: его читают разметка, этот расчёт и tests/regression.mjs.
        Второй расчёт — долговая нагрузка: все платежи (этот кредит + действующие) к доходу.
        Доход в поле — «чистыми», как его спрашивают банки, и по методике Нацбанка нагрузка считается
        именно от дохода за вычетом обязательных удержаний — то есть от того, что человек ввёл. */
@@ -556,20 +558,31 @@
       /* Доход для одобрения «чистыми»: все платежи, делённые на норматив (40 %) — столько банк готов
          принять к расчёту. Пишется справа в плашке .calc-pay, парой с платежом по кредиту. */
       set('[data-pdn-need]', money(need));
-      var box = $('[data-pdn-box]');
-      if (box) {
-        box.classList.toggle('is-over', over);
-        box.classList.toggle('is-ok', income > 0 && !over);
-      }
-      var verdict = $('[data-pdn-verdict]');
-      if (verdict) {
-        /* В вердикте остаётся только оценка нагрузки: нужный доход «чистыми» теперь стоит парой
-           с платежом в плашке .calc-pay наверху карточки, и называть его же число ниже было бы
-           повтором (заказчик 02.10.2026: «Доход для одобрения (чистыми) … размести напротив
-           платежа по кредиту»). */
-        if (!income) verdict.textContent = 'Укажите доход в месяц — от него считается нагрузка.';
-        else if (over) verdict.innerHTML = 'Нагрузка <b>' + pct(pdn) + '</b> — выше нормы ' + limit + ' %.';
-        else verdict.innerHTML = 'Нагрузка <b>' + pct(pdn) + '</b> — в норме (до ' + limit + ' %).';
+      /* Строка про нагрузку. Заказчик 02.10.2026: «Нагрузка 38,1 % — в норме (до 40 %). - убери» —
+         вердикт «в норме» повторял доход для одобрения из плашки .calc-pay и только называл
+         норматив, поэтому в норме страница молчит, а строка появляется, лишь когда нагрузка
+         норматив превысила. Разметки под неё в lib/pages.mjs нет: узел создаётся здесь, сразу под
+         плашкой главных чисел, и получает готовое оформление сайта — .alert.alert-err (мягкая
+         красная подложка --err-soft, цвет текста --err). Про доход, который ещё не ввели, тоже
+         ничего не пишем: расчёт по нулю — не превышение. */
+      if (over) {
+        var box = $('[data-pdn-warn]');
+        if (!box) {
+          box = document.createElement('div');
+          box.className = 'alert alert-err calc-pdn';
+          box.setAttribute('data-pdn-warn', '');
+          var payBox = $('.calc-pay');
+          var out = $('.calc-out');
+          /* Строка встаёт сразу под плашкой платежа и нужного дохода — там же, где стоял
+             прежний вердикт. Запасной путь (если плашки на странице нет) — началом колонки итогов,
+             чтобы предупреждение не потерялось. */
+          if (payBox && payBox.parentNode) payBox.parentNode.insertBefore(box, payBox.nextSibling);
+          else if (out) out.insertBefore(box, out.firstChild);
+        }
+        box.innerHTML = 'Нагрузка <b>' + pct(pdn) + '</b> — выше нормы ' + limit + ' %.';
+      } else {
+        var warn = $('[data-pdn-warn]');
+        if (warn && warn.parentNode) warn.parentNode.removeChild(warn);
       }
     }
     form.addEventListener('input', calc);
@@ -947,23 +960,46 @@
      пересчитывается при изменении видимой части окна (см. watchViewport). Видимая высота
      берётся у visualViewport, когда он есть: с открытой клавиатурой это единственный верный
      ориентир. */
+  /* Видимая часть ближайшего прокручиваемого предка со своей рамкой содержимого. Нужна окну
+     заявки: его карточка — сама по себе область прокрутки (.modal{overflow-y:auto}), и раскрытый
+     список, посчитанный только по окну, выходил за её нижний край, отчего справа у карточки
+     появлялась своя полоса прокрутки (заказчик 2026-10-03: «при выборе марки справа появилась
+     полоса прокрутки, адаптируй все, что бы полосы прокрутки не было»). */
+  function clipBox(el) {
+    var box = null;
+    for (var p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+      var cs = getComputedStyle(p);
+      if (cs.overflowY !== 'auto' && cs.overflowY !== 'scroll') continue;
+      var r = p.getBoundingClientRect();
+      var top = r.top + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.paddingTop) || 0);
+      var bottom = r.bottom - (parseFloat(cs.borderBottomWidth) || 0) - (parseFloat(cs.paddingBottom) || 0);
+      box = box ? { top: Math.max(box.top, top), bottom: Math.min(box.bottom, bottom) } : { top: top, bottom: bottom };
+    }
+    return box;
+  }
+
   function placePop(wrap, pop, anchor, cap) {
     var vv = window.visualViewport;
     var top = vv ? vv.offsetTop : 0;
     var bottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
     var max = cap || Math.min(480, Math.max(280, Math.round((bottom - top) * 0.6)));
+    var box = clipBox(wrap);
+    if (box) { top = Math.max(top, box.top); bottom = Math.min(bottom, box.bottom); }
     wrap.classList.remove('sel--up');
     pop.style.maxHeight = '';
     var r = anchor.getBoundingClientRect();
     var need = Math.min(pop.scrollHeight, max);
     var below = bottom - r.bottom - 8;
     var above = r.top - top - 8;
+    /* Теснота бывает разной: если список держит окно со своей прокруткой, ужимаем его сильнее —
+       два ряда лучше, чем полоса прокрутки у окна. */
+    var floor = box ? 96 : 120;
     if (below < need + 12 && above > below) {
       wrap.classList.add('sel--up');
-      pop.style.maxHeight = Math.min(max, Math.max(120, above - 6)) + 'px';
+      pop.style.maxHeight = Math.min(max, Math.max(floor, above - 6)) + 'px';
       return 'up';
     }
-    pop.style.maxHeight = Math.min(max, Math.max(120, below - 6)) + 'px';
+    pop.style.maxHeight = Math.min(max, Math.max(floor, below - 6)) + 'px';
     return 'down';
   }
 
