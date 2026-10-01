@@ -438,22 +438,26 @@ const SECTIONS = {
     /* Все поля расчёта — ползунки (просьба заказчика 2026-09-27: «В кредитном калькуляторе —
        Стоимость автомобиля, руб. 60000 / Первоначальный взнос, руб. — сделай ползунком как в
        месяцах»). Проверяем по разметке сервера, без скрипта: числовых полей в форме больше нет,
-       у каждого ползунка есть подпись <output>, а границы стоимости и участия осмысленные.
+       у каждого ползунка есть подпись <output>, а границы стоимости и первоначального платежа
+       осмысленные.
        Просьба 2026-09-29: «в блок кредитный калькулятор добавь ползунок участие клиента от 5% до
-       80%» — вместо взноса в рублях стоит процент участия, поэтому у ползунка name="share" свои
+       80%» — вместо взноса в рублях стоит процент, поэтому у ползунка name="share" свои
        границы 5…80 с шагом 1, а взнос в рублях виден в подписи.
+       Правка 02.10.2026: «Участие клиента измени на Первоначальный платеж» — подпись ползунка
+       теперь «Первоначальный платеж, %»; имя поля осталось share.
        Просьба 02.10.2026: «добавь туда какой доход должен быть у клиента чтобы получить этот
        кредит, методологию … Наверное надо ещё значение Сколько у человека Уже есть платежи по
        кредитам чтобы он мог внести и показать налоговой нагрузки считался верным» — в форме стало
        пять ползунков: к трём прежним добавились «Доход в месяц (после налогов)» и «Платежи по
        другим кредитам», у каждого своя подпись <output> (name="income", name="other"). */
-    check('pages', 'калькулятор: стоимость, участие клиента и срок — ползунки с подписью значения',
+    check('pages', 'калькулятор: стоимость, первоначальный платеж и срок — ползунки с подписью значения',
       (calcFormHtml.match(/type="range"/g) || []).length === 5
       && !/type="number"/.test(calcFormHtml)
       && (calcFormHtml.match(/<output /g) || []).length === 5
       && /name="price" min="1000" max="\d+" step="500"/.test(calcFormHtml)
       && /name="share" min="5" max="80" step="1"/.test(calcFormHtml)
-      && /Участие клиента, %/.test(calcFormHtml),
+      && /Первоначальный платеж, %/.test(calcFormHtml)
+      && !/Участие клиента/.test(calcFormHtml),
       calcFormHtml.replace(/\s+/g, ' ').slice(0, 200));
     /* Вторая строка полей — доход и действующие кредиты; у формы есть норматив ПДН
        (data-pdn-limit), иначе скрипт считал бы нагрузку по своим числам, а не по серверным из
@@ -468,37 +472,39 @@ const SECTIONS = {
       && /Доход в месяц \(после налогов\)/.test(calcFormHtml)
       && /Платежи по другим кредитам/.test(calcFormHtml),
       calcFormHtml.replace(/\s+/g, ' ').slice(0, 240));
-    /* Итоги расчёта: платёж и нужный доход стоят парой в плашке .calc-pay наверху карточки, сразу
-       под ней — строка про нагрузку, ниже — суммы кредита. Заказчик 02.10.2026: «убери с блока
-       расчет кредита. Доход для одобрения (чистыми) 2 756 Б, размести напротив платежа по кредиту»
-       и следом «Перенеси строчку где считается нагрузка, под блок - Платёж по кредиту … Доход для
-       одобрения (чистыми)». До первого пересчёта на месте чисел стоит «—». */
-    const payHtml = calcText.slice(calcText.indexOf('calc-pay'), calcText.indexOf('calc-pdn'));
+    /* Итоги расчёта: платёж и нужный доход стоят парой в плашке .calc-pay наверху карточки, ниже —
+       суммы кредита. Заказчик 02.10.2026: «убери с блока расчет кредита. Доход для одобрения
+       (чистыми) 2 756 Б, размести напротив платежа по кредиту» и следом «Перенеси строчку где
+       считается нагрузка, под блок - Платёж по кредиту … Доход для одобрения (чистыми)». До первого
+       пересчёта на месте чисел стоит «—». */
+    const payHtml = calcText.slice(calcText.indexOf('calc-pay'), calcText.indexOf('calc-out > .spec-list'));
     check('pages', 'калькулятор: платёж и нужный доход стоят парой в одной плашке',
       /Платёж по кредиту/.test(payHtml) && /data-payment/.test(payHtml)
         && /Доход для одобрения \(чистыми\)/.test(payHtml) && /data-pdn-need/.test(payHtml),
       payHtml.replace(/\s+/g, ' ').slice(0, 200));
-    /* Блок нагрузки: заказчик 02.10.2026 оставил от него одну строчку про нагрузку — «остальное,
-       это - 0 % норма — 40 % Платежи по другим кредитам 0 Б Всего платежей в месяц 953 Б Доход до
-       вычета налогов (13 % и 1 %) 2 771 Б Показатель долговой нагрузки (ПДН) — … Методика расчёта
-       ПДН на сайте Нацбанка, - убери». Поэтому в разметке остался только вердикт: ни шкалы от нуля
-       до норматива, ни трёх чисел, ни примечания со ссылкой на nbrb.by. */
-    const pdnHtml = calcText.slice(calcText.indexOf('calc-pdn'), calcText.indexOf('spec-list', calcText.indexOf('calc-pdn')));
-    check('pages', 'калькулятор: в блоке нагрузки остался только вердикт',
-      /data-pdn-verdict/.test(pdnHtml)
-        && !/data-pdn-need/.test(pdnHtml)
-        && (pdnHtml.match(/<p /g) || []).length === 1,
-      pdnHtml.replace(/\s+/g, ' ').slice(0, 200));
+    /* Строка про нагрузку. Заказчик 02.10.2026: «Нагрузка 38,1 % — в норме (до 40 %). - убери» —
+       вердикт «в норме» повторял доход для одобрения из плашки .calc-pay и только называл норматив.
+       Поэтому в разметке под него не осталось ничего: в норме страница молчит, а предупреждение при
+       превышении норматива initCalc создаёт сам (public/assets/js/site.js, класс .alert.alert-err).
+       Здесь же — что вместе с вердиктом не вернулись ни шкала от нуля до норматива, ни три числа
+       ПДН, ни примечание со ссылкой на nbrb.by, ни слово «в норме». */
+    const pagesSource = fs.readFileSync(path.join(ROOT, 'lib/pages.mjs'), 'utf8');
+    check('pages', 'калькулятор: строки «Нагрузка … — в норме» в разметке нет',
+      !/data-pdn-box|data-pdn-verdict|pdn-verdict/.test(pagesSource)
+        && !/class="calc-pdn"/.test(pagesSource)
+        && !/Нагрузка/.test(payHtml)
+        && !/в норме/.test(payHtml),
+      calcText.slice(calcText.indexOf('calc-pay'), calcText.indexOf('spec-list')).replace(/\s+/g, ' ').slice(0, 220));
     check('pages', 'калькулятор: шкала, три числа ПДН и примечание с методикой убраны',
       !/pdn-bar|pdn-scale|calc-note|data-pdn-fill|data-pdn-other|data-pdn-total|data-pdn-tax/.test(calcText)
-        && !/Платежи по другим кредитам<\/span>/.test(pdnHtml)
+        && !/Платежи по другим кредитам<\/span>/.test(calcText)
         && !/Всего платежей в месяц/.test(calcText)
         && !/норма — 40 %/.test(calcText)
         && !/Доход до вычета налогов/.test(calcText)
         && !/nbrb\.by/.test(calcText)
         && !/ПДН = платежи/.test(calcText)
         && !/подоходного налога 13 %/.test(calcText),
-      pdnHtml.replace(/\s+/g, ' ').slice(0, 200));
+      calcText.slice(calcText.indexOf('calc-pay'), calcText.length).replace(/\s+/g, ' ').slice(0, 220));
 
     /* Марки: тёмной полосы под шапкой больше нет ни на одной странице (заказчик 2026-09-27:
        «убери после шапки на всех страницах на сером фоне»), а список марок встал светлой строкой
@@ -1862,9 +1868,11 @@ const SECTIONS = {
          строка итогов 70 px высотой, под числом одинокая «Б» с чертой (читалась как подчёркнутый
          квадрат), три колонки разной высоты. Теперь знак внутри <b>, рядом с числом: подпись сверху,
          «48 000 Б» одной строкой, все колонки одной высоты — это в строке показателей (три колонки:
-         сумма кредита, переплата, всего выплат). Блок нагрузки после правок того же дня списком
-         больше не является: от него осталась одна строка вердикта, и она стоит между плашкой
-         «платёж и нужный доход» и списком сумм — «Перенеси строчку где считается нагрузка, под блок».
+         сумма кредита, переплата, всего выплат). Строки про нагрузку здесь больше нет: заказчик
+         02.10.2026 убрал вердикт «Нагрузка 38,1 % — в норме (до 40 %). - убери», и в норме между
+         плашкой «платёж и нужный доход» и списком сумм не стоит ничего — предупреждение при
+         превышении норматива initCalc создаёт сам и ставит на это же место (проверяется ниже,
+         в разделе про нагрузку).
          Клик по числам никуда не ведёт: ссылок в карточке итогов нет вовсе — единственная была
          в примечании с методикой ПДН (.calc-note), а его заказчик убрал («Методика расчёта ПДН
          на сайте Нацбанка, - убери»), поэтому здесь же проверяется, что ссылок ноль. */
@@ -1898,16 +1906,14 @@ const SECTIONS = {
           });
           const links = [...box.querySelectorAll('a')].map((a) => a.getAttribute('href') || '');
           const pay = box.querySelector('.calc-pay');
-          const block = box.querySelector('.calc-pdn');
-          const verdict = box.querySelector('.calc-pdn .pdn-verdict');
+          const warn = box.querySelector('.calc-pdn');
           const sums = box.querySelector('.spec-list');
           return {
             lists, links,
-            verdict: verdict ? verdict.textContent.replace(/\s+/g, ' ').trim() : '',
-            oneVerdict: !!block && block.children.length === 1,
-            order: !!(pay && verdict && sums
-              && rect(pay).bottom <= rect(verdict).top + 1
-              && rect(verdict).bottom <= rect(sums).top + 1),
+            warn: warn ? warn.textContent.replace(/\s+/g, ' ').trim() : '',
+            warnHtml: warn ? warn.className : '',
+            warnAfterPay: !!(warn && pay && pay.nextElementSibling === warn),
+            order: !!(pay && sums && rect(pay).bottom <= rect(sums).top + 1),
           };
         });
         const main = calc ? calc.lists[0] : null;
@@ -1924,9 +1930,9 @@ const SECTIONS = {
           calc ? `суммы (${main.cols} колонки): ${values(main)}; списков ${calc.lists.length}; `
             + `ссылок ${calc.links.length}`
             : 'блок итогов .calc-out не найден');
-        check('ui', `${w}: строка про нагрузку стоит одна между плашкой платежа и суммами`,
-          !!calc && calc.oneVerdict && calc.order && /Нагрузка/.test(calc.verdict),
-          calc ? `вердикт «${calc.verdict}», один потомок ${calc.oneVerdict}, порядок ${calc.order}`
+        check('ui', `${w}: строки про нагрузку в норме нет, плашка платежа стоит над суммами`,
+          !!calc && !calc.warn && !calc.warnHtml && calc.order,
+          calc ? `строка про нагрузку «${calc.warn}» (класс «${calc.warnHtml}»), порядок ${calc.order}`
             : 'блок итогов .calc-out не найден');
       }
 
@@ -2577,11 +2583,15 @@ const SECTIONS = {
              в месяц», ни дохода до вычета налогов, ни примечания с методикой ПДН. */
           outText: clean('.calc-out'),
           pdn: {
-            verdict: clean('[data-pdn-verdict]'),
+            /* Строки про нагрузку в разметке нет: в норме её не должно быть и на живой странице,
+               а при превышении норматива initCalc создаёт узел [data-pdn-warn]. В норме узла нет,
+               поэтому warn — пустая строка, а не null. */
+            warn: clean('[data-pdn-warn]') || '',
+            warnBox: !!document.querySelector('[data-pdn-warn]'),
             need: clean('[data-pdn-need]'),
-            box: (document.querySelector('[data-pdn-box]') || {}).className,
             gone: ['.pdn-bar', '.pdn-scale', '.calc-note', '[data-pdn-fill]', '[data-pdn-other]',
-              '[data-pdn-total]', '[data-pdn-tax]'].filter((s) => document.querySelector(s)).length,
+              '[data-pdn-total]', '[data-pdn-tax]', '.pdn-verdict', '[data-pdn-verdict]',
+              '[data-pdn-box]'].filter((s) => document.querySelector(s)).length,
           },
         };
       });
@@ -2622,55 +2632,71 @@ const SECTIONS = {
         JSON.stringify(calc3.payRow) + ` · нужный доход в блоке ПДН: ${calc3.needInPdn}`);
       /* Долговая нагрузка по умолчанию: доход 2 500 Б, своих кредитов нет. Платёж 953 → нагрузка
          953 / 2 500 = 38,1 % (норма — не более 40 %, постановление Правления Национального банка
-         от 31.03.2020 № 100), нужный доход 953 / 0,4 = 2 383 Б «чистыми». Четвёртой правкой того же
-         дня заказчик убрал из блока нагрузки всё, кроме вердикта: «остальное, это - 0 % норма — 40 %
-         Платежи по другим кредитам 0 Б Всего платежей в месяц 953 Б Доход до вычета налогов
-         (13 % и 1 %) 2 771 Б Показатель долговой нагрузки (ПДН) — … Методика расчёта ПДН на сайте
-         Нацбанка, - убери». Поэтому здесь же проверяется, что ни шкалы, ни трёх чисел, ни примечания
-         в разметке нет, а дохода до удержаний (2 771 Б) нет и в тексте итогов. */
+         от 31.03.2020 № 100), нужный доход 953 / 0,4 = 2 383 Б «чистыми». Заказчик 02.10.2026 убрал
+         из блока нагрузки всё лишнее: сначала шкалу, три числа и примечание с методикой
+         («остальное, это - 0 % норма — 40 % Платежи по другим кредитам 0 Б Всего платежей в месяц
+         953 Б Доход до вычета налогов (13 % и 1 %) 2 771 Б Показатель долговой нагрузки (ПДН) —
+         … Методика расчёта ПДН на сайте Нацбанка, - убери»), а затем и сам вердикт: «Нагрузка
+         38,1 % — в норме (до 40 %). - убери». Значит, при нагрузке в норме страницы не касается
+         ничего: ни вердикта, ни зелёной плашки, ни слова «в норме» в итогах, а предупреждение
+         появляется только при превышении. */
       const pdnNum = (s) => Number(String(s).replace(/\u00A0/g, ' ').replace(/[^\d]/g, ''));
-      check('ui', 'калькулятор: по умолчанию нагрузка 38,1 % — вердикт «в норме», блок зелёный',
-        /^Нагрузка 38,1 % — в норме \(до 40 %\)\./.test(calc3.pdn.verdict)
-          && /is-ok/.test(calc3.pdn.box) && !/is-over/.test(calc3.pdn.box),
-        `вердикт «${calc3.pdn.verdict}», класс «${calc3.pdn.box}»`);
+      check('ui', 'калькулятор: при нагрузке 38,1 % (в норме) строки про нагрузку нет',
+        !calc3.pdn.warnBox && calc3.pdn.warn === '' && calc3.pdn.gone === 0
+          && !/Нагрузка|в норме/.test(calc3.outText),
+        `строка «${calc3.pdn.warn}», узел есть: ${calc3.pdn.warnBox}, лишних узлов ${calc3.pdn.gone}, итоги: ${calc3.outText}`);
       check('ui', 'калькулятор: нужный доход 2 383 Б стоит в плашке платежа, шкалы и трёх чисел ПДН нет',
-        pdnNum(calc3.pdn.need) === 2383 && calc3.pdn.gone === 0 && calc3.needInPdn === 0
+        pdnNum(calc3.pdn.need) === 2383 && calc3.needInPdn === 0
           && /Доход для одобрения \(чистыми\)\s*2 383 Б/.test(calc3.outText)
           && !/Всего платежей в месяц|Доход до вычета налогов|2 771|норма — 40 %|Показатель долговой нагрузки/.test(calc3.outText),
         `нужен «${calc3.pdn.need}», лишних узлов ${calc3.pdn.gone}, итоги: ${calc3.outText}`);
-      /* Доход ниже и платежи по другим кредитам: вердикт переворачивается и краснеет, а нужный
-         доход считается от «платёж по кредиту + платежи по другим кредитам». */
+      /* Доход ниже и платежи по другим кредитам: предупреждение появляется и считает нужный доход
+         от «платёж по кредиту + платежи по другим кредитам». */
       const pdnRange = await page.evaluate(() => {
         const f = document.querySelector('[data-calc]');
         const fire = (el) => el.dispatchEvent(new Event('input', { bubbles: true }));
-        const clean = (sel) => document.querySelector(sel).textContent.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
-        const read = () => ({
-          verdict: clean('[data-pdn-verdict]'), need: clean('[data-pdn-need]'),
-          box: document.querySelector('[data-pdn-box]').className,
-          bg: getComputedStyle(document.querySelector('.pdn-verdict')).color,
-        });
+        const clean = (sel) => {
+          const el = document.querySelector(sel);
+          return el ? el.textContent.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim() : '';
+        };
+        const read = () => {
+          const w = document.querySelector('[data-pdn-warn]');
+          const pay = document.querySelector('.calc-pay');
+          return {
+            warn: w ? w.textContent.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim() : '',
+            box: w ? w.className : '',
+            colour: w ? getComputedStyle(w).color : '',
+            bg: w ? getComputedStyle(w).backgroundColor : '',
+            afterPay: !!(w && pay && pay.nextElementSibling === w),
+            need: clean('[data-pdn-need]'),
+          };
+        };
         f.income.value = 1500; fire(f.income);
         const low = read();
         f.income.value = 2500; fire(f.income);
         f.other.value = 500; fire(f.other);
         const withOther = read();
         f.income.value = 3000; fire(f.income);
-        const okAgain = read();
+        const overAgain = read();
         f.other.value = 0; fire(f.other);
         f.income.value = 2500; fire(f.income);
-        return { low, withOther, okAgain };
+        const back = read();
+        return { low, withOther, overAgain, back };
       });
-      check('ui', 'калькулятор: при доходе 1 500 Б вердикт «выше нормы» и красный цвет',
-        /^Нагрузка 63,6 % — выше нормы 40 %\./.test(pdnRange.low.verdict)
-          && /is-over/.test(pdnRange.low.box) && !/is-ok/.test(pdnRange.low.box)
-          && pdnRange.low.bg === 'rgb(196, 56, 43)',
-        `вердикт «${pdnRange.low.verdict}», класс «${pdnRange.low.box}», цвет ${pdnRange.low.bg}`);
+      check('ui', 'калькулятор: при доходе 1 500 Б появляется предупреждение на красной подложке',
+        /^Нагрузка 63,6 % — выше нормы 40 %\.$/.test(pdnRange.low.warn)
+          && /alert alert-err calc-pdn/.test(pdnRange.low.box)
+          && pdnRange.low.colour === 'rgb(196, 56, 43)' && pdnRange.low.bg === 'rgb(251, 234, 232)'
+          && pdnRange.low.afterPay,
+        `строка «${pdnRange.low.warn}», класс «${pdnRange.low.box}», цвет ${pdnRange.low.colour} на ${pdnRange.low.bg}, под плашкой ${pdnRange.low.afterPay}`);
       check('ui', 'калькулятор: платежи по другим кредитам входят в нужный доход',
         pdnNum(pdnRange.withOther.need) === 3633
-          && /^Нагрузка 58,1 % — выше нормы 40 %\./.test(pdnRange.withOther.verdict),
-        `нужен ${pdnRange.withOther.need} (953 + 500 платежей ÷ 40 %)`);
+          && /^Нагрузка 58,1 % — выше нормы 40 %\.$/.test(pdnRange.withOther.warn),
+        `нужен ${pdnRange.withOther.need} (953 + 500 платежей ÷ 40 %), строка «${pdnRange.withOther.warn}»`);
       check('ui', 'калькулятор: с доходом 3 000 Б и платежом 500 Б нагрузка 48,4 % — снова выше нормы',
-        /^Нагрузка 48,4 % — выше нормы 40 %\./.test(pdnRange.okAgain.verdict), pdnRange.okAgain.verdict);
+        /^Нагрузка 48,4 % — выше нормы 40 %\.$/.test(pdnRange.overAgain.warn), pdnRange.overAgain.warn);
+      check('ui', 'калькулятор: при возврате дохода в норму предупреждение снова убирается',
+        pdnRange.back.warn === '' && !pdnRange.back.warnBox, `строка «${pdnRange.back.warn}»`);
       /* Ползунки расчёта (просьба заказчика 2026-09-27: «Стоимость автомобиля, руб. 60000 /
          Первоначальный взнос, руб. — сделай ползунком как в месяцах», затем 2026-09-29: «в блок
          кредитный калькулятор добавь ползунок участие клиента от 5% до 80%», затем 02.10.2026:
@@ -2740,13 +2766,13 @@ const SECTIONS = {
         };
         return { high, low, lowPrice };
       });
-      check('ui', 'калькулятор: участие клиента 80 % — взнос 48 000, кредит 12 000',
+      check('ui', 'калькулятор: первоначальный платеж 80 % — взнос 48 000, кредит 12 000',
         shareRange.high.share === '80' && shareRange.high.out === '80 % · 48 000 Б'
           && shareRange.high.credit === '12 000' && shareRange.high.sum === '12 000 Б',
         `80 %: подпись «${shareRange.high.out}», кредит «${shareRange.high.credit}», строка итога «${shareRange.high.sum}»`);
-      check('ui', 'калькулятор: участие клиента ограничено снизу 5 %',
+      check('ui', 'калькулятор: первоначальный платеж ограничен снизу 5 %',
         shareRange.low.share === '5' && shareRange.low.out === '5 % · 3 000 Б',
-        `введено 3 → ${shareRange.low.share} % («${shareRange.low.out}») · цена 10 000, участие 5 %: кредит «${shareRange.lowPrice.credit}», платёж «${shareRange.lowPrice.pay}»`);
+        `введено 3 → ${shareRange.low.share} % («${shareRange.low.out}») · цена 10 000, платёж 5 %: кредит «${shareRange.lowPrice.credit}», платёж «${shareRange.lowPrice.pay}»`);
       check('ui', 'калькулятор: взнос в рублях считается от цены, стоимость 10 000 при 5 %',
         shareRange.lowPrice.priceOut === '10 000' && shareRange.lowPrice.out === '5 % · 500 Б'
           && shareRange.lowPrice.credit === '9 500' && shareRange.lowPrice.pay === '189'
@@ -2784,7 +2810,7 @@ const SECTIONS = {
       check('ui', 'калькулятор: ползунок двигается с клавиатуры шагом 500 и пересчитывает расчёт',
         keyMove.price === '60500' && keyMove.out === '60 500' && keyMove.pay === '961 Б / месяц',
         `60 000 → ${keyMove.price}, подпись «${keyMove.out}», платёж «${keyMove.pay}»`);
-      /* На 861–1179 px подписи «Стоимость автомобиля, руб.» и «Участие клиента, %» не
+      /* На 861–1179 px подписи «Стоимость автомобиля, руб.» и «Первоначальный платеж, %» не
          влезают в 152 px и переносятся на две строки — по верху их ползунки уезжали на 20 px ниже
          ползунка «Срока, месяцев». Поэтому поля выровнены по низу (.calc-fields: align-items:end):
          внутри строки все ползунки и все значения стоят на одной линии. Строк теперь две (поля
@@ -5401,6 +5427,51 @@ const SECTIONS = {
       }));
       check('ui', 'сравнение: «Убрать» в карточке убирает одну машину, остальные остаются',
         cmpAfter.cards === 2 && cmpAfter.badge.trim() === '2', JSON.stringify(cmpAfter));
+
+      /* Окно «Поставить авто на продажу»: раскрытый список марок не должен делать карточку окна
+         прокручиваемой (заказчик: «при выборе марки справа появилась полоса прокрутки, адаптируй
+         все, что бы полосы прокрутки не было»). Список позиционирован абсолютно и раньше считался
+         только по видимому окну, поэтому выходил за нижний край карточки (.modal{overflow-y:auto}) —
+         карточка получала свою полосу. Замер на геометрии со снимка заказчика (1920x1080 при
+         масштабе 125 % → 1536x704 css px): прежний расчёт давал списку 422 px и низ 588 против низа
+         карточки 510, то есть прокрутку 79 px; теперь список ужимается по карточке (clipBox в
+         placePop), полоса занимает 0 px, а ширина формы при раскрытии списка не меняется — с
+         классической полосой окно раньше дёргалось влево на 15 px. */
+      for (const vp of [{ w: 1536, h: 704, dpr: 1.25 }, { w: 1280, h: 720, dpr: 1 }]) {
+        await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: vp.dpr, isMobile: false, hasTouch: false });
+        await page.goto(BASE + '/', { waitUntil: 'load' });
+        await new Promise((r) => setTimeout(r, 200));
+        await page.click('[data-sale-open]');
+        await new Promise((r) => setTimeout(r, 250));
+        const closed = await page.evaluate(() => {
+          const card = document.querySelector('.modal-back:not([hidden]) .modal');
+          return { w: card.clientWidth, scrollH: card.scrollHeight, clientH: card.clientHeight };
+        });
+        await page.click('.modal-back:not([hidden]) [data-combo="brand"] [data-combo-input]');
+        await new Promise((r) => setTimeout(r, 400));
+        const m = await page.evaluate(() => {
+          const card = document.querySelector('.modal-back:not([hidden]) .modal');
+          const pop = document.querySelector('.modal-back:not([hidden]) .combo-sel .sel-pop:not([hidden])');
+          if (!card || !pop) return { none: true };
+          const cs = getComputedStyle(card);
+          const cr = card.getBoundingClientRect();
+          const pr = pop.getBoundingClientRect();
+          return {
+            cardScrollH: card.scrollHeight, cardClientH: card.clientHeight,
+            cardVBar: card.scrollHeight > card.clientHeight + 1,
+            bar: card.offsetWidth - card.clientWidth, cardW: card.clientWidth,
+            popBar: getComputedStyle(pop).scrollbarWidth,
+            popBottom: Math.round(pr.bottom), cardContentBottom: Math.round(cr.bottom - (parseFloat(cs.paddingBottom) || 0)),
+            popClientH: pop.clientHeight, rows: pop.querySelectorAll('.sel-opt').length,
+          };
+        });
+        check('ui', `${vp.w}x${vp.h}: раскрытый список марок не делает карточку окна прокручиваемой`,
+          !m.none && !m.cardVBar && m.bar === 0 && m.cardW === closed.w,
+          `${JSON.stringify(m)}, окно закрыто ${JSON.stringify(closed)}`);
+        check('ui', `${vp.w}x${vp.h}: список марок уложен внутри карточки окна и сам без полосы прокрутки`,
+          !m.none && m.popBottom <= m.cardContentBottom + 1 && m.popBar === 'none' && m.popClientH >= 160 && m.rows > 10,
+          `${JSON.stringify(m)}`);
+      }
     } finally {
       await browser.close();
     }
