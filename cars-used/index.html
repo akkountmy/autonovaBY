@@ -46,7 +46,7 @@
        фото в покое стрелки скрыты совсем (opacity 0) и появляются при наведении на снимок.
        Формулировки здесь намеренно обтекаемые: этот комментарий уезжает в HTML каждой страницы, и
        проверки «на карточке нет такой-то строки» искали бы её в собственном комментарии. -->
-<link rel="stylesheet" href="../assets/css/site.css?v=202">
+<link rel="stylesheet" href="../assets/css/site.css?v=203">
 <link rel="stylesheet" href="../assets/css/photo-focus.css?v=3">
 
 </head>
@@ -73,6 +73,11 @@
         </div>
       </div>
       <a class="icon-btn head-extra head-first" href="../news/" title="Автожурнал" aria-label="Автожурнал"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.4C10.4 5.2 8.5 4.6 6.4 4.6c-1 0-2 .1-2.9.4v12.8c.9-.3 1.9-.4 2.9-.4 2.1 0 4 .6 5.6 1.8 1.6-1.2 3.5-1.8 5.6-1.8 1 0 2 .1 2.9.4V5c-.9-.3-1.9-.4-2.9-.4-2.1 0-4 .6-5.6 1.8z"/><path d="M12 6.4v12.8"/></svg></a>
+      <!-- Кредитный калькулятор — иконкой в шапке перед сравнением (заказчик 02.10.2026: «в мобильной
+           версии добавь в шапку иконку кредитного калькулятора, размести перед иконкой сравнения»).
+           Раньше калькулятор был только пунктом меню; на телефоне меню уезжает в бургер, а раздел
+           нужен на виду. Значок — navCalc, тот же, что у пункта меню. -->
+      <a class="icon-btn" href="../kalkulyator/" title="Кредитный калькулятор" aria-label="Кредитный калькулятор"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.6" y="2.6" width="14.8" height="18.8" rx="3"/><rect x="7.6" y="5.8" width="8.8" height="3.6" rx="1.3"/><path d="M8.4 13.4h.01M12 13.4h.01M15.6 13.4h.01M8.4 17.4h.01M12 17.4h.01M15.6 17.4h.01"/></svg></a>
       <a class="icon-btn" href="../compare/" title="Сравнение"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.4v16.2"/><path d="M8.4 19.6h7.2"/><path d="M4.6 7.4h14.8"/><path d="M5 7.4l-2.6 6.2a3 3 0 0 0 5.2 0z"/><path d="M19 7.4l2.6 6.2a3 3 0 0 1-5.2 0z"/><circle cx="12" cy="3.2" r="1.1"/></svg><span class="badge" data-count-cmp hidden>0</span></a>
       <a class="icon-btn" href="../favorites/" title="Избранное"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/></svg><span class="badge" data-count-fav hidden>0</span></a>
       <button class="icon-btn" type="button" data-auth-open aria-haspopup="dialog" title="Вход и регистрация"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button>
@@ -164,7 +169,7 @@
     <div class="cars"><article class="car" data-car-id="267" data-car-title="Geely EX5, 2026"
     data-brand="Geely" data-model="EX5" data-year="2026"
     data-price="67900" data-mileage="9405"
-    data-added="2026-09-26" data-views="884"
+    data-added="2026-09-26" data-views="892"
     data-body="suv" data-trans="at"
     data-fuel="electric" data-drive="fwd"
     data-volume="0">
@@ -207,7 +212,7 @@
   </article><article class="car" data-car-id="266" data-car-title="Renault Sandero Stepway II, 2017"
     data-brand="Renault" data-model="Sandero Stepway II" data-year="2017"
     data-price="31900" data-mileage="55955"
-    data-added="2026-09-26" data-views="141"
+    data-added="2026-09-26" data-views="145"
     data-body="hatchback" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.6">
@@ -250,7 +255,7 @@
   </article><article class="car" data-car-id="265" data-car-title="Lada (ВАЗ) Vesta I, 2020"
     data-brand="Lada (ВАЗ)" data-model="Vesta I" data-year="2020"
     data-price="30900" data-mileage="86730"
-    data-added="2026-09-26" data-views="166"
+    data-added="2026-09-26" data-views="170"
     data-body="wagon" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.6">
@@ -293,7 +298,7 @@
   </article><article class="car" data-car-id="264" data-car-title="Geely Atlas Pro, 2022"
     data-brand="Geely" data-model="Atlas Pro" data-year="2022"
     data-price="53900" data-mileage="46320"
-    data-added="2026-09-26" data-views="138"
+    data-added="2026-09-26" data-views="142"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -336,7 +341,7 @@
   </article><article class="car" data-car-id="53" data-car-title="Geely Emgrand II, 2023"
     data-brand="Geely" data-model="Emgrand II" data-year="2023"
     data-price="43000" data-mileage="23735"
-    data-added="2026-09-24" data-views="132"
+    data-added="2026-09-24" data-views="136"
     data-body="sedan" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -379,7 +384,7 @@
   </article><article class="car" data-car-id="52" data-car-title="Renault Kaptur I, 2017"
     data-brand="Renault" data-model="Kaptur I" data-year="2017"
     data-price="41900" data-mileage="87000"
-    data-added="2026-09-24" data-views="133"
+    data-added="2026-09-24" data-views="137"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="2">
@@ -422,7 +427,7 @@
   </article><article class="car" data-car-id="51" data-car-title="Renault Sandero Stepway II, 2019"
     data-brand="Renault" data-model="Sandero Stepway II" data-year="2019"
     data-price="34900" data-mileage="98495"
-    data-added="2026-09-24" data-views="135"
+    data-added="2026-09-24" data-views="139"
     data-body="hatchback" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.6">
@@ -465,7 +470,7 @@
   </article><article class="car" data-car-id="50" data-car-title="Citroën Berlingo II, 2012"
     data-brand="Citroën" data-model="Berlingo II" data-year="2012"
     data-price="20900" data-mileage="173320"
-    data-added="2026-09-24" data-views="131"
+    data-added="2026-09-24" data-views="135"
     data-body="minivan" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.6">
@@ -508,7 +513,7 @@
   </article><article class="car" data-car-id="49" data-car-title="Nissan Note II (E12), 2015"
     data-brand="Nissan" data-model="Note II (E12)" data-year="2015"
     data-price="25900" data-mileage="176000"
-    data-added="2026-09-24" data-views="131"
+    data-added="2026-09-24" data-views="135"
     data-body="hatchback" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.2">
@@ -551,7 +556,7 @@
   </article><article class="car" data-car-id="48" data-car-title="BMW 5 серия F07 (GT), 2011"
     data-brand="BMW" data-model="5 серия F07 (GT)" data-year="2011"
     data-price="0" data-mileage="313300"
-    data-added="2026-09-24" data-views="132"
+    data-added="2026-09-24" data-views="136"
     data-body="liftback" data-trans="at"
     data-fuel="diesel" data-drive="fwd"
     data-volume="3">
@@ -594,7 +599,7 @@
   </article><article class="car" data-car-id="47" data-car-title="Geely Emgrand II, 2024"
     data-brand="Geely" data-model="Emgrand II" data-year="2024"
     data-price="41900" data-mileage="52570"
-    data-added="2026-09-24" data-views="131"
+    data-added="2026-09-24" data-views="135"
     data-body="sedan" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -637,7 +642,7 @@
   </article><article class="car" data-car-id="46" data-car-title="Geely Tugella I, 2021"
     data-brand="Geely" data-model="Tugella I" data-year="2021"
     data-price="66900" data-mileage="72870"
-    data-added="2026-09-24" data-views="134"
+    data-added="2026-09-24" data-views="138"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="2">
@@ -680,7 +685,7 @@
   </article><article class="car" data-car-id="45" data-car-title="Ford Focus II, 2008"
     data-brand="Ford" data-model="Focus II" data-year="2008"
     data-price="12900" data-mileage="321950"
-    data-added="2026-09-24" data-views="378"
+    data-added="2026-09-24" data-views="384"
     data-body="hatchback" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.4">
@@ -723,7 +728,7 @@
   </article><article class="car" data-car-id="44" data-car-title="Citroën C1 II, 2019"
     data-brand="Citroën" data-model="C1 II" data-year="2019"
     data-price="21900" data-mileage="113440"
-    data-added="2026-09-24" data-views="135"
+    data-added="2026-09-24" data-views="139"
     data-body="hatchback" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1">
@@ -766,7 +771,7 @@
   </article><article class="car" data-car-id="43" data-car-title="Belgee X50, 2024"
     data-brand="Belgee" data-model="X50" data-year="2024"
     data-price="0" data-mileage="9500"
-    data-added="2026-09-24" data-views="134"
+    data-added="2026-09-24" data-views="138"
     data-body="suv" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -809,7 +814,7 @@
   </article><article class="car" data-car-id="42" data-car-title="Belgee X50, 2025"
     data-brand="Belgee" data-model="X50" data-year="2025"
     data-price="0" data-mileage="4300"
-    data-added="2026-09-24" data-views="357"
+    data-added="2026-09-24" data-views="363"
     data-body="suv" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -852,7 +857,7 @@
   </article><article class="car" data-car-id="41" data-car-title="Geely Atlas I, 2020"
     data-brand="Geely" data-model="Atlas I" data-year="2020"
     data-price="41900" data-mileage="96300"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.8">
@@ -895,7 +900,7 @@
   </article><article class="car" data-car-id="40" data-car-title="Hyundai Creta I, 2018"
     data-brand="Hyundai" data-model="Creta I" data-year="2018"
     data-price="35900" data-mileage="198892"
-    data-added="2026-09-24" data-views="135"
+    data-added="2026-09-24" data-views="139"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="2">
@@ -938,7 +943,7 @@
   </article><article class="car" data-car-id="39" data-car-title="Hyundai Tucson I, 2006"
     data-brand="Hyundai" data-model="Tucson I" data-year="2006"
     data-price="16900" data-mileage="383405"
-    data-added="2026-09-24" data-views="136"
+    data-added="2026-09-24" data-views="140"
     data-body="suv" data-trans="at"
     data-fuel="diesel" data-drive="fwd"
     data-volume="2">
@@ -981,7 +986,7 @@
   </article><article class="car" data-car-id="38" data-car-title="Opel Zafira C, 2014"
     data-brand="Opel" data-model="Zafira C" data-year="2014"
     data-price="38964" data-mileage="229350"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="minivan" data-trans="mt"
     data-fuel="diesel" data-drive="fwd"
     data-volume="1.6">
@@ -1024,7 +1029,7 @@
   </article><article data-extra class="car" data-car-id="37" data-car-title="Honda Jazz II, 2009"
     data-brand="Honda" data-model="Jazz II" data-year="2009"
     data-price="15900" data-mileage="266481"
-    data-added="2026-09-24" data-views="132"
+    data-added="2026-09-24" data-views="136"
     data-body="hatchback" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -1067,7 +1072,7 @@
   </article><article data-extra class="car" data-car-id="36" data-car-title="Geely Emgrand II, 2023"
     data-brand="Geely" data-model="Emgrand II" data-year="2023"
     data-price="40400" data-mileage="42200"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="sedan" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -1110,7 +1115,7 @@
   </article><article data-extra class="car" data-car-id="35" data-car-title="Renault Scenic IV, 2018"
     data-brand="Renault" data-model="Scenic IV" data-year="2018"
     data-price="36900" data-mileage="230550"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="minivan" data-trans="amt"
     data-fuel="diesel" data-drive="fwd"
     data-volume="1.5">
@@ -1153,7 +1158,7 @@
   </article><article data-extra class="car" data-car-id="34" data-car-title="Alfa Romeo Romeo 159, 2008"
     data-brand="Alfa Romeo" data-model="Romeo 159" data-year="2008"
     data-price="17900" data-mileage="304524"
-    data-added="2026-09-24" data-views="131"
+    data-added="2026-09-24" data-views="135"
     data-body="wagon" data-trans="at"
     data-fuel="diesel" data-drive="fwd"
     data-volume="1.9">
@@ -1196,7 +1201,7 @@
   </article><article data-extra class="car" data-car-id="33" data-car-title="Peugeot 5008 I, 2009"
     data-brand="Peugeot" data-model="5008 I" data-year="2009"
     data-price="18900" data-mileage="242100"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="minivan" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.6">
@@ -1239,7 +1244,7 @@
   </article><article data-extra class="car" data-car-id="32" data-car-title="Geely Geometry C, 2022"
     data-brand="Geely" data-model="Geometry C" data-year="2022"
     data-price="59000" data-mileage="5550"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="sedan" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="0">
@@ -1282,7 +1287,7 @@
   </article><article data-extra class="car" data-car-id="31" data-car-title="Audi A5 F5, 2018"
     data-brand="Audi" data-model="A5 F5" data-year="2018"
     data-price="67900" data-mileage="131710"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="liftback" data-trans="amt"
     data-fuel="cng" data-drive="fwd"
     data-volume="2">
@@ -1294,7 +1299,7 @@
       <div class="carousel-dots" data-dots><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
       <a class="car-photo-hit" href="../car/audi-a5-f5-130454531/" aria-label="Audi A5 F5, F5, 2018 — открыть карточку автомобиля"></a>
-      <div class="car-badges"><span class="tag light"><svg class="" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> VIN<span class="vin-word"> проверен</span></span><span class="tag">Выбор дилера</span></div>
+      <div class="car-badges"><span class="tag light"><svg class="" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> VIN<span class="vin-word"> проверен</span></span><i class="badge-break" aria-hidden="true"></i><span class="tag tag-dealer">Выбор дилера</span></div>
       <button class="car-fav" type="button" data-fav="31" aria-label="В избранное"><svg class="" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
       <span class="tag" style="position:absolute;right:12px;bottom:12px">12 фото</span>
     </div>
@@ -1325,7 +1330,7 @@
   </article><article data-extra class="car" data-car-id="30" data-car-title="Ford Escape IV, 2019"
     data-brand="Ford" data-model="Escape IV" data-year="2019"
     data-price="59900" data-mileage="81000"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="2">
@@ -1368,7 +1373,7 @@
   </article><article data-extra class="car" data-car-id="29" data-car-title="Ford Fusion USA II, 2018"
     data-brand="Ford" data-model="Fusion USA II" data-year="2018"
     data-price="30900" data-mileage="76600"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="sedan" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -1411,7 +1416,7 @@
   </article><article data-extra class="car" data-car-id="28" data-car-title="Renault Scenic III, 2013"
     data-brand="Renault" data-model="Scenic III" data-year="2013"
     data-price="24900" data-mileage="352000"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="minivan" data-trans="amt"
     data-fuel="diesel" data-drive="fwd"
     data-volume="1.5">
@@ -1454,7 +1459,7 @@
   </article><article data-extra class="car" data-car-id="27" data-car-title="BMW 3 серия E90, E91, E92, E93, 2005"
     data-brand="BMW" data-model="3 серия E90, E91, E92, E93" data-year="2005"
     data-price="20900" data-mileage="310250"
-    data-added="2026-09-24" data-views="131"
+    data-added="2026-09-24" data-views="135"
     data-body="sedan" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="2">
@@ -1497,7 +1502,7 @@
   </article><article data-extra class="car" data-car-id="26" data-car-title="Chevrolet Trax I, 2018"
     data-brand="Chevrolet" data-model="Trax I" data-year="2018"
     data-price="31900" data-mileage="150780"
-    data-added="2026-09-24" data-views="132"
+    data-added="2026-09-24" data-views="136"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.4">
@@ -1540,7 +1545,7 @@
   </article><article data-extra class="car" data-car-id="25" data-car-title="Geely Emgrand II, 2022"
     data-brand="Geely" data-model="Emgrand II" data-year="2022"
     data-price="38900" data-mileage="44500"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="sedan" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -1583,7 +1588,7 @@
   </article><article data-extra class="car" data-car-id="24" data-car-title="Mercedes-Benz E-Класс W212, S212, C207, A207, 2009"
     data-brand="Mercedes-Benz" data-model="E-Класс W212, S212, C207, A207" data-year="2009"
     data-price="29900" data-mileage="347500"
-    data-added="2026-09-24" data-views="131"
+    data-added="2026-09-24" data-views="135"
     data-body="sedan" data-trans="at"
     data-fuel="diesel" data-drive="fwd"
     data-volume="2.1">
@@ -1626,7 +1631,7 @@
   </article><article data-extra class="car" data-car-id="23" data-car-title="Belgee X70 I, 2024"
     data-brand="Belgee" data-model="X70 I" data-year="2024"
     data-price="74900" data-mileage="5500"
-    data-added="2026-09-24" data-views="139"
+    data-added="2026-09-24" data-views="143"
     data-body="suv" data-trans="amt"
     data-fuel="petrol" data-drive="awd"
     data-volume="1.5">
@@ -1638,7 +1643,7 @@
       <div class="carousel-dots" data-dots><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
       <a class="car-photo-hit" href="../car/belgee-x70-2024/" aria-label="Belgee X70 I, X, 2024 — открыть карточку автомобиля"></a>
-      <div class="car-badges"><span class="tag light"><svg class="" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> VIN<span class="vin-word"> проверен</span></span><span class="tag">Выбор дилера</span></div>
+      <div class="car-badges"><span class="tag light"><svg class="" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> VIN<span class="vin-word"> проверен</span></span><i class="badge-break" aria-hidden="true"></i><span class="tag tag-dealer">Выбор дилера</span></div>
       <button class="car-fav" type="button" data-fav="23" aria-label="В избранное"><svg class="" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
       <span class="tag" style="position:absolute;right:12px;bottom:12px">12 фото</span>
     </div>
@@ -1669,7 +1674,7 @@
   </article><article data-extra class="car" data-car-id="22" data-car-title="BMW X5 G05, 2022"
     data-brand="BMW" data-model="X5 G05" data-year="2022"
     data-price="159482" data-mileage="56800"
-    data-added="2026-09-24" data-views="145"
+    data-added="2026-09-24" data-views="149"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="awd"
     data-volume="3">
@@ -1681,7 +1686,7 @@
       <div class="carousel-dots" data-dots><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
       <a class="car-photo-hit" href="../car/bmw-x5-2022/" aria-label="BMW X5 G05, X, 2022 — открыть карточку автомобиля"></a>
-      <div class="car-badges"><span class="tag light"><svg class="" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> VIN<span class="vin-word"> проверен</span></span><span class="tag">Выбор дилера</span></div>
+      <div class="car-badges"><span class="tag light"><svg class="" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> VIN<span class="vin-word"> проверен</span></span><i class="badge-break" aria-hidden="true"></i><span class="tag tag-dealer">Выбор дилера</span></div>
       <button class="car-fav" type="button" data-fav="22" aria-label="В избранное"><svg class="" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
       <span class="tag" style="position:absolute;right:12px;bottom:12px">12 фото</span>
     </div>
@@ -1712,7 +1717,7 @@
   </article><article data-extra class="car" data-car-id="21" data-car-title="Nissan X-Trail III (T32), 2015"
     data-brand="Nissan" data-model="X-Trail III (T32)" data-year="2015"
     data-price="45500" data-mileage="289600"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="suv" data-trans="mt"
     data-fuel="diesel" data-drive="fwd"
     data-volume="1.6">
@@ -1755,7 +1760,7 @@
   </article><article data-extra class="car" data-car-id="20" data-car-title="Geely Emgrand II, 2022"
     data-brand="Geely" data-model="Emgrand II" data-year="2022"
     data-price="37900" data-mileage="46730"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="sedan" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -1798,7 +1803,7 @@
   </article><article data-extra class="car" data-car-id="19" data-car-title="Geely Atlas Pro, 2023"
     data-brand="Geely" data-model="Atlas Pro" data-year="2023"
     data-price="54900" data-mileage="100130"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="suv" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -1841,7 +1846,7 @@
   </article><article data-extra class="car" data-car-id="18" data-car-title="Renault Duster I, 2013"
     data-brand="Renault" data-model="Duster I" data-year="2013"
     data-price="26900" data-mileage="136820"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="suv" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="2">
@@ -1884,7 +1889,7 @@
   </article><article data-extra class="car" data-car-id="17" data-car-title="Renault Kaptur I, 2018"
     data-brand="Renault" data-model="Kaptur I" data-year="2018"
     data-price="39900" data-mileage="99950"
-    data-added="2026-09-24" data-views="132"
+    data-added="2026-09-24" data-views="136"
     data-body="suv" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.6">
@@ -1927,7 +1932,7 @@
   </article><article data-extra class="car" data-car-id="16" data-car-title="Nissan X-Trail III (T32), 2018"
     data-brand="Nissan" data-model="X-Trail III (T32)" data-year="2018"
     data-price="51900" data-mileage="198530"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="suv" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="2">
@@ -1970,7 +1975,7 @@
   </article><article data-extra class="car" data-car-id="15" data-car-title="Nissan Qashqai II, 2015"
     data-brand="Nissan" data-model="Qashqai II" data-year="2015"
     data-price="41900" data-mileage="181885"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="suv" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="2">
@@ -2013,7 +2018,7 @@
   </article><article data-extra class="car" data-car-id="14" data-car-title="Peugeot 3008 I, 2011"
     data-brand="Peugeot" data-model="3008 I" data-year="2011"
     data-price="21900" data-mileage="142880"
-    data-added="2026-09-24" data-views="131"
+    data-added="2026-09-24" data-views="135"
     data-body="suv" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.6">
@@ -2056,7 +2061,7 @@
   </article><article data-extra class="car" data-car-id="13" data-car-title="Volkswagen Golf VI, 2010"
     data-brand="Volkswagen" data-model="Golf VI" data-year="2010"
     data-price="24000" data-mileage="289740"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="hatchback" data-trans="mt"
     data-fuel="diesel" data-drive="fwd"
     data-volume="1.6">
@@ -2099,7 +2104,7 @@
   </article><article data-extra class="car" data-car-id="12" data-car-title="Nissan Qashqai I, 2010"
     data-brand="Nissan" data-model="Qashqai I" data-year="2010"
     data-price="31900" data-mileage="173500"
-    data-added="2026-09-24" data-views="131"
+    data-added="2026-09-24" data-views="135"
     data-body="suv" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="2">
@@ -2142,7 +2147,7 @@
   </article><article data-extra class="car" data-car-id="11" data-car-title="Geely Atlas Pro, 2022"
     data-brand="Geely" data-model="Atlas Pro" data-year="2022"
     data-price="51900" data-mileage="99450"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -2185,7 +2190,7 @@
   </article><article data-extra class="car" data-car-id="10" data-car-title="Peugeot 408 I, 2013"
     data-brand="Peugeot" data-model="408 I" data-year="2013"
     data-price="15900" data-mileage="151970"
-    data-added="2026-09-24" data-views="135"
+    data-added="2026-09-24" data-views="139"
     data-body="sedan" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.6">
@@ -2228,7 +2233,7 @@
   </article><article data-extra class="car" data-car-id="9" data-car-title="Geely Emgrand II, 2024"
     data-brand="Geely" data-model="Emgrand II" data-year="2024"
     data-price="44900" data-mileage="30760"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="sedan" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -2271,7 +2276,7 @@
   </article><article data-extra class="car" data-car-id="8" data-car-title="Geely Emgrand II, 2023"
     data-brand="Geely" data-model="Emgrand II" data-year="2023"
     data-price="40900" data-mileage="53350"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="sedan" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -2314,7 +2319,7 @@
   </article><article data-extra class="car" data-car-id="7" data-car-title="Toyota Corolla Verso II (AR10), 2008"
     data-brand="Toyota" data-model="Corolla Verso II (AR10)" data-year="2008"
     data-price="22900" data-mileage="285710"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="minivan" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.8">
@@ -2357,7 +2362,7 @@
   </article><article data-extra class="car" data-car-id="6" data-car-title="Geely Atlas I, 2021"
     data-brand="Geely" data-model="Atlas I" data-year="2021"
     data-price="44900" data-mileage="106910"
-    data-added="2026-09-24" data-views="130"
+    data-added="2026-09-24" data-views="134"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.8">
@@ -2400,7 +2405,7 @@
   </article><article data-extra class="car" data-car-id="5" data-car-title="Geely Coolray I, 2023"
     data-brand="Geely" data-model="Coolray I" data-year="2023"
     data-price="50900" data-mileage="45515"
-    data-added="2026-09-24" data-views="131"
+    data-added="2026-09-24" data-views="135"
     data-body="suv" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -2443,7 +2448,7 @@
   </article><article data-extra class="car" data-car-id="4" data-car-title="Chevrolet Cruze J300, 2014"
     data-brand="Chevrolet" data-model="Cruze J300" data-year="2014"
     data-price="15900" data-mileage="234770"
-    data-added="2026-09-24" data-views="136"
+    data-added="2026-09-24" data-views="140"
     data-body="sedan" data-trans="mt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.8">
@@ -2486,7 +2491,7 @@
   </article><article data-extra class="car" data-car-id="3" data-car-title="Geely Monjaro, 2024"
     data-brand="Geely" data-model="Monjaro" data-year="2024"
     data-price="95900" data-mileage="66200"
-    data-added="2026-09-24" data-views="905"
+    data-added="2026-09-24" data-views="913"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="awd"
     data-volume="2">
@@ -2498,7 +2503,7 @@
       <div class="carousel-dots" data-dots><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
       <a class="car-photo-hit" href="../car/geely-monjaro-2024/" aria-label="Geely Monjaro, 2024 — открыть карточку автомобиля"></a>
-      <div class="car-badges"><span class="tag light"><svg class="" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> VIN<span class="vin-word"> проверен</span></span><span class="tag">Выбор дилера</span></div>
+      <div class="car-badges"><span class="tag light"><svg class="" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> VIN<span class="vin-word"> проверен</span></span><i class="badge-break" aria-hidden="true"></i><span class="tag tag-dealer">Выбор дилера</span></div>
       <button class="car-fav" type="button" data-fav="3" aria-label="В избранное"><svg class="" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
       <span class="tag" style="position:absolute;right:12px;bottom:12px">12 фото</span>
     </div>
@@ -2529,7 +2534,7 @@
   </article><article data-extra class="car" data-car-id="2" data-car-title="Audi Q5 8R, 2010"
     data-brand="Audi" data-model="Q5 8R" data-year="2010"
     data-price="39900" data-mileage="375860"
-    data-added="2026-09-24" data-views="514"
+    data-added="2026-09-24" data-views="520"
     data-body="suv" data-trans="amt"
     data-fuel="diesel" data-drive="fwd"
     data-volume="3">
@@ -2572,7 +2577,7 @@
   </article><article data-extra class="car" data-car-id="1" data-car-title="Geely Emgrand II, 2023"
     data-brand="Geely" data-model="Emgrand II" data-year="2023"
     data-price="41500" data-mileage="62900"
-    data-added="2026-09-24" data-views="1503"
+    data-added="2026-09-24" data-views="1523"
     data-body="sedan" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -2761,7 +2766,7 @@
       </div>
       <label class="field"><span>Желаемая цена, <span class="byn">Б</span></span><input type="number" name="price" min="0" step="100" placeholder="50 000"></label>
       <div class="auth-row">
-        <label class="field"><span>Имя *</span><input type="text" name="name" required autocomplete="name" value="" placeholder="Как к вам обращаться"></label>
+        <label class="field sale-name"><span>Имя *</span><input type="text" name="name" required autocomplete="name" value="" placeholder="Как к вам обращаться"></label>
         <label class="field"><span>Телефон *</span><input type="tel" name="phone" required autocomplete="tel" value="" placeholder="+375 __ ___ __ __"></label>
       </div>
       <label class="check"><input type="checkbox" name="agree" required checked><span class="small muted">Согласен с обработкой персональных данных</span></label>
@@ -2817,7 +2822,7 @@
 </div>
 <button class="back-top" data-top type="button" aria-label="Наверх"><svg class="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg></button>
 <script src="../assets/js/site.js?v=38" defer></script>
-<script src="../assets/js/catalog-demo.js?v=mup5d9m5" defer></script>
+<script src="../assets/js/catalog-demo.js?v=mup5tg6f" defer></script>
 <script src="../assets/js/demo-pages.js" defer></script>
 </body>
 </html>

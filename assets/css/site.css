@@ -323,8 +323,14 @@ html.mnav-on::-webkit-scrollbar{width:0}
 @media(max-width:640px){.topbar{display:none}
   .header .logo img{height:26px}
   .header .logo-sub{font-size:9.6px;letter-spacing:.08em;padding-left:20px}
-  .header-in{gap:8px;padding-left:14px;padding-right:14px}
-  .head-actions{gap:5px}
+  /* Заказчик 02.10.2026: «смести иконки в шапке чуть правее друг к другу» и «добавь в шапку
+     иконку кредитного калькулятора перед иконкой сравнения». Иконка калькулятора пришла в
+     .head-actions шестой (разметка — lib/view.mjs, перед /compare), поэтому правый край блока
+     остался на месте (376 из 390, полоса .wrap), а сдвиг делается сжатием: зазор между
+     иконками 5→2 px, правое поле шапки 14→10 px. Правый край при этом отодвигается на 4 px
+     вправо, а самый левый значок — на 22 px (было 176, стало 154). */
+  .header-in{gap:8px;padding-left:14px;padding-right:10px}
+  .head-actions{gap:2px}
   /* Шестая и седьмая круглые кнопки в 390 px не помещаются (41 px перебора): локация
      на телефоне, как и раньше в верхней полосе, скрыта, а «Автожурнал» и «Отзывы»
      остаются пунктами бургера. */
@@ -1559,8 +1565,22 @@ section.block{padding:calc(var(--block-gap) / 2) 0}
   /* Плашки над кадром: «VIN проверен» при уменьшенном кегле не влезал рядом с «Новый» и
      обрезался правым краем кадра — теперь плашки не сжимаются, переносятся на вторую строку
      и не заходят под кнопку избранного. */
-  .car-badges{top:7px;left:7px;right:34px;gap:4px}
+  .car-badges{top:7px;left:4px;right:34px;gap:2px}
   .car-badges .tag{padding:3px 7px;font-size:10.5px;border-radius:6px;white-space:nowrap;flex:0 0 auto}
+  /* Заказчик 02.10.2026: «выбор дилера на карточках авто в мобильной версии размести в одну
+     строчку с иконкой VIN проверен и сделай красным». В разметке (lib/view.mjs, carCard) плашка
+     «Выбор дилера» идёт последней, а между ней и «VIN проверен» стоит невидимый разрыв
+     .badge-break. Здесь порядком flex переносим «Выбор дилера» сразу за «VIN»: пара встаёт одной
+     строкой, а разрыв (order 9, basis 100%) переносит остальное — служебные плашки вроде
+     «Без пробега» уезжают на третью строку и пару не разрывают. Цвет — фирменный красный
+     (--accent) с белыми буквами, как у плашки «Новый». Селектор «Выбор дилера» записан как
+     .tag.tag-dealer нарочно: у общего правила «не light» (.car-badges .tag:not(.light)) вес 3
+     класса, и простой .car-badges .tag-dealer (2 класса) ему проигрывал — плашка оставалась с
+     order 0 и уезжала на первую строку над «VIN». */
+  .car-badges .badge-break{order:9;flex:0 0 100%;height:0;margin:0}
+  .car-badges .tag:not(.light){order:0}
+  .car-badges .tag.light{order:1;padding:3px 4px}
+  .car-badges .tag.tag-dealer{order:2;padding:3px 4px;letter-spacing:-.015em;background:var(--accent);color:#fff}
   /* «VIN проверен» на телефоне не помещается рядом с «Новый» — слово «проверен» скрыто, плашка
      читается как «VIN» со щитом (заказчик 02.10.2026). Прячем только текст: иконка и «VIN»
      остаются, а на широком экране ничего не меняется. */
@@ -2189,6 +2209,15 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
   table.tbl-cards td[data-label="Автомобиль"]{display:block;margin-bottom:10px;white-space:normal}
   table.tbl-cards td[data-label="Автомобиль"]::before{content:none}
   table.tbl-cards td.num.tbl-ctr{text-align:left}
+  /* Заказчик 02.10.2026: «в моб. версии — проданные автомобили — цена в карточках улетела вправо,
+     подвинь к знаку белорусского рубля». В раскладке карточкой ячейка стала flex-контейнером с
+     justify-content:space-between, и знак «Б» — отдельный узел (.byn, в разметке его ставит
+     bynHtml): он уезжал к правому краю ячейки, а число оставалось у левого, зазор выходил 119 px
+     (замер 390 px: «41 900» кончалось на 227, «Б» начиналась на 346). Возвращаем ячейке обычный
+     текстовый поток — тогда «Б» стоит вплотную за числом с тем же отступом .14em, что и на всём
+     сайте, а значение по-прежнему прижато к правому краю, как у остальных строк. */
+  table.tbl-cards td[data-label="Цена"]{display:block;text-align:right}
+  table.tbl-cards td[data-label="Цена"] .byn{display:inline}
   table.tbl-cards tr.tbl-group{background:var(--paper-soft);border:0;border-radius:10px;padding:9px 14px;margin:18px 0 12px}
   table.tbl-cards tr.tbl-group td{display:block;padding:0;white-space:normal}
 }
@@ -2531,6 +2560,15 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
      высотой 948 px и внутреннюю прокрутку на телефоне, пары же помещаются целиком (161 px на поле
      держит и «2022», и «45 000»). Поэтому здесь пары остаются парными до 361 px. */
   .sale-modal .auth-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  /* Подсказка «Как к вам обращаться» (заказчик 02.10.2026: «в окне „поставить авто на продажу“
+     слова-подсказка вылазит за поле ввода») не помещалась в узкой паре: при 390 px поле 159 px,
+     под текст остаётся 129 px, а подсказка занимает 162 px — конец выходил за край. Кегль полей
+     трогать нельзя (меньше 16 px — браузер на телефоне сам зумит страницу по фокусу), поэтому
+     ниже 520 px (этот же медиазапрос) пара «Имя + Телефон» встаёт в столбик: подсказка занимает
+     162 из 300 px. Пары «Марка + Модель» и «Год + Пробег» остаются парными — их подсказки
+     короткие (39/60 и 35/48 px). Окно от этого подрастает на 53 px (замер 390 px: 514 → 567 при
+     экране 844) и прокручивается внутри себя, как на 360 px, где пары и раньше стояли в столбик. */
+  .sale-modal .auth-row:has(.sale-name){grid-template-columns:minmax(0,1fr)}
   .sale-modal form .auth-row+.auth-row,
   .sale-modal form .auth-row+.field,
   .sale-modal form .field+.auth-row{margin-top:8px}
