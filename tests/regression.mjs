@@ -437,15 +437,47 @@ const SECTIONS = {
        у каждого ползунка есть подпись <output>, а границы стоимости и участия осмысленные.
        Просьба 2026-09-29: «в блок кредитный калькулятор добавь ползунок участие клиента от 5% до
        80%» — вместо взноса в рублях стоит процент участия, поэтому у ползунка name="share" свои
-       границы 5…80 с шагом 1, а взнос в рублях виден в подписи. */
+       границы 5…80 с шагом 1, а взнос в рублях виден в подписи.
+       Просьба 02.10.2026: «добавь туда какой доход должен быть у клиента чтобы получить этот
+       кредит, методологию … Наверное надо ещё значение Сколько у человека Уже есть платежи по
+       кредитам чтобы он мог внести и показать налоговой нагрузки считался верным» — в форме стало
+       пять ползунков: к трём прежним добавились «Доход в месяц (после налогов)» и «Платежи по
+       другим кредитам», у каждого своя подпись <output> (name="income", name="other"). */
     check('pages', 'калькулятор: стоимость, участие клиента и срок — ползунки с подписью значения',
-      (calcFormHtml.match(/type="range"/g) || []).length === 3
+      (calcFormHtml.match(/type="range"/g) || []).length === 5
       && !/type="number"/.test(calcFormHtml)
-      && (calcFormHtml.match(/<output /g) || []).length === 3
+      && (calcFormHtml.match(/<output /g) || []).length === 5
       && /name="price" min="1000" max="\d+" step="500"/.test(calcFormHtml)
       && /name="share" min="5" max="80" step="1"/.test(calcFormHtml)
       && /Участие клиента, %/.test(calcFormHtml),
       calcFormHtml.replace(/\s+/g, ' ').slice(0, 200));
+    /* Вторая строка полей — доход и действующие кредиты; у формы есть норматив ПДН и ставка
+       удержаний (data-pdn-limit / data-withholding), иначе скрипт считал бы нагрузку по своим
+       числам, а не по серверным из lib/finance.mjs. */
+    check('pages', 'калькулятор: доход в месяц и платежи по другим кредитам — ползунки со своими границами',
+      /name="income"[^>]*min="400" max="8000" step="50"/.test(calcFormHtml)
+      && /name="other"[^>]*min="0" max="3000" step="50"/.test(calcFormHtml)
+      && /data-pdn-limit="40"/.test(calcFormHtml)
+      && /data-withholding="14"/.test(calcFormHtml)
+      && /Доход в месяц \(после налогов\)/.test(calcFormHtml)
+      && /Платежи по другим кредитам/.test(calcFormHtml),
+      calcFormHtml.replace(/\s+/g, ' ').slice(0, 240));
+    /* Итоги ПДН в разметке: четыре числа, вердикт, шкала и примечание с методикой Нацбанка
+       (постановление Правления Национального банка от 31.03.2020 № 100 — «ПДН не должен превышать
+       40 процентов»). До первого пересчёта на месте чисел стоит «—». */
+    const calcOutHtml = calcText.slice(calcText.indexOf('calc-pdn'), calcText.indexOf('</div>', calcText.indexOf('calc-note')));
+    check('pages', 'калькулятор: в итогах есть вердикт по нагрузке, шкала и четыре числа ПДН',
+      ['data-pdn-verdict', 'data-pdn-fill', 'data-pdn-other', 'data-pdn-total', 'data-pdn-need', 'data-pdn-tax']
+        .every((m) => calcOutHtml.includes(m))
+      && /Доход для одобрения \(чистыми\)/.test(calcOutHtml)
+      && /Доход до вычета налогов \(13 % и 1 %\)/.test(calcOutHtml)
+      && /норма — 40 %/.test(calcOutHtml),
+      calcOutHtml.replace(/\s+/g, ' ').slice(0, 200));
+    check('pages', 'калькулятор: методика ПДН подписана со ссылкой на Нацбанк',
+      /ПДН = платежи ÷ доход × 100 %/.test(calcText)
+      && /постановление Правления Национального банка от 31\.03\.2020 № 100/.test(calcText)
+      && /подоходного налога 13 % и взносов в ФСЗН 1 %/.test(calcText)
+      && /href="https:\/\/www\.nbrb\.by\/today\/faq\/o-metodike-rascheta-pokazatelej-dolgovoj-nagruzki"/.test(calcText));
 
     /* Марки: тёмной полосы под шапкой больше нет ни на одной странице (заказчик 2026-09-27:
        «убери после шапки на всех страницах на сером фоне»), а список марок встал светлой строкой
@@ -1808,9 +1840,11 @@ const SECTIONS = {
          знак выпадал из строки числа и вставал отдельной строкой под ним: замер до правки на 730 px —
          строка итогов 70 px высотой, под числом одинокая «Б» с чертой (читалась как подчёркнутый
          квадрат), три колонки разной высоты. Теперь знак внутри <b>, рядом с числом: подпись сверху,
-         «48 000 Б» одной строкой, все три колонки одной высоты (50 px). Клик по числам никуда не
-         ведёт: в блоке итогов нет ни одной ссылки (замер кликом по числу, знаку рубля и платежу
-         адрес не менялся), а подчёркивания текста у чисел нет. */
+         «48 000 Б» одной строкой, все колонки одной высоты (50 px) — это в первой строке показателей
+         (три колонки). Строка ПДН (четыре показателя в две колонки) проверяется там же, тем же
+         правилом: знак в числе, без подчёркивания, колонки ровные.
+         Клик по числам никуда не ведёт: единственная ссылка в карточке итогов — «Методика расчёта
+         ПДН на сайте Нацбанка» в примечании (.calc-note), а среди чисел ссылок нет. */
       for (const w of [1440, 390]) {
         await page.setViewport({ width: w, height: 950, isMobile: w <= 560, hasTouch: w <= 560, deviceScaleFactor: 1 });
         await page.goto(BASE + '/kalkulyator', { waitUntil: 'domcontentloaded' });
@@ -1822,36 +1856,42 @@ const SECTIONS = {
           const box = document.querySelector('.calc-out');
           if (!box) return null;
           const rect = (el) => el.getBoundingClientRect();
-          const list = box.querySelector('.spec-list');
-          const rows = [...list.children].map((d) => {
-            const num = d.querySelector('b');
-            const digit = d.querySelector('i');
-            const sign = d.querySelector('.byn');
-            if (!num || !digit || !sign) return null;
-            return {
-              inside: sign.parentElement === num,
-              sameLine: Math.abs(rect(sign).top - rect(digit).top) <= 6,
-              nowrap: getComputedStyle(num).whiteSpace === 'nowrap',
-              deco: getComputedStyle(num).textDecorationLine,
-              h: Math.round(rect(d).height), y: Math.round(rect(d).top), w: Math.round(rect(d).width),
-              value: num.textContent.replace(/\s+/g, ' ').trim(),
-            };
+          const lists = [...box.querySelectorAll('.spec-list')].map((list) => {
+            const rows = [...list.children].map((d) => {
+              const num = d.querySelector('b');
+              const digit = d.querySelector('i');
+              const sign = d.querySelector('.byn');
+              if (!num || !digit || !sign) return null;
+              return {
+                inside: sign.parentElement === num,
+                sameLine: Math.abs(rect(sign).top - rect(digit).top) <= 6,
+                nowrap: getComputedStyle(num).whiteSpace === 'nowrap',
+                deco: getComputedStyle(num).textDecorationLine,
+                h: Math.round(rect(d).height), w: Math.round(rect(d).width),
+                value: num.textContent.replace(/\s+/g, ' ').trim(),
+              };
+            }).filter(Boolean);
+            return { rows, cols: getComputedStyle(list).gridTemplateColumns.split(' ').length };
           });
-          return {
-            rows: rows.filter(Boolean),
-            cols: getComputedStyle(list).gridTemplateColumns.split(' ').length,
-            links: [...box.querySelectorAll('a')].length,
-          };
+          const links = [...box.querySelectorAll('a')].map((a) => ({ href: a.getAttribute('href') || '', note: !!a.closest('.calc-note') }));
+          return { lists, links };
         });
-        const rows = calc ? calc.rows : [];
-        const spreadH = rows.length ? Math.max(...rows.map((r) => r.h)) - Math.min(...rows.map((r) => r.h)) : 999;
-        const oneLine = rows.length === 3 && rows.every((r) => r.inside && r.sameLine && r.nowrap && r.deco === 'none');
-        const even = w <= 640 ? true : spreadH <= 1 && new Set(rows.map((r) => r.w)).size === 1;
+        const main = calc ? calc.lists[0] : null;
+        const pdn = calc ? calc.lists[1] : null;
+        const clean = (list) => list.rows.length > 0
+          && list.rows.every((r) => r.inside && r.sameLine && r.nowrap && r.deco === 'none');
+        const spreadH = (list) => Math.max(...list.rows.map((r) => r.h)) - Math.min(...list.rows.map((r) => r.h));
+        const even = (list) => w <= 640
+          ? true
+          : new Set(list.rows.map((r) => r.w)).size === 1 && spreadH(list) <= 1;
+        const values = (list) => list.rows.map((r) => `«${r.value}» ${r.h}px`).join(', ');
         check('ui', `${w}: итоги кредитного калькулятора — знак рубля в строке числа, колонки ровные`,
-          oneLine && even && calc.links === 0,
-          calc ? `строки: ${rows.map((r) => `«${r.value}» ${r.h}px`).join(', ')}; знак в числе у `
-            + `${rows.filter((r) => r.inside).length}/3, на линии числа у ${rows.filter((r) => r.sameLine).length}/3, `
-            + `подчёркиваний ${rows.filter((r) => r.deco !== 'none').length}, разброс высот ${spreadH} px, ссылок ${calc.links}`
+          !!main && !!pdn && main.rows.length === 3 && pdn.rows.length === 4
+            && clean(main) && even(main) && clean(pdn) && even(pdn)
+            && calc.links.length === 1 && calc.links[0].note
+            && /nbrb\.by/.test(calc.links[0].href),
+          calc ? `суммы (${main.cols} колонки): ${values(main)}; ПДН (${pdn.cols} колонки): ${values(pdn)}; `
+            + `ссылок ${calc.links.length} (в примечании ${calc.links.filter((l) => l.note).length})`
             : 'блок итогов .calc-out не найден');
       }
 
@@ -2472,24 +2512,34 @@ const SECTIONS = {
           return el ? el.textContent.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim() : null;
         };
         const rowNum = (n) => {
-          const row = document.querySelector(`.spec-list > div:nth-child(${n})`);
+          const row = document.querySelector(`.calc-out > .spec-list > div:nth-child(${n})`);
           return row ? row.textContent.replace(/^\D+/, '').replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim() : null;
         };
         return {
-          form: r('[data-calc]'), out: r('.calc-out'), lead: r('.calc-lead'),          fieldCols: document.querySelector('.calc-fields')
+          form: r('[data-calc]'), out: r('.calc-out'), lead: r('.calc-lead'),
+          fieldCols: document.querySelector('.calc-fields')
             ? getComputedStyle(document.querySelector('.calc-fields')).gridTemplateColumns.split(' ').length : 0,
           pay: clean('.big.num'),
           credit: rowNum(1),
           signs: document.querySelectorAll('.calc-out .byn').length,
           rate: !!document.querySelector('[data-calc] [name=rate]'),
+          pdn: {
+            verdict: clean('[data-pdn-verdict]'),
+            other: clean('[data-pdn-other]'), total: clean('[data-pdn-total]'),
+            need: clean('[data-pdn-need]'), tax: clean('[data-pdn-tax]'),
+            box: (document.querySelector('[data-pdn-box]') || {}).className,
+            fill: (document.querySelector('[data-pdn-fill]') || { style: {} }).style.getPropertyValue('--pdn'),
+            cols: getComputedStyle(document.querySelector('.calc-pdn .spec-list')).gridTemplateColumns.split(' ').length,
+          },
         };
       });
       const stacked = calc3.form && calc3.out && calc3.lead &&
         calc3.out.y >= calc3.form.bottom && calc3.out.x === calc3.form.x && calc3.out.right === calc3.form.right;
       check('ui', 'блок расчёта: итоги стоят под полями в той же колонке', stacked,
         `поля ${calc3.form.y}–${calc3.form.bottom} (x ${calc3.form.x}…${calc3.form.right}) / итоги ${calc3.out.y}–${calc3.out.bottom} (x ${calc3.out.x}…${calc3.out.right})`);
-      check('ui', 'блок расчёта: поля расчёта стоят одной строкой', calc3.fieldCols === 3,
-        `колонок у .calc-fields: ${calc3.fieldCols}`);
+      check('ui', 'блок расчёта: поля расчёта стоят одной строкой',
+        calc3.fieldCols === 6,
+        `колонок у .calc-fields: ${calc3.fieldCols} (шесть колонок: три поля по две, доход и платежи по три)`);
       check('ui', 'блок расчёта: окно заявки справа от полей, верх на одной линии',
         calc3.lead.x > calc3.form.right && calc3.lead.y === calc3.form.y,
         `${calc3.form.right} → ${calc3.lead.x}, верх полей ${calc3.form.y} / заявки ${calc3.lead.y}`);
@@ -2499,15 +2549,71 @@ const SECTIONS = {
       check('ui', 'блок расчёта: итоги не выходят ниже окна заявки, низы сходятся',
         Math.abs(calc3.out.bottom - calc3.lead.bottom) <= 1,
         `низ итогов ${calc3.out.bottom} / низ заявки ${calc3.lead.bottom}`);
+      /* Знаков рубля в итогах девять: один у платежа в месяц, по три в трёх суммах кредита, четыре
+         в столбцах ПДН и ещё один в самом вердикте («…нужен доход от 2 383 Б чистыми»). Проверяем
+         и его: вердикт без знака читался бы как «2 383» без валюты. */
       check('ui', 'в калькуляторе нет поля «Ставка», платёж по 16 % годовых (аннуитет)',
-        !calc3.rate && calc3.pay === '953 Б / месяц' && calc3.credit === '48 000 Б' && calc3.signs === 4, JSON.stringify(calc3));
+        !calc3.rate && calc3.pay === '953 Б / месяц' && calc3.credit === '48 000 Б' && calc3.signs === 9, JSON.stringify(calc3));
+      /* Долговая нагрузка по умолчанию: доход 2 500 Б, своих кредитов нет. Платёж 953 → нагрузка
+         953 / 2 500 = 38,1 % (норма — не более 40 %, постановление Правления Национального банка
+         от 31.03.2020 № 100), нужный доход 953 / 0,4 = 2 383 Б «чистыми», а до удержаний
+         (подоходный 13 % + ФСЗН 1 %) — 2 383 / 0,86 = 2 771 Б. Заказчик 02.10.2026: «добавь туда
+         какой доход должен быть у клиента чтобы получить этот кредит, методологию». */
+      const pdnNum = (s) => Number(String(s).replace(/\u00A0/g, ' ').replace(/[^\d]/g, ''));
+      check('ui', 'калькулятор: по умолчанию нагрузка 38,1 % — «в норме», шкала зелёная и не полная',
+        /^Нагрузка 38,1 % — в норме \(до 40 %\)\./.test(calc3.pdn.verdict)
+          && /is-ok/.test(calc3.pdn.box) && !/is-over/.test(calc3.pdn.box)
+          && calc3.pdn.fill === '95.3%' && calc3.pdn.cols === 2
+          && pdnNum(calc3.pdn.other) === 0 && pdnNum(calc3.pdn.total) === 953,
+        `вердикт «${calc3.pdn.verdict}», класс «${calc3.pdn.box}», заливка ${calc3.pdn.fill}, колонок ${calc3.pdn.cols}`);
+      check('ui', 'калькулятор: нужный доход 2 383 Б, до удержаний 2 771 Б',
+        pdnNum(calc3.pdn.need) === 2383 && pdnNum(calc3.pdn.tax) === 2771,
+        `нужен ${calc3.pdn.need}, до вычета ${calc3.pdn.tax}`);
+      /* Доход ниже и платежи по другим кредитам: вердикт переворачивается, шкала краснеет, а все
+         числа ПДН считаются от «платёж по кредиту + платежи по другим кредитам». */
+      const pdnRange = await page.evaluate(() => {
+        const f = document.querySelector('[data-calc]');
+        const fire = (el) => el.dispatchEvent(new Event('input', { bubbles: true }));
+        const clean = (sel) => document.querySelector(sel).textContent.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+        const read = () => ({
+          verdict: clean('[data-pdn-verdict]'), other: clean('[data-pdn-other]'), total: clean('[data-pdn-total]'),
+          need: clean('[data-pdn-need]'), tax: clean('[data-pdn-tax]'),
+          box: document.querySelector('[data-pdn-box]').className,
+          fill: document.querySelector('[data-pdn-fill]').style.getPropertyValue('--pdn'),
+          bg: getComputedStyle(document.querySelector('.pdn-verdict')).color,
+        });
+        f.income.value = 1500; fire(f.income);
+        const low = read();
+        f.income.value = 2500; fire(f.income);
+        f.other.value = 500; fire(f.other);
+        const withOther = read();
+        f.income.value = 3000; fire(f.income);
+        const okAgain = read();
+        f.other.value = 0; fire(f.other);
+        f.income.value = 2500; fire(f.income);
+        return { low, withOther, okAgain };
+      });
+      check('ui', 'калькулятор: при доходе 1 500 Б вердикт «выше нормы», шкала переполнена',
+        /^Нагрузка 63,6 % — выше нормы 40 %\./.test(pdnRange.low.verdict)
+          && /is-over/.test(pdnRange.low.box) && pdnRange.low.fill === '100.0%'
+          && pdnRange.low.bg === 'rgb(196, 56, 43)' && pdnNum(pdnRange.low.total) === 953,
+        `вердикт «${pdnRange.low.verdict}», класс «${pdnRange.low.box}», заливка ${pdnRange.low.fill}`);
+      check('ui', 'калькулятор: платежи по другим кредитам входят во все платежи и в нужный доход',
+        pdnNum(pdnRange.withOther.other) === 500 && pdnNum(pdnRange.withOther.total) === 1453
+          && pdnNum(pdnRange.withOther.need) === 3633 && pdnNum(pdnRange.withOther.tax) === 4225
+          && /^Нагрузка 58,1 % — выше нормы 40 %\./.test(pdnRange.withOther.verdict),
+        `другие ${pdnRange.withOther.other}, всего ${pdnRange.withOther.total}, нужен ${pdnRange.withOther.need}, до вычета ${pdnRange.withOther.tax}`);
+      check('ui', 'калькулятор: с доходом 3 000 Б и платежом 500 Б нагрузка 48,4 % — снова выше нормы',
+        /^Нагрузка 48,4 % — выше нормы 40 %\./.test(pdnRange.okAgain.verdict), pdnRange.okAgain.verdict);
       /* Ползунки расчёта (просьба заказчика 2026-09-27: «Стоимость автомобиля, руб. 60000 /
          Первоначальный взнос, руб. — сделай ползунком как в месяцах», затем 2026-09-29: «в блок
-         кредитный калькулятор добавь ползунок участие клиента от 5% до 80%»). Проверяем: все три
-         поля — ползунки с подписью значения, границы и шаг как в разметке (участие клиента —
-         проценты 5…80 шагом 1, срок по умолчанию максимальный), заливка трека считается скриптом
-         (--p), а взнос в рублях всегда равен проценту от цены, поэтому превысить стоимость не
-         может — границы, как раньше, двигать не нужно.
+         кредитный калькулятор добавь ползунок участие клиента от 5% до 80%», затем 02.10.2026:
+         «Наверное надо ещё значение Сколько у человека Уже есть платежи по кредитам чтобы он мог
+         внести»). Проверяем: все пять полей — ползунки с подписью значения, границы и шаг как в
+         разметке (участие клиента — проценты 5…80 шагом 1, доход 400…8 000 шагом 50, платежи по
+         другим кредитам 0…3 000 шагом 50, срок по умолчанию максимальный), заливка трека считается
+         скриптом (--p), а взнос в рублях всегда равен проценту от цены, поэтому превысить стоимость
+         не может — границы, как раньше, двигать не нужно.
          lib/pages.mjs: calculatorPage, public/assets/js/site.js: initCalc,
          public/assets/css/site.css: .calc-slider. */
       const sliders = await page.evaluate(() => {
@@ -2527,17 +2633,20 @@ const SECTIONS = {
       });
       const by = (n) => sliders.rows.find((r) => r.name === n) || {};
       const price0 = by('price'), share0 = by('share'), months0 = by('months');
-      check('ui', 'калькулятор: все три поля расчёта — ползунки, числовых полей нет',
-        sliders.sliders === 3 && sliders.numbers === 0
-        && sliders.rows.map((r) => r.name).join() === 'price,share,months'
+      const income0 = by('income'), other0 = by('other');
+      check('ui', 'калькулятор: все пять полей расчёта — ползунки, числовых полей нет',
+        sliders.sliders === 5 && sliders.numbers === 0
+        && sliders.rows.map((r) => r.name).join() === 'price,share,months,income,other'
         && sliders.rows.every((r) => r.type === 'range'),
         sliders.rows.map((r) => `${r.name}:${r.type}`).join(' '));
       check('ui', 'калькулятор: у ползунков границы, шаг и подпись значения под ними',
         price0.min === '1000' && price0.step === '500' && Number(price0.max) >= 60000
         && (Number(price0.max) - 1000) % 500 === 0 && price0.out === '60 000'
         && share0.min === '5' && share0.max === '80' && share0.step === '1' && share0.out === '20 % · 12 000\u00A0Б'
-        && months0.min === '6' && months0.max === '84' && months0.step === '6' && months0.out === '84',
-        `стоимость ${price0.min}…${price0.max}/${price0.step} «${price0.out}» · участие ${share0.min}…${share0.max}/${share0.step} «${share0.out}» · срок ${months0.min}…${months0.max}/${months0.step} «${months0.out}»`);
+        && months0.min === '6' && months0.max === '84' && months0.step === '6' && months0.out === '84'
+        && income0.min === '400' && income0.max === '8000' && income0.step === '50' && income0.out === '2 500'
+        && other0.min === '0' && other0.max === '3000' && other0.step === '50' && other0.out === '0',
+        `стоимость ${price0.min}…${price0.max}/${price0.step} «${price0.out}» · участие ${share0.min}…${share0.max}/${share0.step} «${share0.out}» · срок ${months0.min}…${months0.max}/${months0.step} «${months0.out}» · доход ${income0.min}…${income0.max}/${income0.step} «${income0.out}» · платежи ${other0.min}…${other0.max}/${other0.step} «${other0.out}»`);
       check('ui', 'калькулятор: заливка ползунков считается скриптом (--p)',
         sliders.rows.every((r) => /^\d+(\.\d+)?%$/.test(r.fill)),
         sliders.rows.map((r) => `${r.name}=${r.fill || '—'}`).join(' '));
@@ -2548,7 +2657,7 @@ const SECTIONS = {
            <span class="byn">Б</span> в той же строке. */
         const num = (sel) => document.querySelector(sel).textContent.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
         const sum = (n) => {
-          const row = document.querySelector(`.spec-list > div:nth-child(${n})`);
+          const row = document.querySelector(`.calc-out > .spec-list > div:nth-child(${n})`);
           return row ? row.textContent.replace(/^\D+/, '').replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim() : null;
         };
         f.share.value = 80; fire(f.share);
@@ -2612,23 +2721,32 @@ const SECTIONS = {
       /* На 861–1179 px подписи «Стоимость автомобиля, руб.» и «Участие клиента, %» не
          влезают в 152 px и переносятся на две строки — по верху их ползунки уезжали на 20 px ниже
          ползунка «Срока, месяцев». Поэтому поля выровнены по низу (.calc-fields: align-items:end):
-         все ползунки и все значения стоят на одной линии. */
+         внутри строки все ползунки и все значения стоят на одной линии. Строк теперь две (поля
+         кредита и поля дохода), между строками ползунки, конечно, на разной высоте — сверяем
+         расхождение внутри каждой строки, а не по всей форме. */
       await page.setViewport({ width: 1024, height: 900 });
       await page.goto(BASE + '/kalkulyator', { waitUntil: 'domcontentloaded' });
       const align1024 = await page.evaluate(() => {
         const tops = (sel) => [...document.querySelectorAll(sel)].map((el) => Math.round(el.getBoundingClientRect().top));
-        const spread = (a) => Math.max(...a) - Math.min(...a);
+        const spread = (a) => (a.length ? Math.max(...a) - Math.min(...a) : 999);
         const labels = tops('[data-calc] .field > span');
         return {
-          sliders: spread(tops('[data-calc] input[type=range]')),
-          outs: spread(tops('[data-calc] output')),
-          labels: spread(labels),
+          sliders: spread(tops('[data-calc] .field:nth-child(-n+3) input[type=range]')),
+          creditOuts: spread(tops('[data-calc] .field:nth-child(-n+3) output')),
+          incomeSliders: spread(tops('[data-calc] .field-wide input[type=range]')),
+          incomeOuts: spread(tops('[data-calc] .field-wide output')),
+          labels: spread(labels.slice(0, 3)),
           count: tops('[data-calc] input[type=range]').length,
+          wide: tops('[data-calc] .field-wide').length,
         };
       });
       check('ui', '1024: ползунки расчёта и их значения стоят на одной линии',
-        align1024.count === 3 && align1024.sliders <= 1 && align1024.outs <= 1,
-        `ползунков ${align1024.count}, подписи в две строки (расхождение верхов ${align1024.labels} px), ползунки — ${align1024.sliders} px, значения — ${align1024.outs} px`);
+        align1024.count === 5 && align1024.wide === 2
+        && align1024.sliders <= 1 && align1024.creditOuts <= 1
+        && align1024.incomeSliders <= 1 && align1024.incomeOuts <= 1,
+        `ползунков ${align1024.count} (широких ${align1024.wide}), подписи в две строки (расхождение верхов ${align1024.labels} px), `
+          + `строка кредита: ползунки ${align1024.sliders} px, значения ${align1024.creditOuts} px; `
+          + `строка дохода: ползунки ${align1024.incomeSliders} px, значения ${align1024.incomeOuts} px`);
 
       await page.setViewport({ width: 390, height: 844 });
       await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
@@ -2733,16 +2851,38 @@ const SECTIONS = {
         });
       });
       check('ui', 'иконки шапки: прозрачный фон и никаких рамок',
-        headerIcons.length >= 5 && headerIcons.every((i) => i.bg === 'rgba(0, 0, 0, 0)' && i.border === '0px none' && i.icon > 0),
+        headerIcons.length >= 4 && headerIcons.every((i) => i.bg === 'rgba(0, 0, 0, 0)' && i.border === '0px none' && i.icon > 0),
         JSON.stringify(headerIcons));
-      await page.hover('.header .head-actions .icon-btn');
+      /* Заказчик 02.10.2026: «в десктопной версии убери значок калькулятора» — на широком экране
+         раздел стоит подписью в ряду меню, и значок его только дублировал. Гасит его правило
+         .head-actions .icon-btn-calc{display:none} в @media(min-width:1280px); на телефоне
+         (бургер, ≤1279 px) значок остаётся и проверяется отдельно ниже. */
+      const desktopCalc = await page.evaluate(() => {
+        const calc = document.querySelector('.head-actions .icon-btn-calc');
+        const vis = (el) => {
+          if (!el) return false;
+          const cs = getComputedStyle(el), b = el.getBoundingClientRect();
+          return cs.display !== 'none' && cs.visibility !== 'hidden' && b.width > 0 && b.height > 0;
+        };
+        const shown = [...document.querySelectorAll('.head-actions .icon-btn')].filter(vis);
+        return {
+          inDom: !!calc, visible: vis(calc),
+          shown: shown.map((el) => el.getAttribute('href') || String(el.className)),
+          nav: vis(document.querySelector('.nav')),
+        };
+      });
+      check('ui', '1400: значка калькулятора в шапке нет, а ряд подписей меню на месте',
+        desktopCalc.inDom && !desktopCalc.visible && desktopCalc.nav
+          && desktopCalc.shown.includes('/compare') && desktopCalc.shown.includes('/favorites'),
+        `в разметке ${desktopCalc.inDom ? 'есть' : 'нет'}, видно ${desktopCalc.visible}, ряд подписей ${desktopCalc.nav}, видимые значки: ${desktopCalc.shown.join(', ')}`);
+      await page.hover('.header .head-actions a.icon-btn[href="/compare"]');
       /* Ждём именно конечный цвет. У .icon-btn переход .15s, но под нагрузкой (в момент прогона
          рядом могут работать другие браузеры) кадры анимации отстают, и фиксированная пауза
          ловила промежуточный rgba(255,255,255,0.035) — прогон падал на ровном месте.
          Поэтому опрашиваем цвет, пока он не станет конечным. */
       let hoverBg = '';
       for (let i = 0; i < 30; i++) {
-        hoverBg = await page.$eval('.header .head-actions .icon-btn', (el) => getComputedStyle(el).backgroundColor);
+        hoverBg = await page.$eval('.header .head-actions a.icon-btn[href="/compare"]', (el) => getComputedStyle(el).backgroundColor);
         if (/rgba\(255, 255, 255, 0\.1\)/.test(hoverBg)) break;
         await new Promise((r) => setTimeout(r, 50));
       }
