@@ -497,12 +497,15 @@
        остались только доход «чистыми» и оценка нагрузки по нормативу. */
     var PDN_LIMIT = Number(form.dataset.pdnLimit) || 40;
     /* Знак белорусского рубля ставится в разметке — <span class="byn">Б</span> сразу после числа
-       (черта рисуется из CSS: своего символа в Юникоде у него нет). Скрипт пишет только числа,
-       поэтому разметка знака не затирается. В <output data-share> разметку вставить нельзя (это
-       значение поля), поэтому там знак идёт обычным текстом, через неразрывный пробел. */
-    var BYN = '\u00A0Б';
+       (черту рисует шрифт public/assets/fonts/byn-sign.ttf, класс .byn в site.css: знак со страницы
+       petrov.by, которую заказчик назвал образцом). Скрипт пишет только числа, поэтому разметка
+       знака не затирается. Исключение — <output data-share>: у его значения нет отдельного узла под
+       знак, поэтому строку пишем разметкой целиком через innerHTML (та же строка, что и в разметке
+       страницы: BYN_HTML в lib/cars.mjs). Через .value знак вышел бы голой буквой «Б» без черты —
+       заказчик 03.10.2026 просил, чтобы знак рубля читался как знак. */
+    var BYN = '\u00A0<span class="byn">Б</span>';
     /* Числа пишутся без знака: знак стоит в разметке сразу после числа. Исключение — значение
-       поля <output data-share>, там знак идёт текстом. */
+       поля <output data-share>, там разметку пишет строка ниже. */
     function money(v) { return digits(v); }
     function digits(v) { return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
     /* Процент с одним знаком после запятой и запятой как разделителем (38,1 %): так же пишут
@@ -540,7 +543,7 @@
       var other = Number(form.other && form.other.value) || 0;
       if (monthsOut) monthsOut.value = months;
       if (priceOut) priceOut.value = digits(price);
-      if (shareOut) shareOut.value = share + ' % · ' + digits(down) + BYN;
+      if (shareOut) shareOut.innerHTML = share + ' % · ' + digits(down) + BYN;
       if (incomeOut) incomeOut.value = digits(income);
       if (otherOut) otherOut.value = digits(other);
       paint(form.price); paint(form.share); paint(form.months);

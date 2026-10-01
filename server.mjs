@@ -23,6 +23,7 @@ const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
   '.webp': 'image/webp', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
   '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.webmanifest': 'application/manifest+json',
   '.avif': 'image/avif', '.heic': 'image/heic', '.mp4': 'video/mp4', '.pdf': 'application/pdf',
 };
@@ -195,7 +196,7 @@ function serveStatic(req, res, pathname, versioned = false) {
      кэшировать надолго: старый адрес остаётся валидным, свежий приходит с новым «?v=».
      Без версии (загруженные в кабинет фото) держим сутки — их имена не меняются. */
   const cache = versioned ? 'public, max-age=31536000, immutable'
-    : (['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.ico', '.woff2'].includes(ext) ? 'public, max-age=86400' : 'public, max-age=300');
+    : (['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.ico', '.woff2', '.ttf'].includes(ext) ? 'public, max-age=86400' : 'public, max-age=300');
   /* Текстовые ассеты (site.css, site.js, логотипы-svg, данные каталога av.by) отдаём сжатыми:
      браузер, который умеет brotli, получает brotli, остальные — gzip. Сжатая версия считается
      один раз на файл и живёт в памяти. ETag не меняем: он описывает исходный файл, а Vary
