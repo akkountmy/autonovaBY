@@ -46,7 +46,7 @@
        фото в покое стрелки скрыты совсем (opacity 0) и появляются при наведении на снимок.
        Формулировки здесь намеренно обтекаемые: этот комментарий уезжает в HTML каждой страницы, и
        проверки «на карточке нет такой-то строки» искали бы её в собственном комментарии. -->
-<link rel="stylesheet" href="../../assets/css/site.css?v=207">
+<link rel="stylesheet" href="../../assets/css/site.css?v=208">
 <link rel="stylesheet" href="../../assets/css/photo-focus.css?v=3">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Car","name":"Geely Geometry C 2022","brand":{"@type":"Brand","name":"Geely"},"model":"Geometry C","vehicleModelDate":"2022","mileageFromOdometer":{"@type":"QuantitativeValue","value":5550,"unitCode":"KMT"},"offers":{"@type":"Offer","price":59000,"priceCurrency":"BYN","availability":"https://schema.org/InStock"},"image":"https://akkountmy.github.io/autonovaBYhttps://cdn.jsdelivr.net/gh/akkountmy/autonovaBY@main/public/uploads/seed/geely-geometry-c-129204483/01.jpg"}</script>
 </head>
@@ -76,8 +76,13 @@
       <!-- Кредитный калькулятор — иконкой в шапке перед сравнением (заказчик 02.10.2026: «в мобильной
            версии добавь в шапку иконку кредитного калькулятора, размести перед иконкой сравнения»).
            Раньше калькулятор был только пунктом меню; на телефоне меню уезжает в бургер, а раздел
-           нужен на виду. Значок — navCalc, тот же, что у пункта меню. -->
-      <a class="icon-btn" href="../../kalkulyator/" title="Кредитный калькулятор" aria-label="Кредитный калькулятор"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.6" y="2.6" width="14.8" height="18.8" rx="3"/><rect x="7.6" y="5.8" width="8.8" height="3.6" rx="1.3"/><path d="M8.4 13.4h.01M12 13.4h.01M15.6 13.4h.01M8.4 17.4h.01M12 17.4h.01M15.6 17.4h.01"/></svg></a>
+           нужен на виду. Значок — navCalc, тот же, что у пункта меню.
+           Заказчик 02.10.2026 (вторая правка того же дня): «в десктопной версии убери значок
+           калькулятора» — на широком экране раздел и так стоит подписью в ряду меню, и значок
+           только дублировал пункт. Класс icon-btn-calc гасит его в @media(min-width:1280px), то
+           есть ровно там, где работает ряд подписей; на телефоне (бургер, ≤1279 px) значок
+           остаётся. В разметке он один и тот же — прячется только стилем. -->
+      <a class="icon-btn icon-btn-calc" href="../../kalkulyator/" title="Кредитный калькулятор" aria-label="Кредитный калькулятор"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.6" y="2.6" width="14.8" height="18.8" rx="3"/><rect x="7.6" y="5.8" width="8.8" height="3.6" rx="1.3"/><path d="M8.4 13.4h.01M12 13.4h.01M15.6 13.4h.01M8.4 17.4h.01M12 17.4h.01M15.6 17.4h.01"/></svg></a>
       <a class="icon-btn" href="../../compare/" title="Сравнение"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.4v16.2"/><path d="M8.4 19.6h7.2"/><path d="M4.6 7.4h14.8"/><path d="M5 7.4l-2.6 6.2a3 3 0 0 0 5.2 0z"/><path d="M19 7.4l2.6 6.2a3 3 0 0 1-5.2 0z"/><circle cx="12" cy="3.2" r="1.1"/></svg><span class="badge" data-count-cmp hidden>0</span></a>
       <a class="icon-btn" href="../../favorites/" title="Избранное"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/></svg><span class="badge" data-count-fav hidden>0</span></a>
       <button class="icon-btn" type="button" data-auth-open aria-haspopup="dialog" title="Вход и регистрация"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button>
@@ -116,7 +121,7 @@
       <div class="row muted small car-meta">
         <span><svg class="" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Гомель</span>
         <span><svg class="" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> опубликовано 24 сентября</span>
-        <span><svg class="" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> 151 просмотр</span>
+        <span><svg class="" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> 155 просмотров</span>
         <span class="car-no num">№ 129204483</span>
       </div>
     </div></div>
@@ -210,7 +215,7 @@
     <div class="cars"><article class="car" data-car-id="19" data-car-title="Geely Atlas Pro, 2023"
     data-brand="Geely" data-model="Atlas Pro" data-year="2023"
     data-price="54900" data-mileage="100130"
-    data-added="2026-09-24" data-views="152"
+    data-added="2026-09-24" data-views="156"
     data-body="suv" data-trans="amt"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -253,7 +258,7 @@
   </article><article class="car" data-car-id="264" data-car-title="Geely Atlas Pro, 2022"
     data-brand="Geely" data-model="Atlas Pro" data-year="2022"
     data-price="53900" data-mileage="46320"
-    data-added="2026-09-26" data-views="160"
+    data-added="2026-09-26" data-views="164"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -296,7 +301,7 @@
   </article><article class="car" data-car-id="11" data-car-title="Geely Atlas Pro, 2022"
     data-brand="Geely" data-model="Atlas Pro" data-year="2022"
     data-price="51900" data-mileage="99450"
-    data-added="2026-09-24" data-views="152"
+    data-added="2026-09-24" data-views="156"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="1.5">
@@ -339,7 +344,7 @@
   </article><article class="car" data-car-id="46" data-car-title="Geely Tugella I, 2021"
     data-brand="Geely" data-model="Tugella I" data-year="2021"
     data-price="66900" data-mileage="72870"
-    data-added="2026-09-24" data-views="156"
+    data-added="2026-09-24" data-views="160"
     data-body="suv" data-trans="at"
     data-fuel="petrol" data-drive="fwd"
     data-volume="2">
@@ -617,8 +622,8 @@
   </div>
 </div>
 <button class="back-top" data-top type="button" aria-label="Наверх"><svg class="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg></button>
-<script src="../../assets/js/site.js?v=38" defer></script>
-<script src="../../assets/js/catalog-demo.js?v=mup8qy99" defer></script>
+<script src="../../assets/js/site.js?v=39" defer></script>
+<script src="../../assets/js/catalog-demo.js?v=mup9k8hr" defer></script>
 <script src="../../assets/js/demo-pages.js" defer></script>
 </body>
 </html>

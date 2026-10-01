@@ -475,11 +475,24 @@
     var monthsOut = $('[data-months]', form);
     var priceOut = $('[data-price]', form);
     var shareOut = $('[data-share]', form);
+    var incomeOut = $('[data-income]', form);
+    var otherOut = $('[data-other]', form);
     /* Ставка считается «под капотом»: поле «Ставка, % годовых» убрано со страницы по просьбе
        заказчика («убери Ставка, % годовых … но под капотом должна считаться ставка 16 % годовых
        аннуитетом»). Меняется в lib/finance.mjs, страница отдаёт её в data-rate, здесь — только
        запасное значение, если атрибут потеряется. */
     var RATE = Number(form.dataset.rate) || 16;
+    /* Показатель долговой нагрузки (ПДН) — заказчик 02.10.2026: «добавь туда какой доход должен быть
+       у клиента чтобы получить этот кредит, методологию … возьми с нормативных актов Беларуси где
+       считается показатель долговой нагрузки … надо ещё значение Сколько у человека Уже есть платежи
+       по кредитам … показать налоговой нагрузки считался верным».
+       Норматив и ставку обязательных удержаний отдаёт форма (data-pdn-limit, data-withholding),
+       значения живут в lib/finance.mjs рядом с формулой платежа; здесь только запасные, если
+       атрибуты потеряются. 40 % — допустимое ПДН по постановлению Правления Нацбанка от 31.03.2020
+       № 100 (50 % разрешены лишь по товарам белорусского производства, автотранспорт исключён).
+       Удержания: подоходный налог 13 % + взносы в ФСЗН 1 % — доход до удержаний = доход / 0,86. */
+    var PDN_LIMIT = Number(form.dataset.pdnLimit) || 40;
+    var WITHHOLD = Number(form.dataset.withholding) || 14;
     /* Знак белорусского рубля ставится в разметке — <span class="byn">Б</span> сразу после числа
        (черта рисуется из CSS: своего символа в Юникоде у него нет). Скрипт пишет только числа,
        поэтому разметка знака не затирается. В <output data-share> разметку вставить нельзя (это
@@ -489,8 +502,12 @@
        поля <output data-share>, там знак идёт текстом. */
     function money(v) { return digits(v); }
     function digits(v) { return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+    /* Процент с одним знаком после запятой и запятой как разделителем (38,1 %): так же пишут
+       проценты на сайте. Ровные значения остаются целыми — 40 %, а не 40,0 %. */
+    function pct(v) { return (Math.round(v * 10) / 10).toString().replace('.', ',') + ' %'; }
     /* Заливка трека до бегунка: доля в переменной --p, её читает CSS. У всех ползунков
-       (стоимость, участие клиента, срок) она считается одинаково, поэтому выглядят они одинаково. */
+       (стоимость, участие клиента, срок, доход, платежи по другим кредитам) она считается
+       одинаково, поэтому выглядят они одинаково. */
     function paint(el) {
       if (!el) return;
       var min = Number(el.min) || 0, max = Number(el.max) || 0;
@@ -501,7 +518,11 @@
        ползунок участие клиента от 5% до 80%»). Раньше это был ползунок взноса в рублях, и его
        границу приходилось двигать вместе со стоимостью, чтобы взнос не превысил цену: теперь
        проценты от цены по определению не больше цены, поэтому подгонять границы не нужно.
-       Взнос в рублях показываем рядом с процентом — так видно реальную сумму. */
+       Взнос в рублях показываем рядом с процентом — так видно реальную сумму.
+       Второй расчёт — долговая нагрузка: все платежи (этот кредит + действующие) к доходу.
+       Доход в поле — «чистыми», как его спрашивают банки, поэтому в итогах рядом стоит доход до
+       удержаний: по методике Нацбанка доход берётся за вычетом обязательных удержаний, и без
+       этой пары «нагрузка» считалась бы по доходу «грязными» и была бы занижена. */
     function calc() {
       var price = Number(form.price.value) || 0;
       var share = Math.min(100, Math.max(0, Number(form.share.value) || 0));
@@ -511,15 +532,44 @@
       var credit = Math.max(0, price - down);
       var m = rate / 100 / 12;
       var pay = m > 0 ? credit * m / (1 - Math.pow(1 + m, -months)) : credit / months;
+      var income = Number(form.income && form.income.value) || 0;
+      var other = Number(form.other && form.other.value) || 0;
       if (monthsOut) monthsOut.value = months;
       if (priceOut) priceOut.value = digits(price);
       if (shareOut) shareOut.value = share + ' % · ' + digits(down) + BYN;
+      if (incomeOut) incomeOut.value = digits(income);
+      if (otherOut) otherOut.value = digits(other);
       paint(form.price); paint(form.share); paint(form.months);
+      paint(form.income); paint(form.other);
       var set = function (sel, txt) { var el = $(sel); if (el) el.textContent = txt; };
       set('[data-payment]', money(pay));
       set('[data-credit]', money(credit));
       set('[data-over]', money(pay * months - credit));
       set('[data-total]', money(pay * months));
+      var payTotal = pay + other;
+      var limit = PDN_LIMIT > 0 ? PDN_LIMIT : 40;
+      var need = payTotal / (limit / 100);
+      var needTax = need / (1 - WITHHOLD / 100);
+      var pdn = income > 0 ? (payTotal / income) * 100 : 0;
+      var over = income > 0 && pdn > limit + 1e-9;
+      set('[data-pdn-other]', money(other));
+      set('[data-pdn-total]', money(payTotal));
+      set('[data-pdn-need]', money(need));
+      set('[data-pdn-tax]', money(needTax));
+      var fill = $('[data-pdn-fill]');
+      if (fill) fill.style.setProperty('--pdn', Math.min(100, income > 0 ? (pdn / limit) * 100 : 0).toFixed(1) + '%');
+      var box = $('[data-pdn-box]');
+      if (box) {
+        box.classList.toggle('is-over', over);
+        box.classList.toggle('is-ok', income > 0 && !over);
+      }
+      var verdict = $('[data-pdn-verdict]');
+      if (verdict) {
+        var needTxt = 'от <b>' + money(need) + ' <span class="byn">Б</span></b> чистыми';
+        if (!income) verdict.textContent = 'Укажите доход в месяц — от него считается нагрузка.';
+        else if (over) verdict.innerHTML = 'Нагрузка <b>' + pct(pdn) + '</b> — выше нормы ' + limit + ' %. Для одобрения нужен доход ' + needTxt + '.';
+        else verdict.innerHTML = 'Нагрузка <b>' + pct(pdn) + '</b> — в норме (до ' + limit + ' %). Кредит дают при доходе ' + needTxt + '.';
+      }
     }
     form.addEventListener('input', calc);
     form.addEventListener('change', calc);

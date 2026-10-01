@@ -46,7 +46,7 @@
        фото в покое стрелки скрыты совсем (opacity 0) и появляются при наведении на снимок.
        Формулировки здесь намеренно обтекаемые: этот комментарий уезжает в HTML каждой страницы, и
        проверки «на карточке нет такой-то строки» искали бы её в собственном комментарии. -->
-<link rel="stylesheet" href="../assets/css/site.css?v=207">
+<link rel="stylesheet" href="../assets/css/site.css?v=208">
 <link rel="stylesheet" href="../assets/css/photo-focus.css?v=3">
 
 </head>
@@ -76,8 +76,13 @@
       <!-- Кредитный калькулятор — иконкой в шапке перед сравнением (заказчик 02.10.2026: «в мобильной
            версии добавь в шапку иконку кредитного калькулятора, размести перед иконкой сравнения»).
            Раньше калькулятор был только пунктом меню; на телефоне меню уезжает в бургер, а раздел
-           нужен на виду. Значок — navCalc, тот же, что у пункта меню. -->
-      <a class="icon-btn" href="../kalkulyator/" title="Кредитный калькулятор" aria-label="Кредитный калькулятор"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.6" y="2.6" width="14.8" height="18.8" rx="3"/><rect x="7.6" y="5.8" width="8.8" height="3.6" rx="1.3"/><path d="M8.4 13.4h.01M12 13.4h.01M15.6 13.4h.01M8.4 17.4h.01M12 17.4h.01M15.6 17.4h.01"/></svg></a>
+           нужен на виду. Значок — navCalc, тот же, что у пункта меню.
+           Заказчик 02.10.2026 (вторая правка того же дня): «в десктопной версии убери значок
+           калькулятора» — на широком экране раздел и так стоит подписью в ряду меню, и значок
+           только дублировал пункт. Класс icon-btn-calc гасит его в @media(min-width:1280px), то
+           есть ровно там, где работает ряд подписей; на телефоне (бургер, ≤1279 px) значок
+           остаётся. В разметке он один и тот же — прячется только стилем. -->
+      <a class="icon-btn icon-btn-calc" href="../kalkulyator/" title="Кредитный калькулятор" aria-label="Кредитный калькулятор"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.6" y="2.6" width="14.8" height="18.8" rx="3"/><rect x="7.6" y="5.8" width="8.8" height="3.6" rx="1.3"/><path d="M8.4 13.4h.01M12 13.4h.01M15.6 13.4h.01M8.4 17.4h.01M12 17.4h.01M15.6 17.4h.01"/></svg></a>
       <a class="icon-btn" href="../compare/" title="Сравнение"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.4v16.2"/><path d="M8.4 19.6h7.2"/><path d="M4.6 7.4h14.8"/><path d="M5 7.4l-2.6 6.2a3 3 0 0 0 5.2 0z"/><path d="M19 7.4l2.6 6.2a3 3 0 0 1-5.2 0z"/><circle cx="12" cy="3.2" r="1.1"/></svg><span class="badge" data-count-cmp hidden>0</span></a>
       <a class="icon-btn" href="../favorites/" title="Избранное"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/></svg><span class="badge" data-count-fav hidden>0</span></a>
       <button class="icon-btn" type="button" data-auth-open aria-haspopup="dialog" title="Вход и регистрация"><svg class="" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button>
@@ -109,12 +114,15 @@
 <main>
   <div class="wrap"><div class="breadcrumbs"><a href="../">Главная</a><span>/</span><span>Кредитный калькулятор</span></div></div>
   <div class="wrap page-pb">
-    <div class="sec-head"><div><h1 style="font-size:clamp(24px,2.6vw,36px)">Кредитный калькулятор</h1><p>Точные условия банк подтверждает после рассмотрения заявки.</p></div></div>
+    <div class="sec-head"><div><h1 style="font-size:clamp(24px,2.6vw,36px)">Кредитный калькулятор</h1><p>Считаем платёж, переплату и доход, который нужен банку для одобрения кредита. Точные условия банк подтверждает после рассмотрения заявки.</p></div></div>
     <div class="side-layout calc-layout">
-      <form class="panel calc-fields" data-calc data-rate="16">
+      <form class="panel calc-fields" data-calc data-rate="16" data-pdn-limit="40" data-withholding="14">
         <label class="field calc-slider"><span>Стоимость автомобиля, <span class="byn">Б</span></span><input type="range" name="price" min="1000" max="159000" step="500" value="60000"><output data-price>60 000</output></label>
         <label class="field calc-slider"><span>Участие клиента, %</span><input type="range" name="share" min="5" max="80" step="1" value="20"><output data-share>20 % · 12 000 Б</output></label>
         <label class="field calc-slider"><span>Срок, месяцев</span><input type="range" name="months" min="6" max="84" step="6" value="84"><output data-months>84</output></label>
+        <div class="calc-group">Доход и действующие кредиты</div>
+        <label class="field calc-slider field-wide"><span>Доход в месяц (после налогов), <span class="byn">Б</span></span><input type="range" name="income" min="400" max="8000" step="50" value="2500"><output data-income>2 500</output></label>
+        <label class="field calc-slider field-wide"><span>Платежи по другим кредитам, <span class="byn">Б</span>/мес</span><input type="range" name="other" min="0" max="3000" step="50" value="0"><output data-other>0</output></label>
       </form>
       <div class="calc-out"><div class="big num"><b data-payment>—</b>&nbsp;<span class="byn">Б</span> <span class="num">/ месяц</span></div>
         
@@ -122,6 +130,19 @@
           <div><span>Сумма кредита</span><b class="num"><i data-credit>—</i>&nbsp;<span class="byn">Б</span></b></div>
           <div><span>Переплата</span><b class="num"><i data-over>—</i>&nbsp;<span class="byn">Б</span></b></div>
           <div><span>Итого к возврату</span><b class="num"><i data-total>—</i>&nbsp;<span class="byn">Б</span></b></div>
+        </div>
+        
+        <div class="calc-pdn" data-pdn-box>
+          <p class="pdn-verdict" data-pdn-verdict>—</p>
+          <div class="pdn-bar" aria-hidden="true"><i data-pdn-fill></i></div>
+          <p class="pdn-scale" aria-hidden="true"><span>0 %</span><span>норма — 40 %</span></p>
+          <div class="spec-list">
+            <div><span>Платежи по другим кредитам</span><b class="num"><i data-pdn-other>—</i>&nbsp;<span class="byn">Б</span></b></div>
+            <div><span>Всего платежей в месяц</span><b class="num"><i data-pdn-total>—</i>&nbsp;<span class="byn">Б</span></b></div>
+            <div><span>Доход для одобрения (чистыми)</span><b class="num"><i data-pdn-need>—</i>&nbsp;<span class="byn">Б</span></b></div>
+            <div><span>Доход до вычета налогов (13 % и 1 %)</span><b class="num"><i data-pdn-tax>—</i>&nbsp;<span class="byn">Б</span></b></div>
+          </div>
+          <p class="calc-note">Показатель долговой нагрузки (ПДН) — это все ежемесячные платежи по кредитам, включая этот, делённые на среднемесячный доход: <b>ПДН = платежи ÷ доход × 100 %</b>. Национальный банк допускает не более 40 %. В расчёт входят платёж по новому кредиту, платежи по другим кредитам, рассрочке и просроченная задолженность. Доход учитывается за вычетом обязательных удержаний — подоходного налога 13 % и взносов в ФСЗН 1 %, поэтому рядом показан и доход до вычета налогов. Срок кредита на автомобиль — до 84 месяцев. Основание: постановление Правления Национального банка от 31.03.2020 № 100. <a href="https://www.nbrb.by/today/faq/o-metodike-rascheta-pokazatelej-dolgovoj-nagruzki" target="_blank" rel="noopener noreferrer">Методика расчёта ПДН на сайте Нацбанка</a>.</p>
         </div>
       </div>
       <div class="panel calc-lead">
@@ -330,7 +351,7 @@
   </div>
 </div>
 <button class="back-top" data-top type="button" aria-label="Наверх"><svg class="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg></button>
-<script src="../assets/js/site.js?v=38" defer></script>
+<script src="../assets/js/site.js?v=39" defer></script>
 <script src="../assets/js/demo-pages.js" defer></script>
 </body>
 </html>

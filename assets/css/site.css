@@ -210,6 +210,12 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
      стояли целиком и с запасом ~30 px даже у вошедшего в кабинет. */
   .header-in{gap:16px}
   .head-actions{gap:7px}
+  /* Значок кредитного калькулятора нужен только там, где меню уехало в бургер (заказчик
+     02.10.2026: «в десктопной версии убери значок калькулятора»). С 1280 px в шапке стоит ряд
+     подписей с пунктом «Кредитный калькулятор», и значок дублировал его, отнимая место у ряда
+     (запас по ширине здесь ~30 px). Прячем только значок: сравнение, избранное и звонок
+     остаются, на ≤1279 px значок тоже остаётся. */
+  .head-actions .icon-btn-calc{display:none}
   .nav .nav-dd{min-width:0}
   .nav-tx{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis}
 }
@@ -2150,8 +2156,11 @@ html.lb-on{overflow:hidden}
 .calc-out .big i,.calc-out .spec-list i{font-style:normal}
 .calc-out .big span{font-size:15px;font-family:var(--f-text);color:var(--text-2);font-weight:400}
 /* Список итогов прижат к низу карточки: в общем ряду карточки растянуты на одну высоту, и без
-   этого под списком оставалась бы пустая полоса, а низ карточки не совпадал с соседними. */
-.calc-out .spec-list{margin-top:auto}
+   этого под списком оставалась бы пустая полоса, а низ карточки не совпадал с соседними.
+   Автоматический отступ только у ПЕРВОГО списка (он прямой ребёнок .calc-out): под ним в той же
+   карточке стоит блок долговой нагрузки (.calc-pdn), и если бы отступ тянул и он, свободная
+   высота делилась бы между двумя отступами, а между списками появлялась пустая полоса. */
+.calc-out > .spec-list{margin-top:auto}
 .acc{border:1px solid var(--line);border-radius:var(--r-card);background:#fff;overflow:hidden}
 .acc details{border-bottom:1px solid var(--line)}
 .acc details:last-child{border-bottom:none}
@@ -2305,8 +2314,21 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
    подписи рядом с процентом). Колонки описаны явно, а не одним auto-fit: при auto-fit число колонок
    зависит от ширины карточки, после замены поля на процент их стало три, а карточка оставалась
    рассчитана на четыре — ползунки сжимались до 110 px или появлялась пустая колонка.
-   lib/finance.mjs держит ставку и границы. */
-.calc-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px;align-items:end}
+   lib/finance.mjs держит ставку и границы.
+   Полей стало пять (заказчик 02.10.2026: «… добавь туда какой доход должен быть у клиента чтобы
+   получить этот кредит … надо ещё значение Сколько у человека Уже есть платежи по кредитам чтобы
+   он мог внести»): к трём полям кредита добавились «Доход в месяц» и «Платежи по другим кредитам».
+   Сетка поэтому шестиколоночная: первые три поля занимают по две колонки (по-прежнему три равных
+   поля в строке), вторая строка — два широких поля по три колонки, между строками подпись
+   .calc-group. Так вторая строка начинается ровно под первой, без пустой ячейки. */
+.calc-fields{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px 18px;align-items:end}
+.calc-fields > .field{grid-column:span 2}
+.calc-fields > .field-wide{grid-column:span 3}
+/* Подпись второй строки полей — отделяет условия кредита от дохода заявителя: тонкая линия,
+   мелкий кегль вразрядку. */
+.calc-group{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin-top:2px;
+  font-size:12.4px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3)}
+.calc-group::after{content:"";flex:1;height:1px;background:var(--line)}
 /* ── Ползунки расчёта: стоимость, взнос и срок — одинаковые ползунки ─────────────────────────
    Просьба заказчика: «Стоимость автомобиля, руб. 60000 / Первоначальный взнос, руб. — сделай
    ползунком как в месяцах». Раньше стоимость и взнос были числовыми полями (50 px высотой),
@@ -2348,6 +2370,40 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
    переехал внутрь <b> (lib/pages.mjs) и теперь стоит в строке числа; здесь только запрет переноса —
    «48 000 Б» не разрывается, поэтому все три колонки итогов одной высоты и одной строки. */
 .calc-out .spec-list b{display:block;margin-top:4px;font-family:var(--f-num);font-size:17px;font-weight:700;text-align:left;white-space:nowrap}
+/* ── Долговая нагрузка (ПДН) в итогах расчёта ────────────────────────────────────────────────
+   Заказчик 02.10.2026: «Найди эталонный вид блока расчёта по кредиту добавь туда какой доход
+   должен быть у клиента чтобы получить этот кредит, методологию Какой должен быть доход клиента
+   возьми с нормативных актов Беларуси где считается показатель долговой нагрузки, Наверное надо
+   ещё значение Сколько у человека Уже есть платежи по кредитам чтобы он мог внести и показать
+   налоговой нагрузки считался верным».
+   Методика — постановление Правления Национального банка от 31.03.2020 № 100 «О расчёте
+   показателей долговой нагрузки и обеспеченности кредита»: ПДН = сумма ежемесячных платежей
+   физлица / среднемесячный доход × 100 %, допустимое значение — не более 40 % (у кредитов на
+   товары белорусского производства, кроме автотранспорта, — 50 %). Значит, доход, при котором
+   кредит проходит, — это все платежи, делённые на 0,4. Доход по методике берётся за вычетом
+   обязательных удержаний, поэтому рядом стоит доход до удержаний (подоходный 13 % + ФСЗН 1 %):
+   без него «нагрузка» считалась бы по доходу «грязными» и была бы занижена.
+   В карточке: вердикт сверху, полоса-шкала (заливка = доля от нормы 40 %, ставит initCalc в --pdn)
+   и два столбца чисел. Блок идёт последним в .calc-out, под списком сумм кредита. */
+.calc-pdn{display:flex;flex-direction:column;gap:12px;
+  border-top:1px solid var(--line);padding-top:14px}
+.calc-pdn .spec-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;
+  border-top:0;padding-top:0}
+.pdn-verdict{margin:0;font-size:13.4px;line-height:1.4;color:var(--text-2)}
+.pdn-verdict b{font-family:var(--f-num);color:var(--text);white-space:nowrap}
+.calc-pdn.is-ok .pdn-verdict{color:var(--ok)}
+.calc-pdn.is-over .pdn-verdict{color:var(--err)}
+.pdn-bar{height:6px;border-radius:99px;background:var(--paper-3);overflow:hidden}
+/* Заливка шкалы: сколько занято от допустимых 40 %. В норме полоса зелёная (как цвет вердикта),
+   выше нормы — красная и упирается в правый край (100 %), поэтому превышение видно и по цвету,
+   и по вердикту. Подписи под шкалой (0 % … 40 %) объясняют, что означает её длина. */
+.pdn-bar i{display:block;height:100%;width:var(--pdn,0%);border-radius:99px;background:var(--ok);
+  transition:width .18s ease}
+.calc-pdn.is-over .pdn-bar i{background:var(--err)}
+.pdn-scale{display:flex;justify-content:space-between;gap:12px;margin-top:-4px;
+  font-size:11.6px;color:var(--text-3)}
+.calc-note{margin:0;font-size:12.2px;line-height:1.45;color:var(--text-3)}
+.calc-note a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
 /* Тесно: колонка заявки чуть уже — как в блоке «Проданные автомобили» (.sold-layout). */
 @media(max-width:1179px){
   .calc-layout{grid-template-columns:minmax(0,1fr) 420px}
@@ -2358,9 +2414,12 @@ table.tbl th.tbl-ctr,table.tbl td.tbl-ctr{text-align:center}
   .calc-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:none;
     grid-template-areas:"in" "out" "lead"}
 }
-/* Телефон: поля расчёта снова столбиком, показатели — списком с разделителями, как раньше. */
+/* Телефон: поля расчёта снова столбиком, показатели — списком с разделителями, как раньше.
+   Поля растягиваются на всю строку: в сетке из одной колонки span 2/3 создал бы лишние колонки,
+   поэтому здесь он снят (grid-column:auto). */
 @media(max-width:640px){
   .calc-fields{grid-template-columns:minmax(0,1fr);gap:12px 0}
+  .calc-fields > .field,.calc-fields > .field-wide{grid-column:auto}
   .calc-out .spec-list{grid-template-columns:minmax(0,1fr);gap:0}
   .calc-out .spec-list div{padding:10px 0;border-bottom:1px solid var(--line);
     display:flex;justify-content:space-between;gap:14px;font-size:14.5px}
