@@ -273,8 +273,14 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   [data-mobile-nav] .nav-ico{display:none}
   [data-mobile-nav] .nav-dd{flex-direction:column;align-items:stretch}
   /* В панели список услуг раскрывается по тапу на «Услуги». Без display:none
-     скрытый (visibility) список держал ~400 px пустоты между пунктами. */
-  [data-mobile-nav] .nav-dd-menu{display:none;position:static;top:auto;left:auto;min-width:0;margin:2px 0 6px;padding:4px;background:rgba(255,255,255,.04);box-shadow:none}
+     скрытый (visibility) список держал ~400 px пустоты между пунктами.
+     Заказчик 02.10.2026: «В бутерброде в мобильной версии, раскрывается список услуг, сделай
+     этот список без рамки вокруг» — у пунктов панели не остаётся ни рамки, ни подложки: базовое
+     правило .nav-dd-menu выше рисует выпадающий список для широкого экрана (border 1px
+     --line-dark, фон --ink-2, радиус 12 px), а здесь он просто раскрывается внутри панели.
+     Рамку, фон, радиус и внутренние отступы снимаем: список читается как те же пункты меню,
+     что и строки .nav>a рядом (шеврон у «Услуги» остаётся и показывает, что список раскрыт). */
+  [data-mobile-nav] .nav-dd-menu{display:none;position:static;top:auto;left:auto;min-width:0;margin:2px 0 6px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
   [data-mobile-nav] .nav-dd.open .nav-dd-menu{display:block}
   [data-mobile-nav] .nav-dd-menu::before{display:none}
   [data-mobile-nav] .nav .nav-dd-menu a{padding:11px 16px}
