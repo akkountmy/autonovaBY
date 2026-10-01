@@ -24,35 +24,6 @@
   /* Форма подбора есть не на каждой странице с сеткой (например, на странице марки её нет) —
      тогда просто показываем/прячем партии и сортируем. */
   var form = document.querySelector('[data-param-form]');
-  /* Страница каталога — только та, у которой у выдачи есть строка «Показать ещё» (data-more):
-     лишь там сетка .cars и есть сама выдача. На главной и на страницах авто сетки .cars тоже
-     есть, но это разделы — «Лидеры продаж», «Выбор дилера», «Новые поступления», «Похожие
-     автомобили», — и скрипт брал первую из них. Заказчик 02.10.2026 с боевого сайта: «на
-     титульной странице в блоке поиск по параметрам базово стоит в списке марка - все марки, а на
-     кнопке - Показать автомобили4, на кнопке показан - 4, сделай, что бы базово кнопка показывала
-     все количество авто»: в первой сетке главной четыре карточки «Лидеров продаж», их число и
-     попадало в счётчик кнопки вместо 57 (в разметке копии уже стоит 57 — верное). Тот же выход
-     заодно перестаёт пересортировывать и прятать карточки разделов главной. */
-  if (!grid || !more) return;                    // не страница каталога — молча выходим
-  var cards = Array.prototype.slice.call(grid.querySelectorAll('.car'));
-  if (!cards.length) return;
-
-  var head = document.getElementById('list');
-  var sortSel = document.querySelector('select[data-sort]');
-  var titleEl = head ? head.querySelector('h2') : null;
-  var cntEl = form ? form.querySelector('button[type="submit"] .btn-cnt') : null;
-  var moreRow = document.querySelector('[data-more-row]');
-  var moreBtn = document.querySelector('[data-more-btn]');
-  var moreCnt = document.querySelector('[data-more-count]');
-  var moreEnd = document.querySelector('[data-more-end]');
-  var total = cards.length;
-  /* Партия — столько карточек, сколько сервер отдаёт за раз (data-per-page), иначе первая
-     отрисованная партия (столько карточек пришло без data-extra). */
-  var perPage = Number(more && more.getAttribute('data-per-page')) || 0;
-  if (!perPage) {
-    perPage = cards.filter(function (c) { return !c.hasAttribute('data-extra'); }).length || 20;
-  }
-  var shown = perPage;
 
   var plural = function (n, one, few, many) {
     var m10 = n % 10, m100 = n % 100;
@@ -88,6 +59,98 @@
     if (q && c.textContent.toLowerCase().indexOf(q) === -1) return false;
     return true;
   }
+
+  /* ── счётчик на кнопке там, где выдачи нет (главная) ──────────────────────────────────────────
+     Раньше скрипт выходил сразу, если на странице нет ленты каталога с «Показать ещё», и на
+     главной число на кнопке «Показать автомобили N» оставалось тем, что нарисовал сборщик: выбор
+     марки ничего не пересчитывал. Заказчик 02.10.2026: «в блоке на титульной странице — поиск по
+     параметрам при выборе марки не меняется количество машин в кнопке показать автомобили».
+     Карточек всей выдачи на главной нет (там разделы «Лидеры продаж» и «Новые поступления»),
+     поэтому число берём из индекса копии data/cars.json — тот же список, по которому работают
+     страницы сравнения и избранного. Индекс грузим один раз при первом же изменении параметров
+     (без JS, как и раньше, на кнопке стоит число всего каталога), считаем тем же отбором fits —
+     для этого данные индекса надеваем на объект с getAttribute, как у карточки в разметке.
+     Если индекс не отдался (страница открыта с диска без папки data) — на кнопке остаётся прежнее
+     число: лучше старое, чем пустая кнопка. */
+  function indexCard(c) {
+    var attrs = {
+      'data-brand': c.brand, 'data-model': c.model, 'data-body': c.body_key, 'data-trans': c.trans_key,
+      'data-fuel': c.fuel_key, 'data-drive': c.drive_key, 'data-year': c.year, 'data-volume': c.volume,
+      'data-mileage': c.mileage, 'data-price': c.price,
+    };
+    return {
+      getAttribute: function (n) { return attrs[n] === undefined ? null : String(attrs[n]); },
+      textContent: [c.brand, c.model, c.engine, c.params, c.price_text].join(' '),
+    };
+  }
+  function initCount() {
+    var cntEl = form ? form.querySelector('button[type="submit"] .btn-cnt') : null;
+    if (!form || !cntEl) return;
+    var self = document.currentScript || (function () {
+      var s = document.getElementsByTagName('script');
+      return s[s.length - 1];
+    })();
+    var root = self && self.src ? self.src.replace(/assets\/js\/catalog-demo\.js.*$/, '') : '';
+    var cars = null, loading = false, timer = null, seq = 0;
+    function load(done) {
+      if (cars) { done(); return; }
+      if (loading) return;
+      loading = true;
+      fetch(root + 'data/cars.json', { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          loading = false;
+          if (!d || !d.cars || !d.cars.length) return;
+          cars = d.cars;
+          done();
+        })
+        .catch(function () { loading = false; });
+    }
+    function recount() {
+      var mine = ++seq;
+      load(function () {
+        if (mine !== seq || !cars) return;     /* параметры успели поменяться — считаем последние */
+        var n = 0;
+        for (var i = 0; i < cars.length; i++) if (fits(indexCard(cars[i]))) n++;
+        cntEl.textContent = num5(n);
+      });
+    }
+    function later() { clearTimeout(timer); timer = setTimeout(recount, 180); }
+    form.addEventListener('change', later);
+    form.addEventListener('input', later);
+    form.addEventListener('submit', function () { clearTimeout(timer); }, true);
+  }
+
+  /* Страница каталога — только та, у которой у выдачи есть строка «Показать ещё» (data-more):
+     лишь там сетка .cars и есть сама выдача. На главной и на страницах авто сетки .cars тоже
+     есть, но это разделы — «Лидеры продаж», «Выбор дилера», «Новые поступления», «Похожие
+     автомобили», — и скрипт брал первую из них. Заказчик 02.10.2026 с боевого сайта: «на
+     титульной странице в блоке поиск по параметрам базово стоит в списке марка - все марки, а на
+     кнопке - Показать автомобили4, на кнопке показан - 4, сделай, что бы базово кнопка показывала
+     все количество авто»: в первой сетке главной четыре карточки «Лидеров продаж», их число и
+     попадало в счётчик кнопки вместо 57 (в разметке копии уже стоит 57 — верное). Тот же выход
+     заодно перестаёт пересортировывать и прятать карточки разделов главной. */
+  if (!grid || !more) { initCount(); return; }     // не страница каталога — остаётся только счётчик
+
+  var cards = Array.prototype.slice.call(grid.querySelectorAll('.car'));
+  if (!cards.length) { initCount(); return; }
+
+  var head = document.getElementById('list');
+  var sortSel = document.querySelector('select[data-sort]');
+  var titleEl = head ? head.querySelector('h2') : null;
+  var cntEl = form ? form.querySelector('button[type="submit"] .btn-cnt') : null;
+  var moreRow = document.querySelector('[data-more-row]');
+  var moreBtn = document.querySelector('[data-more-btn]');
+  var moreCnt = document.querySelector('[data-more-count]');
+  var moreEnd = document.querySelector('[data-more-end]');
+  var total = cards.length;
+  /* Партия — столько карточек, сколько сервер отдаёт за раз (data-per-page), иначе первая
+     отрисованная партия (столько карточек пришло без data-extra). */
+  var perPage = Number(more && more.getAttribute('data-per-page')) || 0;
+  if (!perPage) {
+    perPage = cards.filter(function (c) { return !c.hasAttribute('data-extra'); }).length || 20;
+  }
+  var shown = perPage;
 
   /* ── сортировка: ключи ровно те же, что в select (SORTS в lib/cars.mjs) ────────────────────── */
   var byNum = function (name, dir) {
