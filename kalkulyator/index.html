@@ -46,7 +46,7 @@
        фото в покое стрелки скрыты совсем (opacity 0) и появляются при наведении на снимок.
        Формулировки здесь намеренно обтекаемые: этот комментарий уезжает в HTML каждой страницы, и
        проверки «на карточке нет такой-то строки» искали бы её в собственном комментарии. -->
-<link rel="stylesheet" href="../assets/css/site.css?v=214">
+<link rel="stylesheet" href="../assets/css/site.css?v=215">
 <link rel="stylesheet" href="../assets/css/photo-focus.css?v=3">
 
 </head>
@@ -123,7 +123,8 @@
         <label class="field calc-slider field-wide"><span>Доход в месяц (после налогов), <span class="byn">Б</span></span><input type="range" name="income" min="400" max="8000" step="50" value="2500"><output data-income>2 500</output></label>
         <label class="field calc-slider field-wide"><span>Платежи по другим кредитам, <span class="byn">Б</span>/мес</span><input type="range" name="other" min="0" max="3000" step="50" value="0"><output data-other>0</output></label>
       </form>
-      <div class="calc-out">
+      
+      <div class="calc-out" tabindex="-1">
         
         <div class="calc-pay">
           <div class="calc-pay-item"><span>Платёж по кредиту</span><b class="big num"><i data-payment>—</i>&nbsp;<span class="byn">Б</span> <span>/ месяц</span></b></div>
@@ -344,7 +345,7 @@
   </div>
 </div>
 <button class="back-top" data-top type="button" aria-label="Наверх"><svg class="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg></button>
-<script src="../assets/js/site.js?v=46" defer></script>
+<script src="../assets/js/site.js?v=47" defer></script>
 <script src="../assets/js/demo-pages.js" defer></script>
 </body>
 </html>

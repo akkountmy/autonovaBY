@@ -594,6 +594,31 @@
     form.addEventListener('input', calc);
     form.addEventListener('change', calc);
     calc();
+    /* ── Итоги расчёта — «мёртвый» текст ────────────────────────────────────────────────────────
+       Заказчик 03.10.2026 и снова 04.10.2026: «в мобильной версии в блоке расчета платежа по
+       кредиту под словами Б, Итого к возврату, 80 084 Б — есть подчеркивание и при нажатии
+       осуществляется переход на гугл». Ни ссылок, ни подчёркиваний в карточке нет: суммы пишет
+       этот расчёт в <i>, знак рубля стоит в разметке (<span class="byn">Б</span>). Уводит в
+       Google встроенная функция Chrome для Android «Касание для поиска» (Touch to Search): по
+       тапу на выделяемый и неинтерактивный текст браузер подчёркивает слово и открывает поиск
+       Google — https://developer.chrome.com/blog/tap-to-search. Три слоя защиты: tabindex="-1"
+       на карточке (разметка, lib/pages.mjs), user-select:none (CSS, .calc-out) и этот обработчик:
+       Chrome по документации не запускает «касание для поиска» там, где обработчик click отменяет
+       действие по умолчанию. Вдобавок вычищаем из карточки итогов попавшие туда <a> (расширение,
+       режим чтения, чужой плагин) — и при загрузке, и если они появятся позже. */
+    var outBox = $('.calc-out');
+    if (outBox) {
+      outBox.addEventListener('click', function (e) { e.preventDefault(); });
+      var dropLinks = function () {
+        var links = outBox.getElementsByTagName('a');
+        for (var i = links.length - 1; i >= 0; i--) {
+          var a = links[i];
+          if (a.parentNode) a.parentNode.replaceChild(document.createTextNode(a.textContent), a);
+        }
+      };
+      dropLinks();
+      if (window.MutationObserver) new MutationObserver(dropLinks).observe(outBox, { childList: true, subtree: true });
+    }
   }
 
   /* ── меню и мелочи ──────────────────────────────────── */
