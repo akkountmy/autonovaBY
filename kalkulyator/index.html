@@ -46,7 +46,7 @@
        фото в покое стрелки скрыты совсем (opacity 0) и появляются при наведении на снимок.
        Формулировки здесь намеренно обтекаемые: этот комментарий уезжает в HTML каждой страницы, и
        проверки «на карточке нет такой-то строки» искали бы её в собственном комментарии. -->
-<link rel="stylesheet" href="../assets/css/site.css?v=209">
+<link rel="stylesheet" href="../assets/css/site.css?v=210">
 <link rel="stylesheet" href="../assets/css/photo-focus.css?v=3">
 
 </head>
@@ -114,13 +114,12 @@
 <main>
   <div class="wrap"><div class="breadcrumbs"><a href="../">Главная</a><span>/</span><span>Кредитный калькулятор</span></div></div>
   <div class="wrap page-pb">
-    <div class="sec-head"><div><h1 style="font-size:clamp(24px,2.6vw,36px)">Кредитный калькулятор</h1><p>Считаем платёж, переплату и доход, который нужен банку для одобрения кредита. Точные условия банк подтверждает после рассмотрения заявки.</p></div></div>
+    <div class="sec-head"><div><h1 style="font-size:clamp(24px,2.6vw,36px)">Кредитный калькулятор</h1><p>Точные условия банк подтверждает после рассмотрения заявки.</p></div></div>
     <div class="side-layout calc-layout">
-      <form class="panel calc-fields" data-calc data-rate="16" data-pdn-limit="40" data-withholding="14">
+      <form class="panel calc-fields" data-calc data-rate="16" data-pdn-limit="40">
         <label class="field calc-slider"><span>Стоимость автомобиля, <span class="byn">Б</span></span><input type="range" name="price" min="1000" max="159000" step="500" value="60000"><output data-price>60 000</output></label>
         <label class="field calc-slider"><span>Участие клиента, %</span><input type="range" name="share" min="5" max="80" step="1" value="20"><output data-share>20 % · 12 000 Б</output></label>
         <label class="field calc-slider"><span>Срок, месяцев</span><input type="range" name="months" min="6" max="84" step="6" value="84"><output data-months>84</output></label>
-        <div class="calc-group">Доход и действующие кредиты</div>
         <label class="field calc-slider field-wide"><span>Доход в месяц (после налогов), <span class="byn">Б</span></span><input type="range" name="income" min="400" max="8000" step="50" value="2500"><output data-income>2 500</output></label>
         <label class="field calc-slider field-wide"><span>Платежи по другим кредитам, <span class="byn">Б</span>/мес</span><input type="range" name="other" min="0" max="3000" step="50" value="0"><output data-other>0</output></label>
       </form>
@@ -131,23 +130,16 @@
           <div class="calc-pay-item"><span>Доход для одобрения (чистыми)</span><b class="big num"><i data-pdn-need>—</i>&nbsp;<span class="byn">Б</span></b></div>
         </div>
         
+        <div class="calc-pdn" data-pdn-box>
+          <p class="pdn-verdict" data-pdn-verdict>—</p>
+        </div>
+        
         <div class="spec-list">
           <div><span>Сумма кредита</span><b class="num"><i data-credit>—</i>&nbsp;<span class="byn">Б</span></b></div>
           <div><span>Переплата</span><b class="num"><i data-over>—</i>&nbsp;<span class="byn">Б</span></b></div>
           <div><span>Итого к возврату</span><b class="num"><i data-total>—</i>&nbsp;<span class="byn">Б</span></b></div>
         </div>
         
-        <div class="calc-pdn" data-pdn-box>
-          <p class="pdn-verdict" data-pdn-verdict>—</p>
-          <div class="pdn-bar" aria-hidden="true"><i data-pdn-fill></i></div>
-          <p class="pdn-scale" aria-hidden="true"><span>0 %</span><span>норма — 40 %</span></p>
-          <div class="spec-list">
-            <div><span>Платежи по другим кредитам</span><b class="num"><i data-pdn-other>—</i>&nbsp;<span class="byn">Б</span></b></div>
-            <div><span>Всего платежей в месяц</span><b class="num"><i data-pdn-total>—</i>&nbsp;<span class="byn">Б</span></b></div>
-            <div><span>Доход до вычета налогов (13 % и 1 %)</span><b class="num"><i data-pdn-tax>—</i>&nbsp;<span class="byn">Б</span></b></div>
-          </div>
-          <p class="calc-note">Показатель долговой нагрузки (ПДН) — это все ежемесячные платежи по кредитам, включая этот, делённые на среднемесячный доход: <b>ПДН = платежи ÷ доход × 100 %</b>. Национальный банк допускает не более 40 %. В расчёт входят платёж по новому кредиту, платежи по другим кредитам, рассрочке и просроченная задолженность. Доход учитывается за вычетом обязательных удержаний — подоходного налога 13 % и взносов в ФСЗН 1 %, поэтому рядом показан и доход до вычета налогов. Срок кредита на автомобиль — до 84 месяцев. Основание: постановление Правления Национального банка от 31.03.2020 № 100. <a href="https://www.nbrb.by/today/faq/o-metodike-rascheta-pokazatelej-dolgovoj-nagruzki" target="_blank" rel="noopener noreferrer">Методика расчёта ПДН на сайте Нацбанка</a>.</p>
-        </div>
       </div>
       <div class="panel calc-lead">
         <form class="lead-form" method="post" action="/lead" data-lead-form>
@@ -355,7 +347,7 @@
   </div>
 </div>
 <button class="back-top" data-top type="button" aria-label="Наверх"><svg class="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg></button>
-<script src="../assets/js/site.js?v=41" defer></script>
+<script src="../assets/js/site.js?v=42" defer></script>
 <script src="../assets/js/demo-pages.js" defer></script>
 </body>
 </html>
