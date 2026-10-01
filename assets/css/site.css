@@ -71,7 +71,12 @@ p{margin:0 0 1em}
    Ширина черты 0.44em при выступе 0.03em: замер canvas показал, что «Б» занимает 9,15 px из
    16 (Segoe UI 400), 10,27 px (700) и 10,2 px (Bahnschrift), то есть от 0,57 до 0,64 em при
    почти нулевых боковых пробелах — эти значения встают ровно по букве и там, и там. */
-.byn{position:relative;display:inline-block}
+/* Небольшой отступ слева от «Б» — просьба заказчика 02.10.2026: «Сдвинь чуть вправо от цены знак
+   белорусского рубля по всему сайту». Знак почти вплотную прилипал к последней цифре (замер canvas:
+   пробел перед «Б» 0,5–1 px, а между группами разрядов — 4 px), из-за чего читался как часть числа.
+   Двигаем сам знак, а не черту: черта остаётся ровно по букве (left:.03em), сдвиг общий для всех
+   мест — карточки, страница авто, сравнение, избранное, калькулятор, поставка. */
+.byn{position:relative;display:inline-block;margin-left:.14em}
 .byn::before{content:"";position:absolute;left:.03em;width:.44em;height:.095em;top:.47em;
   background:currentColor;border-radius:.02em}
 @media (forced-colors:active){.byn::before{background:CanvasText}}
